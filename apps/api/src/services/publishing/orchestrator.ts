@@ -117,7 +117,9 @@ export class PublishingOrchestrator {
 
         try {
             // Validate content
+            console.log(`Validating content for ${job.platform} job ${job.queue_id}:`, JSON.stringify(job.content_data, null, 2))
             const validation = await service.validateContent(job.content_data)
+            console.log(`Validation result for ${job.platform} job ${job.queue_id}:`, validation)
             if (!validation.valid) {
                 throw new Error(`Content validation failed: ${validation.errors.join(', ')}`)
             }
@@ -180,13 +182,16 @@ export class PublishingOrchestrator {
 
             case 'sendgrid':
             case 'mailchimp':
-                return {
+                const emailContent = {
                     subject: content.subject || content.title,
-                    html_content: content.html || content.content,
-                    text_content: content.text || content.content,
+                    html_content: content.html_content || content.html || content.content,
+                    text_content: content.text_content || content.text || content.content,
                     to: content.recipients || [content.email],
-                    from_email: content.from_email || process.env.DEFAULT_FROM_EMAIL
+                    from_email: content.from_email || process.env.DEFAULT_FROM_EMAIL || 'noreply@contentmultiplier.com',
+                    from_name: content.from_name || 'Content Multiplier'
                 }
+                console.log(`Formatting content for ${platform}:`, JSON.stringify(emailContent, null, 2))
+                return emailContent
 
             case 'wordpress':
                 return {

@@ -251,6 +251,7 @@ export class MailchimpService implements PublishingService {
     }
 
     async validateContent(content: any): Promise<{ valid: boolean; errors: string[] }> {
+        console.log('MailchimpService validateContent called with:', JSON.stringify(content, null, 2))
         const errors: string[] = []
 
         if (!content.subject || content.subject.length === 0) {
@@ -265,6 +266,7 @@ export class MailchimpService implements PublishingService {
             errors.push('From email address is required')
         }
 
+        console.log('MailchimpService validation result:', { valid: errors.length === 0, errors })
         return { valid: errors.length === 0, errors }
     }
 
@@ -278,8 +280,24 @@ export class MailchimpService implements PublishingService {
             throw new Error('Mailchimp credentials not configured')
         }
 
-        // Decrypt credentials (simplified for this example)
-        return JSON.parse(cred.encrypted_credentials)
+        console.log('Raw credentials from DB:', typeof cred.encrypted_credentials, cred.encrypted_credentials)
+
+        // Handle both encrypted (OAuth) and plain JSON credentials (API key)
+        if (typeof cred.encrypted_credentials === 'string') {
+            // Plain JSON string
+            return JSON.parse(cred.encrypted_credentials)
+        } else if (cred.encrypted_credentials && typeof cred.encrypted_credentials === 'object') {
+            if (cred.encrypted_credentials.encrypted) {
+                // Encrypted format from OAuth - need to decrypt
+                // For now, we don't have the decrypt function imported here
+                throw new Error('Encrypted credentials not supported in MailchimpService yet')
+            } else {
+                // Direct object format
+                return cred.encrypted_credentials
+            }
+        } else {
+            throw new Error('Invalid credentials format')
+        }
     }
 }
 

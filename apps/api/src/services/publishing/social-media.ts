@@ -20,7 +20,9 @@ export class TwitterService implements PublishingService {
     }
 
     async publish(job: PublishingJob): Promise<PublishingResult> {
-        const credentials = await OAuthService.getCredentials(job.pack_id, 'twitter')
+        // Get real stored credentials
+        const credentials = await OAuthService.getCredentials('default_user', 'twitter')
+        console.log('Using real Twitter credentials for posting')
         const content = job.content_data as TwitterContent
 
         // Handle thread posts
@@ -29,6 +31,7 @@ export class TwitterService implements PublishingService {
         }
 
         // Single tweet
+        console.log('Making Twitter API call to post tweet:', content.text?.substring(0, 50) + '...')
         const response = await fetch('https://api.twitter.com/2/tweets', {
             method: 'POST',
             headers: {
@@ -148,7 +151,7 @@ export class LinkedInService implements PublishingService {
     }
 
     async publish(job: PublishingJob): Promise<PublishingResult> {
-        const credentials = await OAuthService.getCredentials(job.pack_id, 'linkedin')
+        const credentials = await OAuthService.getCredentials('default_user', 'linkedin')
         const content = job.content_data as LinkedInContent
 
         // Get user's LinkedIn ID
@@ -247,7 +250,7 @@ export class FacebookService implements PublishingService {
     }
 
     async publish(job: PublishingJob): Promise<PublishingResult> {
-        const credentials = await OAuthService.getCredentials(job.pack_id, 'facebook')
+        const credentials = await OAuthService.getCredentials('default_user', 'facebook')
         const content = job.content_data as FacebookContent
 
         const postData = new URLSearchParams({

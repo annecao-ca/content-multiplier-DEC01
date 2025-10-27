@@ -3,8 +3,14 @@ import { env } from '../env.ts';
 
 // simple splitter
 export function splitText(raw: string, chunkSize = 800, overlap = 100) {
-    const chunks: string[] = []; let i = 0;
-    while (i < raw.length) { const end = Math.min(raw.length, i + chunkSize); chunks.push(raw.slice(i, end)); i = end - overlap; if (i < 0) i = 0; }
+    const chunks: string[] = [];
+    let i = 0;
+    while (i < raw.length) {
+        const end = Math.min(raw.length, i + chunkSize);
+        chunks.push(raw.slice(i, end));
+        i += chunkSize - overlap;
+        if (i >= raw.length) break;
+    }
     return chunks;
 }
 
@@ -14,8 +20,9 @@ export async function upsertDocument({ doc_id, title, url, raw }: { doc_id: stri
     const vectors = await embed(chunks);
     await q('DELETE FROM doc_chunks WHERE doc_id=$1', [doc_id]);
     for (let i = 0; i < chunks.length; i++) {
-        await q('INSERT INTO doc_chunks(chunk_id,doc_id,content,embedding) VALUES ($1,$2,$3,$4)', [
-            `${doc_id}-${i}`, doc_id, chunks[i], vectors[i]
+        // PostgreSQL pg driver expects array format for vector type
+        await q('INSERT INTO doc_chunks(chunk_id,doc_id,content,embedding) VALUES ($1,$2,$3,$4::vector)', [
+            `${doc_id}-${i}`, doc_id, chunks[i], JSON.stringify(vectors[i])
         ]);
     }
     return { doc_id, chunks: chunks.length };
@@ -28,6 +35,6 @@ export async function retrieve(query: string, topK = 5, embed: (t: string[]) => 
     FROM doc_chunks
     ORDER BY embedding <=> $1::vector ASC
     LIMIT $2
-  `, [v, topK]);
+  `, [JSON.stringify(v), topK]);
     return rows;
 }

@@ -14,6 +14,30 @@ const routes: FastifyPluginAsync = async (app) => {
         const { platform } = req.params
         const userId = req.user_id || 'default_user' // In real app, get from auth
 
+        // Handle API-key based platforms that don't use OAuth
+        const apiKeyPlatforms = ['mailchimp', 'sendgrid']
+        if (apiKeyPlatforms.includes(platform)) {
+            // Check if credentials already exist
+            const [existing] = await q(
+                'SELECT platform, is_active FROM publishing_credentials WHERE user_id = $1 AND platform = $2',
+                [userId, platform]
+            )
+            
+            if (existing && existing.is_active) {
+                return { 
+                    ok: true, 
+                    message: `${platform} is already configured with API key`,
+                    already_configured: true 
+                }
+            } else {
+                return reply.status(400).send({
+                    ok: false,
+                    error: `${platform} requires API key configuration. Please contact administrator.`,
+                    requires_api_key: true
+                })
+            }
+        }
+
         try {
             const authUrl = await OAuthService.getAuthUrl(platform, userId)
             return { auth_url: authUrl }
@@ -38,6 +62,43 @@ const routes: FastifyPluginAsync = async (app) => {
                 ok: false,
                 error: error instanceof Error ? error.message : 'OAuth callback failed'
             })
+        }
+    })
+
+    app.get('/auth/:platform/callback', async (req: any, reply) => {
+        const { platform } = req.params
+        const { code, state } = req.query
+        const userId = req.user_id || 'default_user'
+
+        console.log('OAuth callback received:', { platform, code: code?.substring(0, 10) + '...', state: state?.substring(0, 10) + '...', userId })
+
+        try {
+            const credentials = await OAuthService.exchangeCode(platform, code, state, userId)
+            console.log('OAuth exchange successful:', { platform, userId, credentialId: credentials.credential_id })
+            return reply.type('text/html').send(`
+                <html>
+                    <body>
+                        <h2>Authentication Successful!</h2>
+                        <p>You have successfully connected your ${platform} account.</p>
+                        <script>
+                            window.close();
+                            if (window.opener) {
+                                window.opener.postMessage({type: 'oauth_success', platform: '${platform}'}, '*');
+                            }
+                        </script>
+                    </body>
+                </html>
+            `)
+        } catch (error) {
+            return reply.type('text/html').send(`
+                <html>
+                    <body>
+                        <h2>Authentication Failed</h2>
+                        <p>Error: ${error instanceof Error ? error.message : 'OAuth callback failed'}</p>
+                        <script>window.close();</script>
+                    </body>
+                </html>
+            `)
         }
     })
 

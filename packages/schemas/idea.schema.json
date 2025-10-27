@@ -89,6 +89,13 @@
                 "selected",
                 "discarded"
             ]
+        },
+        "tags": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "default": []
         }
     }
 }

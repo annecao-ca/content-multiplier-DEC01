@@ -110,9 +110,26 @@ class MultiProviderLLM implements LLMClient {
     }
 
     async embed(input: string[]): Promise<number[][]> {
-        // For demo, return mock embeddings
-        // In production, you'd implement actual embedding calls for each provider
-        return input.map(text => Array(1536).fill(0).map(() => Math.random()))
+        const saved = loadLLMSettings()
+        const apiKey = saved?.apiKey || env.OPENAI_API_KEY || ''
+
+        if (!apiKey) {
+            throw new Error('OpenAI API key not configured. Set OPENAI_API_KEY environment variable.')
+        }
+
+        const client = new OpenAI({ apiKey })
+        const embeddingModel = env.EMBEDDING_MODEL || 'text-embedding-3-small'
+
+        try {
+            const response = await client.embeddings.create({
+                model: embeddingModel,
+                input: input,
+            })
+            return response.data.map(item => item.embedding)
+        } catch (error) {
+            console.error('Embedding API error:', error)
+            throw error
+        }
     }
 }
 

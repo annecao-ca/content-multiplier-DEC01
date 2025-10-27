@@ -13,6 +13,7 @@ export default function Navigation() {
         { href: '/ideas', label: '💡 Ideas', description: 'Generate & select ideas' },
         { href: '/briefs', label: '📋 Briefs', description: 'Research & create briefs' },
         { href: '/packs', label: '📦 Content Packs', description: 'Draft & manage content' },
+        { href: '/analytics', label: '📊 Analytics', description: 'Publishing metrics' },
         { href: '/settings', label: '⚙️ Settings', description: 'Configure LLM & API keys' }
     ]
 

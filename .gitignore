@@ -42,3 +42,10 @@ Thumbs.db
 # Secrets / local data
 apps/api/.data/
 
+# Claude Code local settings (may contain secrets)
+.claude/settings.local.json
+
+# Test scripts with credentials
+add_mailchimp_creds.js
+test_publish.json
+

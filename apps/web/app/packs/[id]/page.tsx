@@ -5,6 +5,7 @@ import Link from 'next/link'
 import RichTextEditor from '../../components/RichTextEditor'
 import { useLanguage } from '../../contexts/LanguageContext'
 import Button from '../../components/Button'
+import PublishingPanel from '../../components/PublishingPanel'
 
 const EditorModal = ({ title, content, onSave, onClose }: {
     title: string
@@ -436,6 +437,9 @@ export default function PackDetailPage() {
                             {loading ? 'Publishing...' : 'Publish'}
                         </Button>
                     )}
+
+                    {/* Publishing Panel */}
+                    <PublishingPanel packId={pack.pack_id} />
                 </>
             )}
             {/* Editor Modals */}

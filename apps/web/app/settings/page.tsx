@@ -171,7 +171,73 @@ export default function SettingsPage() {
                     }}>
                     ← Back
                 </Link>
-                <h1 style={{ margin: 0 }}>LLM Settings</h1>
+                <h1 style={{ margin: 0 }}>Settings</h1>
+            </div>
+
+            {/* Navigation Menu */}
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                gap: '1rem',
+                marginBottom: '2rem'
+            }}>
+                <Link
+                    href="/settings/publishing"
+                    style={{
+                        display: 'block',
+                        padding: '1.5rem',
+                        background: '#f8f9fa',
+                        border: '1px solid #dee2e6',
+                        borderRadius: '8px',
+                        textDecoration: 'none',
+                        color: '#495057',
+                        transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#e9ecef'
+                        e.currentTarget.style.transform = 'translateY(-2px)'
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#f8f9fa'
+                        e.currentTarget.style.transform = 'translateY(0)'
+                        e.currentTarget.style.boxShadow = 'none'
+                    }}
+                >
+                    <h3 style={{ margin: '0 0 0.5rem 0', color: '#343a40' }}>📡 Publishing Settings</h3>
+                    <p style={{ margin: 0, fontSize: '0.9rem' }}>
+                        Connect social media platforms, configure webhooks, and manage publishing credentials
+                    </p>
+                </Link>
+                
+                <Link
+                    href="/settings/twitter-bot"
+                    style={{
+                        display: 'block',
+                        padding: '1.5rem',
+                        background: '#f8f9fa',
+                        border: '1px solid #dee2e6',
+                        borderRadius: '8px',
+                        textDecoration: 'none',
+                        color: '#495057',
+                        transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#e9ecef'
+                        e.currentTarget.style.transform = 'translateY(-2px)'
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#f8f9fa'
+                        e.currentTarget.style.transform = 'translateY(0)'
+                        e.currentTarget.style.boxShadow = 'none'
+                    }}
+                >
+                    <h3 style={{ margin: '0 0 0.5rem 0', color: '#343a40' }}>🐦 Twitter Bot</h3>
+                    <p style={{ margin: 0, fontSize: '0.9rem' }}>
+                        Automated Twitter posting with AI-generated content and scheduling
+                    </p>
+                </Link>
             </div>
 
             <div style={{
@@ -180,7 +246,7 @@ export default function SettingsPage() {
                 borderRadius: '8px',
                 border: '1px solid #dee2e6'
             }}>
-                <h2 style={{ marginTop: 0, color: '#495057' }}>Configure AI Provider</h2>
+                <h2 style={{ marginTop: 0, color: '#495057' }}>LLM Configuration</h2>
 
                 {/* Provider Selection */}
                 <div style={{ marginBottom: '2rem' }}>

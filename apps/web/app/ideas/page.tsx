@@ -10,6 +10,7 @@ export default function IdeasPage() {
     const [promptText, setPromptText] = useState('');
     const [count, setCount] = useState(10);
     const [selectedCount, setSelectedCount] = useState(0);
+    const [editingTags, setEditingTags] = useState<{ [key: string]: string }>({});
     const { language } = useLanguage();
 
     async function load() {
@@ -50,6 +51,17 @@ export default function IdeasPage() {
             return
         }
         load()
+    }
+
+    async function updateTags(ideaId: string, tagsString: string) {
+        const tags = tagsString.split(',').map(t => t.trim()).filter(t => t);
+        await fetch(`/api/ideas/${ideaId}/tags`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tags })
+        });
+        load();
+        setEditingTags({ ...editingTags, [ideaId]: '' });
     }
 
     useEffect(() => { load(); }, []);
@@ -185,6 +197,51 @@ export default function IdeasPage() {
                                     <strong>Audiences:</strong> {i.personas.join(', ')}
                                 </div>
                             )}
+
+                            {/* Tags Display/Edit */}
+                            <div style={{ margin: '1rem 0' }}>
+                                <strong>Tags:</strong>
+                                {i.tags && i.tags.length > 0 ? (
+                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                                        {i.tags.map((tag: string, idx: number) => (
+                                            <span key={idx} style={{
+                                                background: '#e3f2fd',
+                                                color: '#1976d2',
+                                                padding: '0.25rem 0.75rem',
+                                                borderRadius: '12px',
+                                                fontSize: '0.85rem',
+                                                border: '1px solid #90caf9'
+                                            }}>
+                                                #{tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <span style={{ color: '#999', marginLeft: '0.5rem', fontSize: '0.9rem' }}>No tags</span>
+                                )}
+                                <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                    <input
+                                        type="text"
+                                        placeholder="Add tags (comma-separated)"
+                                        value={editingTags[i.idea_id] || ''}
+                                        onChange={(e) => setEditingTags({ ...editingTags, [i.idea_id]: e.target.value })}
+                                        style={{
+                                            flex: 1,
+                                            padding: '0.5rem',
+                                            border: '1px solid #ddd',
+                                            borderRadius: '4px',
+                                            fontSize: '0.9rem'
+                                        }}
+                                    />
+                                    <Button
+                                        onClick={() => updateTags(i.idea_id, editingTags[i.idea_id] || '')}
+                                        variant="neutral"
+                                        style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+                                    >
+                                        Update Tags
+                                    </Button>
+                                </div>
+                            </div>
 
                             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
                                 <Button onClick={() => selectIdea(i.idea_id)} disabled={i.status === 'selected'} variant={i.status === 'selected' ? 'success' : 'primary'}>

@@ -11,9 +11,19 @@ export default function BriefsPage() {
     const { language } = useLanguage()
 
     async function loadIdeas() {
-        const r = await fetch('/api/ideas')
-        const all = await r.json()
-        setIdeas(all.filter((i: any) => i.status === 'selected'))
+        try {
+            const r = await fetch('/api/ideas')
+            const all = await r.json()
+            if (Array.isArray(all)) {
+                setIdeas(all.filter((i: any) => i.status === 'selected'))
+            } else {
+                console.error('API returned non-array:', all)
+                setIdeas([])
+            }
+        } catch (error) {
+            console.error('Failed to load ideas:', error)
+            setIdeas([])
+        }
     }
 
     async function generateBrief(ideaId: string) {
