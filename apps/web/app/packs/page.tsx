@@ -24,9 +24,16 @@ export default function PacksPage() {
         try {
             const res = await fetch('/api/packs')
             const data = await res.json()
-            setPacks(data || [])
+            // Ensure we always have an array, even if the API returns an error or unexpected data
+            if (Array.isArray(data)) {
+                setPacks(data)
+            } else {
+                console.error('Unexpected data format from API:', data)
+                setPacks([])
+            }
         } catch (err) {
             console.error('Failed to load packs:', err)
+            setPacks([])
         }
         setLoading(false)
     }

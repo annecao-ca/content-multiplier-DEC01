@@ -2,6 +2,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Button from '../components/Button';
+import Card from '../components/Card';
+import PageHeader from '../components/PageHeader';
+import EmptyState from '../components/EmptyState';
+import StatusBadge from '../components/StatusBadge';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export default function IdeasPage() {
@@ -168,16 +172,7 @@ export default function IdeasPage() {
                         }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                 <h3 style={{ margin: 0, color: '#333' }}>{i.one_liner}</h3>
-                                <span style={{
-                                    background: i.status === 'selected' ? '#28a745' : '#ffc107',
-                                    color: 'white',
-                                    padding: '0.25rem 0.75rem',
-                                    borderRadius: '12px',
-                                    fontSize: '0.8rem',
-                                    fontWeight: 'bold'
-                                }}>
-                                    {i.status}
-                                </span>
+                                <StatusBadge status={i.status} />
                             </div>
 
                             {i.angle && (

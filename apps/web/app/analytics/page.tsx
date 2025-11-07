@@ -2,6 +2,9 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Button from '../components/Button'
+import Card from '../components/Card'
+import PageHeader from '../components/PageHeader'
+import StatusBadge from '../components/StatusBadge'
 
 interface AnalyticsData {
     pack_id: string
@@ -168,30 +171,17 @@ export default function AnalyticsPage() {
 
     return (
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '2rem'
-            }}>
-                <h1 style={{ margin: 0, fontSize: '2rem', color: '#1f2937' }}>
-                    Publishing Analytics
-                </h1>
-                <Link
-                    href="/"
-                    style={{
-                        background: '#f3f4f6',
-                        color: '#374151',
-                        padding: '0.5rem 1rem',
-                        borderRadius: '8px',
-                        textDecoration: 'none',
-                        fontWeight: 'bold',
-                        border: '1px solid #d1d5db'
-                    }}
-                >
-                    ← Back to Home
-                </Link>
-            </div>
+            <PageHeader
+                title="Publishing Analytics"
+                subtitle="Track performance and engagement across all your publishing platforms"
+                backLink={{ href: '/', label: 'Dashboard' }}
+                badge={totalPosts > 0 ? { text: `${totalPosts} published posts`, color: '#10b981' } : undefined}
+                actions={
+                    <Button onClick={loadAnalytics} disabled={loading} variant="neutral">
+                        {loading ? '🔄 Loading...' : '🔄 Refresh Data'}
+                    </Button>
+                }
+            />
 
             {/* Filters */}
             <div style={{

@@ -1,5 +1,6 @@
 import Navigation from './components/Navigation'
 import { LanguageProvider } from './contexts/LanguageContext'
+import './globals.css'
 
 export const metadata = {
     title: 'Content Multiplier',
