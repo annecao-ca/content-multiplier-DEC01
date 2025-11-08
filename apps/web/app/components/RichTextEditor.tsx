@@ -274,7 +274,7 @@ export default function RichTextEditor({ value, onChange, placeholder, packId }:
             .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" style="color: #007bff;">$1</a>')
             // Lists
             .replace(/^- (.*$)/gim, '<li>$1</li>')
-            .replace(/(<li>.*<\/li>)/s, '<ul style="margin: 1rem 0;">$1</ul>')
+            .replace(/(<li>[\s\S]*?<\/li>)/g, '<ul style="margin: 1rem 0;">$1</ul>')
             // Preserve HTML (for embeds)
             .replace(/\n\n/g, '</p><p>')
             .replace(/\n/g, '<br/>')
