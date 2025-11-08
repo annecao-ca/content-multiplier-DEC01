@@ -214,7 +214,7 @@ export default function RichTextEditor({ value, onChange, placeholder, packId }:
     )
 
     const renderPreviewHTML = () => {
-        // Enhanced markdown-to-HTML conversion
+        // Enhanced markdown-to-HTML conversion (ES2020 compatible)
         let html = value
         console.log('renderPreviewHTML - value length:', value.length)
         console.log('renderPreviewHTML - uploadedImages:', Object.keys(uploadedImages))
