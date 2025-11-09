@@ -11,7 +11,13 @@ import twitterBot from './routes/twitter-bot.ts';
 import { env } from './env.ts';
 import { logEvent } from './services/telemetry.ts';
 
-const app = Fastify({ logger: true });
+const app = Fastify({ 
+    logger: true
+});
+
+console.log('Starting Content Multiplier API...');
+console.log('Environment:', process.env.NODE_ENV || 'development');
+console.log('Port:', process.env.PORT || '3001');
 
 // Add CORS headers manually
 app.addHook('preHandler', async (request, reply) => {
@@ -40,27 +46,37 @@ app.addHook('preHandler', async (request, reply) => {
     }
 });
 
-// Register context plugin
-app.register(contextPlugin);
-
-app.register(ideas, { prefix: '/api/ideas' });
-app.register(briefs, { prefix: '/api/briefs' });
-app.register(packs, { prefix: '/api/packs' });
-app.register(rag, { prefix: '/api/rag' });
-app.register(events, { prefix: '/api/events' });
-app.register(settings, { prefix: '/api/settings' });
-app.register(publishing, { prefix: '/api/publishing' });
-app.register(twitterBot);
-
-// Health check endpoint for Railway
+// Health check endpoints (available immediately)
 app.get('/api/health', async (request, reply) => {
     return { status: 'ok', timestamp: new Date().toISOString() };
 });
 
-// Root health check endpoint
 app.get('/health', async (request, reply) => {
     return { status: 'ok', timestamp: new Date().toISOString() };
 });
+
+// Register context plugin
+try {
+    app.register(contextPlugin);
+    console.log('Context plugin registered');
+} catch (error) {
+    console.error('Failed to register context plugin:', error);
+}
+
+// Register routes conditionally
+try {
+    app.register(ideas, { prefix: '/api/ideas' });
+    app.register(briefs, { prefix: '/api/briefs' });
+    app.register(packs, { prefix: '/api/packs' });
+    app.register(rag, { prefix: '/api/rag' });
+    app.register(events, { prefix: '/api/events' });
+    app.register(settings, { prefix: '/api/settings' });
+    app.register(publishing, { prefix: '/api/publishing' });
+    app.register(twitterBot);
+    console.log('All routes registered');
+} catch (error) {
+    console.error('Failed to register routes:', error);
+}
 
 app.setErrorHandler(async (err, req, reply) => {
     console.error('Error:', err);
