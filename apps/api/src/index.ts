@@ -1,44 +1,18 @@
 import Fastify from 'fastify';
-import contextPlugin from './plugins/context.ts';
-import ideas from './routes/ideas.ts';
-import briefs from './routes/briefs.ts';
-import packs from './routes/packs.ts';
-import rag from './routes/rag.ts';
-import events from './routes/events.ts';
-import settings from './routes/settings.ts';
-import publishing from './routes/publishing.ts';
-import twitterBot from './routes/twitter-bot.ts';
-import { env } from './env.ts';
-import { logEvent } from './services/telemetry.ts';
+
+console.log('🚀 Starting Content Multiplier API...');
+console.log('📦 Environment:', process.env.NODE_ENV || 'development');
+console.log('🔧 Port:', process.env.PORT || '3001');
 
 const app = Fastify({ 
     logger: true
 });
 
-console.log('Starting Content Multiplier API...');
-console.log('Environment:', process.env.NODE_ENV || 'development');
-console.log('Port:', process.env.PORT || '3001');
-
-// Add CORS headers manually
+// CORS headers
 app.addHook('preHandler', async (request, reply) => {
-    const origin = request.headers.origin;
-    const allowedOrigins = [
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'https://localhost:3000',
-        'https://localhost:3001'
-    ];
-    
-    // Allow Railway domains
-    if (origin && (allowedOrigins.includes(origin) || origin.includes('railway.app'))) {
-        reply.header('Access-Control-Allow-Origin', origin);
-    } else {
-        reply.header('Access-Control-Allow-Origin', '*');
-    }
-    
+    reply.header('Access-Control-Allow-Origin', '*');
     reply.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    reply.header('Access-Control-Allow-Credentials', 'true');
     
     if (request.method === 'OPTIONS') {
         reply.status(200).send();
@@ -46,61 +20,53 @@ app.addHook('preHandler', async (request, reply) => {
     }
 });
 
-// Health check endpoints (available immediately)
+// Health check endpoints
 app.get('/api/health', async (request, reply) => {
-    return { status: 'ok', timestamp: new Date().toISOString() };
+    console.log('🏥 Health check requested');
+    return { 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        service: 'content-multiplier-api',
+        version: '1.0.0'
+    };
 });
 
 app.get('/health', async (request, reply) => {
-    return { status: 'ok', timestamp: new Date().toISOString() };
+    console.log('🏥 Root health check requested');
+    return { 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        service: 'content-multiplier-api'
+    };
 });
 
-// Register context plugin
-try {
-    app.register(contextPlugin);
-    console.log('Context plugin registered');
-} catch (error) {
-    console.error('Failed to register context plugin:', error);
-}
+// Basic info endpoint
+app.get('/', async (request, reply) => {
+    return { 
+        name: 'Content Multiplier API',
+        status: 'running',
+        timestamp: new Date().toISOString()
+    };
+});
 
-// Register routes conditionally
-try {
-    app.register(ideas, { prefix: '/api/ideas' });
-    app.register(briefs, { prefix: '/api/briefs' });
-    app.register(packs, { prefix: '/api/packs' });
-    app.register(rag, { prefix: '/api/rag' });
-    app.register(events, { prefix: '/api/events' });
-    app.register(settings, { prefix: '/api/settings' });
-    app.register(publishing, { prefix: '/api/publishing' });
-    app.register(twitterBot);
-    console.log('All routes registered');
-} catch (error) {
-    console.error('Failed to register routes:', error);
-}
-
+// Error handler
 app.setErrorHandler(async (err, req, reply) => {
-    console.error('Error:', err);
-    try {
-        await logEvent({
-            event_type: 'error.occurred',
-            actor_role: 'system',
-            request_id: (req as any).request_id || req.id,
-            timezone: 'UTC',
-            payload: {
-                route: req.routeOptions?.url || req.url,
-                code: (err as any).code || 'ERR',
-                msg: (err?.message || '').slice(0, 500)
-            }
-        });
-    } catch { }
+    console.error('❌ Error:', err);
     reply.status(500).send({ ok: false, error: 'internal_error' });
 });
 
-app.listen({ port: Number(env.PORT || 3001), host: '0.0.0.0' })
+// Start server
+const port = Number(process.env.PORT || 3001);
+const host = '0.0.0.0';
+
+console.log(`🌐 Attempting to start server on ${host}:${port}`);
+
+app.listen({ port, host })
     .then((address) => {
-        console.log(`Server listening at ${address}`);
+        console.log(`✅ Server successfully listening at ${address}`);
+        console.log(`🏥 Health check available at: ${address}/api/health`);
     })
-    .catch((e) => { 
-        app.log.error(e); 
+    .catch((error) => { 
+        console.error('❌ Failed to start server:', error);
         process.exit(1); 
     });

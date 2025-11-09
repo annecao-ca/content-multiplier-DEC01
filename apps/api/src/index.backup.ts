@@ -1,0 +1,106 @@
+import Fastify from 'fastify';
+import contextPlugin from './plugins/context.ts';
+import ideas from './routes/ideas.ts';
+import briefs from './routes/briefs.ts';
+import packs from './routes/packs.ts';
+import rag from './routes/rag.ts';
+import events from './routes/events.ts';
+import settings from './routes/settings.ts';
+import publishing from './routes/publishing.ts';
+import twitterBot from './routes/twitter-bot.ts';
+import { env } from './env.ts';
+import { logEvent } from './services/telemetry.ts';
+
+const app = Fastify({ 
+    logger: true
+});
+
+console.log('Starting Content Multiplier API...');
+console.log('Environment:', process.env.NODE_ENV || 'development');
+console.log('Port:', process.env.PORT || '3001');
+
+// Add CORS headers manually
+app.addHook('preHandler', async (request, reply) => {
+    const origin = request.headers.origin;
+    const allowedOrigins = [
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'https://localhost:3000',
+        'https://localhost:3001'
+    ];
+    
+    // Allow Railway domains
+    if (origin && (allowedOrigins.includes(origin) || origin.includes('railway.app'))) {
+        reply.header('Access-Control-Allow-Origin', origin);
+    } else {
+        reply.header('Access-Control-Allow-Origin', '*');
+    }
+    
+    reply.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    reply.header('Access-Control-Allow-Credentials', 'true');
+    
+    if (request.method === 'OPTIONS') {
+        reply.status(200).send();
+        return;
+    }
+});
+
+// Health check endpoints (available immediately)
+app.get('/api/health', async (request, reply) => {
+    return { status: 'ok', timestamp: new Date().toISOString() };
+});
+
+app.get('/health', async (request, reply) => {
+    return { status: 'ok', timestamp: new Date().toISOString() };
+});
+
+// Register context plugin
+try {
+    app.register(contextPlugin);
+    console.log('Context plugin registered');
+} catch (error) {
+    console.error('Failed to register context plugin:', error);
+}
+
+// Register routes conditionally
+try {
+    app.register(ideas, { prefix: '/api/ideas' });
+    app.register(briefs, { prefix: '/api/briefs' });
+    app.register(packs, { prefix: '/api/packs' });
+    app.register(rag, { prefix: '/api/rag' });
+    app.register(events, { prefix: '/api/events' });
+    app.register(settings, { prefix: '/api/settings' });
+    app.register(publishing, { prefix: '/api/publishing' });
+    app.register(twitterBot);
+    console.log('All routes registered');
+} catch (error) {
+    console.error('Failed to register routes:', error);
+}
+
+app.setErrorHandler(async (err, req, reply) => {
+    console.error('Error:', err);
+    try {
+        await logEvent({
+            event_type: 'error.occurred',
+            actor_role: 'system',
+            request_id: (req as any).request_id || req.id,
+            timezone: 'UTC',
+            payload: {
+                route: req.routeOptions?.url || req.url,
+                code: (err as any).code || 'ERR',
+                msg: (err?.message || '').slice(0, 500)
+            }
+        });
+    } catch { }
+    reply.status(500).send({ ok: false, error: 'internal_error' });
+});
+
+app.listen({ port: Number(env.PORT || 3001), host: '0.0.0.0' })
+    .then((address) => {
+        console.log(`Server listening at ${address}`);
+    })
+    .catch((e) => { 
+        app.log.error(e); 
+        process.exit(1); 
+    });
