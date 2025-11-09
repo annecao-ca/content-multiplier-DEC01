@@ -1,0 +1,4 @@
+# Build check file for Cloudflare
+# This file forces a clean rebuild
+# Build timestamp: 2025-11-09T05:35:00Z
+# Fixed: Removed non-existent TimeDistributionLineChart component reference
