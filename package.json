@@ -1,0 +1,17 @@
+{
+  "name": "content-multiplier",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "npm run build:api && npm run build:web",
+    "build:api": "cd apps/api && npm install",
+    "build:web": "cd apps/web && npm install && npm run build",
+    "start": "cd apps/api && npm start",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:api": "cd apps/api && npm run dev",
+    "dev:web": "cd apps/web && npm run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

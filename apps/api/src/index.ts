@@ -14,7 +14,21 @@ const app = Fastify({ logger: true });
 
 // Add CORS headers manually
 app.addHook('preHandler', async (request, reply) => {
-    reply.header('Access-Control-Allow-Origin', 'http://localhost:3001');
+    const origin = request.headers.origin;
+    const allowedOrigins = [
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'https://localhost:3000',
+        'https://localhost:3001'
+    ];
+    
+    // Allow Railway domains
+    if (origin && (allowedOrigins.includes(origin) || origin.includes('railway.app'))) {
+        reply.header('Access-Control-Allow-Origin', origin);
+    } else {
+        reply.header('Access-Control-Allow-Origin', '*');
+    }
+    
     reply.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     reply.header('Access-Control-Allow-Credentials', 'true');
@@ -33,6 +47,11 @@ app.register(events, { prefix: '/api/events' });
 app.register(settings, { prefix: '/api/settings' });
 app.register(publishing, { prefix: '/api/publishing' });
 app.register(twitterBot);
+
+// Health check endpoint for Railway
+app.get('/api/health', async (request, reply) => {
+    return { status: 'ok', timestamp: new Date().toISOString() };
+});
 
 app.setErrorHandler(async (err, req, reply) => {
     console.error('Error:', err);

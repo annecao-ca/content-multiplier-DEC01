@@ -1,9 +1,9 @@
+export const runtime = 'edge'
+
 'use client'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-
-export const runtime = 'edge'
 
 export default function BriefDetailPage() {
     const params = useParams()

@@ -1,3 +1,5 @@
+export const runtime = 'edge'
+
 'use client'
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
@@ -6,8 +8,6 @@ import RichTextEditor from '../../components/RichTextEditor'
 import { useLanguage } from '../../contexts/LanguageContext'
 import Button from '../../components/Button'
 import PublishingPanel from '../../components/PublishingPanel'
-
-export const runtime = 'edge'
 
 const EditorModal = ({ title, content, onSave, onClose }: {
     title: string
