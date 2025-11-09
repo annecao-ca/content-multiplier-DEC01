@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import contextPlugin from './plugins/context.ts';
 import ideas from './routes/ideas.ts';
 import briefs from './routes/briefs.ts';
 import packs from './routes/packs.ts';
@@ -39,6 +40,9 @@ app.addHook('preHandler', async (request, reply) => {
     }
 });
 
+// Register context plugin
+app.register(contextPlugin);
+
 app.register(ideas, { prefix: '/api/ideas' });
 app.register(briefs, { prefix: '/api/briefs' });
 app.register(packs, { prefix: '/api/packs' });
@@ -50,6 +54,11 @@ app.register(twitterBot);
 
 // Health check endpoint for Railway
 app.get('/api/health', async (request, reply) => {
+    return { status: 'ok', timestamp: new Date().toISOString() };
+});
+
+// Root health check endpoint
+app.get('/health', async (request, reply) => {
     return { status: 'ok', timestamp: new Date().toISOString() };
 });
 
@@ -72,8 +81,10 @@ app.setErrorHandler(async (err, req, reply) => {
 });
 
 app.listen({ port: Number(env.PORT || 3001), host: '0.0.0.0' })
-    .catch((e) => { app.log.error(e); process.exit(1); });
-
-// apps/api/src/index.ts
-import contextPlugin from './plugins/context.ts';
-app.register(contextPlugin);
+    .then((address) => {
+        console.log(`Server listening at ${address}`);
+    })
+    .catch((e) => { 
+        app.log.error(e); 
+        process.exit(1); 
+    });
