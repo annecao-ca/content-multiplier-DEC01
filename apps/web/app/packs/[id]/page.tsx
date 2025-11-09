@@ -7,6 +7,8 @@ import { useLanguage } from '../../contexts/LanguageContext'
 import Button from '../../components/Button'
 import PublishingPanel from '../../components/PublishingPanel'
 
+export const runtime = 'edge'
+
 const EditorModal = ({ title, content, onSave, onClose }: {
     title: string
     content: string
