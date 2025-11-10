@@ -1,15 +1,9 @@
 import Fastify from 'fastify'
 import proxy from '@fastify/http-proxy'
-import { spawn } from 'child_process'
-import path from 'path'
-import { fileURLToPath } from 'url'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
-console.log('🚀 Starting Content Multiplier...')
+console.log('🚀 Starting Content Multiplier API...')
 console.log('📦 Environment:', process.env.NODE_ENV || 'development')
-console.log('🔧 Port:', process.env.PORT || '3001')
+console.log('🔧 API Port:', process.env.PORT || '3001')
 
 const app = Fastify({ 
     logger: true
@@ -33,7 +27,7 @@ app.get('/api/health', async (request, reply) => {
     return { 
         status: 'ok', 
         timestamp: new Date().toISOString(),
-        service: 'content-multiplier',
+        service: 'content-multiplier-api',
         version: '1.0.0'
     }
 })
@@ -43,44 +37,33 @@ app.get('/health', async (request, reply) => {
     return { 
         status: 'ok', 
         timestamp: new Date().toISOString(),
-        service: 'content-multiplier'
+        service: 'content-multiplier-api'
     }
 })
 
-// Start Next.js server internally on port 3000
-const NEXTJS_PORT = 3000
-const nextjsPath = path.join(__dirname, '../../web')
-console.log('🌐 Starting Next.js server on port', NEXTJS_PORT)
+// Proxy all non-API routes to Next.js server (running on port 3000)
+const NEXTJS_PORT = process.env.NEXTJS_PORT || 3000
+console.log('🌐 Proxying frontend requests to Next.js on port', NEXTJS_PORT)
 
-const nextjs = spawn('npm', ['start', '--', '-p', NEXTJS_PORT.toString()], {
-    cwd: nextjsPath,
-    shell: true,
-    stdio: 'inherit'
-})
-
-nextjs.on('error', (error) => {
-    console.error('❌ Failed to start Next.js server:', error)
-})
-
-// Wait a bit for Next.js to start
-await new Promise(resolve => setTimeout(resolve, 3000))
-console.log('✅ Next.js server should be running')
-
-// Proxy all non-API routes to Next.js
-app.register(proxy, {
-    upstream: `http://localhost:${NEXTJS_PORT}`,
-    prefix: '/',
-    rewritePrefix: '/',
-    http2: false,
-    preHandler: (request, reply, done) => {
-        // Only proxy if NOT an API route
-        if (request.url.startsWith('/api/') && !request.url.startsWith('/api/_next')) {
-            done(new Error('skip'))
-        } else {
-            done()
+try {
+    await app.register(proxy, {
+        upstream: `http://localhost:${NEXTJS_PORT}`,
+        prefix: '/',
+        rewritePrefix: '/',
+        http2: false,
+        preHandler: (request, reply, done) => {
+            // Skip proxy for API routes - handle them directly
+            if (request.url.startsWith('/api/') && !request.url.startsWith('/api/_next')) {
+                done(new Error('skip'))
+            } else {
+                done()
+            }
         }
-    }
-})
+    })
+    console.log('✅ Proxy to Next.js registered')
+} catch (error) {
+    console.warn('⚠️ Could not register proxy (Next.js may not be running yet):', error.message)
+}
 
 // Error handler
 app.setErrorHandler(async (err, req, reply) => {
