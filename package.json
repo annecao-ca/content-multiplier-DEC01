@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "npm run build:api",
-    "build:api": "cd apps/api && npm install && echo 'Build complete'",
+    "build:api": "cd apps/api && npm install",
     "build:web": "cd apps/web && npm install && npm run build",
     "start": "cd apps/api && npm start",
     "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
