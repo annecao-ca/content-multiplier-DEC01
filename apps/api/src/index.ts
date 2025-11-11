@@ -1,5 +1,5 @@
 import Fastify from 'fastify'
-import proxy from '@fastify/http-proxy'
+import cors from '@fastify/cors'
 
 console.log('🚀 Starting Content Multiplier API...')
 console.log('📦 Environment:', process.env.NODE_ENV || 'development')
@@ -9,21 +9,21 @@ const app = Fastify({
     logger: true
 })
 
-// CORS headers
-app.addHook('preHandler', async (request, reply) => {
-    reply.header('Access-Control-Allow-Origin', '*')
-    reply.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-    reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-    
-    if (request.method === 'OPTIONS') {
-        reply.status(200).send()
-        return
-    }
+// Register CORS plugin
+await app.register(cors, {
+    origin: [
+        'http://localhost:3000',
+        'https://*.pages.dev', // Cloudflare Pages preview URLs
+        'https://content-multiplier.pages.dev', // Your Cloudflare Pages domain
+        /\.pages\.dev$/, // All Cloudflare Pages domains
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
 })
 
-// Health check endpoints (must be BEFORE proxy)
-app.get('/api/health', async (request, reply) => {
-    console.log('🏥 Health check requested')
+// Health check endpoints
+app.get('/healthz', async (request, reply) => {
+    console.log('🏥 Healthz check requested')
     return { 
         status: 'ok', 
         timestamp: new Date().toISOString(),
@@ -32,38 +32,29 @@ app.get('/api/health', async (request, reply) => {
     }
 })
 
-app.get('/health', async (request, reply) => {
-    console.log('🏥 Root health check requested')
+app.get('/api/health', async (request, reply) => {
+    console.log('🏥 API Health check requested')
     return { 
         status: 'ok', 
         timestamp: new Date().toISOString(),
-        service: 'content-multiplier-api'
+        service: 'content-multiplier-api',
+        version: '1.0.0'
     }
 })
 
-// Proxy all non-API routes to Next.js server (running on port 3000)
-const NEXTJS_PORT = process.env.NEXTJS_PORT || 3000
-console.log('🌐 Proxying frontend requests to Next.js on port', NEXTJS_PORT)
-
-try {
-    await app.register(proxy, {
-        upstream: `http://localhost:${NEXTJS_PORT}`,
-        prefix: '/',
-        rewritePrefix: '/',
-        http2: false,
-        preHandler: (request, reply, done) => {
-            // Skip proxy for API routes - handle them directly
-            if (request.url.startsWith('/api/') && !request.url.startsWith('/api/_next')) {
-                done(new Error('skip'))
-            } else {
-                done()
-            }
+// Root endpoint - just return API info
+app.get('/', async (request, reply) => {
+    return { 
+        name: 'Content Multiplier API',
+        status: 'running',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0',
+        endpoints: {
+            health: '/healthz',
+            apiHealth: '/api/health'
         }
-    })
-    console.log('✅ Proxy to Next.js registered')
-} catch (error) {
-    console.warn('⚠️ Could not register proxy (Next.js may not be running yet):', error.message)
-}
+    }
+})
 
 // Error handler
 app.setErrorHandler(async (err, req, reply) => {
