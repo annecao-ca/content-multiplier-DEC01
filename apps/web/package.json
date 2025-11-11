@@ -9,7 +9,7 @@
         "build:cloudflare": "npx opennextjs-cloudflare build",
         "start": "node server.js",
         "preview": "npm run build:cloudflare && wrangler pages dev .open-next/worker.js",
-        "deploy": "npm run build:cloudflare && wrangler pages deploy .open-next/worker.js --project-name=content-multiplier",
+        "deploy": "npm run build:cloudflare && npx opennextjs-cloudflare deploy",
         "deploy:cloudflare": "npm run build:cloudflare && npx opennextjs-cloudflare deploy"
     },
     "dependencies": {
