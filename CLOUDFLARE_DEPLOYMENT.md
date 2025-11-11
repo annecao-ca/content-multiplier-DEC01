@@ -24,11 +24,11 @@ Your code is already on GitHub ✅
 
 ### Step 3: Configure Build Settings
 
-**Framework preset:** `Next.js (Static HTML Export)`
+**Framework preset:** `Next.js`
 
 **Build settings:**
-- **Build command:** `cd apps/web && npm install && npm run deploy`
-- **Build output directory:** `apps/web/.worker-next`
+- **Build command:** `cd apps/web && npm install && npx opennextjs-cloudflare build`
+- **Build output directory:** `apps/web/.open-next/worker`
 - **Root directory:** `/` (leave as root)
 
 **Environment variables:** Click **Add variable**
@@ -78,21 +78,14 @@ cd apps/web
 npm install
 
 # Deploy to Cloudflare Pages
-npm run deploy
+npm run deploy:cloudflare
 ```
 
 ### For Subsequent Deploys
 
 ```bash
 cd apps/web
-npm run deploy
-```
-
-Or just use the upload command:
-
-```bash
-cd apps/web
-npm run upload
+npm run deploy:cloudflare
 ```
 
 ## Local Testing
@@ -133,7 +126,7 @@ If you used Method 1 (Dashboard):
 If you used Method 2 (CLI):
 ```bash
 cd apps/web
-npm run deploy
+npm run deploy:cloudflare
 ```
 
 ## Custom Domain
@@ -242,11 +235,18 @@ Cloudflare Pages includes:
 # Login to Cloudflare
 wrangler login
 
-# Deploy to production
-cd apps/web && npm run deploy
+# Build for Cloudflare
+cd apps/web && npm run build:cloudflare
 
 # Preview locally
 cd apps/web && npm run preview
+
+# Deploy to production (CLI method)
+cd apps/web && npm run deploy:cloudflare
+
+# Or use wrangler directly
+cd apps/web && npm run build:cloudflare
+wrangler pages deploy .open-next/worker.js --project-name=content-multiplier
 
 # View deployment status
 wrangler pages deployment list

@@ -18,6 +18,7 @@ out/
 coverage/
 .worker-next/
 .vercel/
+.open-next/
 
 # Environment variables
 .env

@@ -4,13 +4,13 @@
     "private": true,
     "scripts": {
         "dev": "next dev -p 3000",
-        "clean": "rm -rf .next node_modules/.cache",
+        "clean": "rm -rf .next node_modules/.cache .open-next",
         "build": "next build",
-        "build:prod": "next build",
+        "build:cloudflare": "npx opennextjs-cloudflare build",
         "start": "node server.js",
-        "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-        "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-        "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload"
+        "preview": "npm run build:cloudflare && wrangler pages dev .open-next/worker.js",
+        "deploy": "npm run build:cloudflare && wrangler pages deploy .open-next/worker.js --project-name=content-multiplier",
+        "deploy:cloudflare": "npm run build:cloudflare && npx opennextjs-cloudflare deploy"
     },
     "dependencies": {
         "@radix-ui/react-progress": "^1.1.7",
