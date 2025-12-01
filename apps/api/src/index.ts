@@ -1,5 +1,25 @@
+// Load environment variables from .env file
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+// Load .env from project root
+const envPath = resolve(process.cwd(), '../../.env');
+config({ path: envPath });
+
+console.log('🔑 Loading environment from:', envPath);
+console.log('🔑 GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? '✅ Loaded' : '❌ Not found');
+
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
+import contextPlugin from './plugins/context.ts'
+import ideas from './routes/ideas.ts'
+import briefs from './routes/briefs.ts'
+import packs from './routes/packs.ts'
+import rag from './routes/rag.ts'
+import events from './routes/events.ts'
+import settings from './routes/settings.ts'
+import publishing from './routes/publishing.ts'
+import twitterBot from './routes/twitter-bot.ts'
 
 console.log('🚀 Starting Content Multiplier API...')
 console.log('📦 Environment:', process.env.NODE_ENV || 'development')
@@ -55,6 +75,29 @@ app.get('/', async (request, reply) => {
         }
     }
 })
+
+// Register context plugin
+try {
+    app.register(contextPlugin);
+    console.log('✅ Context plugin registered');
+} catch (error) {
+    console.error('❌ Failed to register context plugin:', error);
+}
+
+// Register routes
+try {
+    app.register(ideas, { prefix: '/api/ideas' });
+    app.register(briefs, { prefix: '/api/briefs' });
+    app.register(packs, { prefix: '/api/packs' });
+    app.register(rag, { prefix: '/api/rag' });
+    app.register(events, { prefix: '/api/events' });
+    app.register(settings, { prefix: '/api/settings' });
+    app.register(publishing, { prefix: '/api/publishing' });
+    app.register(twitterBot);
+    console.log('✅ All routes registered');
+} catch (error) {
+    console.error('❌ Failed to register routes:', error);
+}
 
 // Error handler
 app.setErrorHandler(async (err, req, reply) => {

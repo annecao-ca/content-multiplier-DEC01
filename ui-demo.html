@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ideas Page - UI Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: #f9fafb;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .back-btn {
+            margin-right: 1rem;
+            padding: 0.5rem 1rem;
+            background: #2d3748;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            border: 1px solid rgba(0,0,0,0.2);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            transition: all 0.2s ease;
+        }
+        
+        .back-btn:hover {
+            background: #3b475e;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+        }
+        
+        h1 {
+            margin: 0;
+            color: #1a202c;
+        }
+        
+        .stats {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .form-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .form-title {
+            margin: 0 0 1.5rem 0;
+            font-size: 1.25rem;
+            color: #1a202c;
+        }
+        
+        .message {
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .message-error {
+            background: #fee2e2;
+            border: 1px solid #ef4444;
+            color: #991b1b;
+        }
+        
+        .message-success {
+            background: #d1fae5;
+            border: 1px solid #10b981;
+            color: #065f46;
+        }
+        
+        .message-close {
+            margin-left: auto;
+            background: transparent;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0.25rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #374151;
+        }
+        
+        .required {
+            color: #ef4444;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        
+        input[type="text"]:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .hint {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        
+        .slider-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+        }
+        
+        .generate-btn {
+            width: 100%;
+            padding: 1rem;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .generate-btn:hover:not(:disabled) {
+            background: #059669;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .generate-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.875rem;
+            padding: 0.5rem;
+        }
+        
+        .idea-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 1.5rem;
+            background: white;
+            margin-bottom: 1rem;
+        }
+        
+        .idea-title {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        
+        .idea-scores {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <a href="#" class="back-btn">← Back</a>
+            <h1>Content Ideas</h1>
+        </div>
+        
+        <!-- Stats -->
+        <div class="stats">
+            <div><strong id="total-count">0</strong> ideas total</div>
+            <div><strong id="selected-count">0</strong> selected</div>
+        </div>
+        
+        <!-- Generate Form -->
+        <div class="form-card">
+            <h2 class="form-title">🎨 Generate Content Ideas</h2>
+            
+            <!-- Error Message -->
+            <div id="error-message" class="message message-error hidden">
+                <span style="font-size: 1.25rem;">❌</span>
+                <div>
+                    <strong>Error:</strong> <span id="error-text"></span>
+                </div>
+                <button class="message-close" onclick="hideError()">×</button>
+            </div>
+            
+            <!-- Success Message -->
+            <div id="success-message" class="message message-success hidden">
+                <span style="font-size: 1.25rem;">✅</span>
+                <div>
+                    <strong>Success!</strong> <span id="success-text"></span>
+                </div>
+                <button class="message-close" onclick="hideSuccess()">×</button>
+            </div>
+            
+            <!-- Form -->
+            <form id="idea-form" onsubmit="handleSubmit(event)">
+                <!-- Persona -->
+                <div class="form-group">
+                    <label>
+                        Persona (Target Audience) <span class="required">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="persona"
+                        placeholder="e.g., Marketing Manager at B2B SaaS, Startup Founder"
+                        value="Marketing Manager at B2B SaaS"
+                    />
+                </div>
+                
+                <!-- Industry -->
+                <div class="form-group">
+                    <label>
+                        Industry <span class="required">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="industry"
+                        placeholder="e.g., SaaS, E-commerce, Fintech, Healthcare"
+                        value="SaaS"
+                    />
+                </div>
+                
+                <!-- Corpus Hints -->
+                <div class="form-group">
+                    <label>Topic Hints (Optional)</label>
+                    <input
+                        type="text"
+                        id="corpus-hints"
+                        placeholder="e.g., AI, automation, productivity, remote work"
+                        value=""
+                    />
+                    <div class="hint">Add keywords to guide AI (comma-separated)</div>
+                </div>
+                
+                <!-- Sliders -->
+                <div class="slider-group">
+                    <!-- Count -->
+                    <div class="form-group">
+                        <label>Number of Ideas: <span id="count-value">10</span></label>
+                        <input
+                            type="range"
+                            id="count"
+                            min="5"
+                            max="20"
+                            value="10"
+                            oninput="updateCount(this.value)"
+                        />
+                        <div class="hint">Recommended: 10 ideas</div>
+                    </div>
+                    
+                    <!-- Temperature -->
+                    <div class="form-group">
+                        <label>
+                            Creativity: <span id="temp-value">0.8</span>
+                            <span id="temp-label">(Balanced)</span>
+                        </label>
+                        <input
+                            type="range"
+                            id="temperature"
+                            min="0"
+                            max="2"
+                            step="0.1"
+                            value="0.8"
+                            oninput="updateTemperature(this.value)"
+                        />
+                        <div class="hint">0 = Factual, 1 = Balanced, 2 = Very Creative</div>
+                    </div>
+                </div>
+                
+                <!-- Generate Button -->
+                <button type="submit" class="generate-btn" id="generate-btn">
+                    <span id="btn-text">🚀 Generate Ideas</span>
+                </button>
+                
+                <!-- Loading Text -->
+                <div id="loading-text" class="loading-text hidden">
+                    Please wait... AI is generating <span id="generating-count">10</span> creative ideas for you
+                </div>
+            </form>
+        </div>
+        
+        <!-- Ideas List (Example) -->
+        <div id="ideas-list" class="hidden">
+            <h2>Your Ideas</h2>
+            <div class="idea-card">
+                <h3 class="idea-title">How AI Transforms Modern Marketing Strategies</h3>
+                <p style="color: #666; margin-bottom: 1rem;">
+                    <strong>Angle:</strong> Focus on practical implementation steps rather than theory
+                </p>
+                <div class="idea-scores">
+                    <div><strong>Novelty:</strong> 4/5</div>
+                    <div><strong>Demand:</strong> 5/5</div>
+                    <div><strong>Fit:</strong> 4/5</div>
+                </div>
+                <div style="margin: 0.5rem 0;">
+                    <strong>Audiences:</strong> Marketing Managers, CMOs, Growth Teams
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function updateCount(value) {
+            document.getElementById('count-value').textContent = value;
+            document.getElementById('generating-count').textContent = value;
+        }
+        
+        function updateTemperature(value) {
+            const temp = parseFloat(value);
+            document.getElementById('temp-value').textContent = temp.toFixed(1);
+            
+            let label;
+            if (temp < 0.5) label = '(Conservative)';
+            else if (temp < 0.9) label = '(Balanced)';
+            else label = '(Creative)';
+            
+            document.getElementById('temp-label').textContent = label;
+        }
+        
+        function showError(message) {
+            document.getElementById('error-text').textContent = message;
+            document.getElementById('error-message').classList.remove('hidden');
+        }
+        
+        function hideError() {
+            document.getElementById('error-message').classList.add('hidden');
+        }
+        
+        function showSuccess(message) {
+            document.getElementById('success-text').textContent = message;
+            document.getElementById('success-message').classList.remove('hidden');
+            
+            // Auto hide after 5 seconds
+            setTimeout(hideSuccess, 5000);
+        }
+        
+        function hideSuccess() {
+            document.getElementById('success-message').classList.add('hidden');
+        }
+        
+        function setLoading(isLoading) {
+            const btn = document.getElementById('generate-btn');
+            const btnText = document.getElementById('btn-text');
+            const loadingText = document.getElementById('loading-text');
+            const inputs = document.querySelectorAll('input');
+            
+            if (isLoading) {
+                btn.disabled = true;
+                btnText.innerHTML = '<div class="spinner"></div> Generating Ideas...';
+                loadingText.classList.remove('hidden');
+                inputs.forEach(input => input.disabled = true);
+            } else {
+                btn.disabled = false;
+                btnText.innerHTML = '🚀 Generate Ideas';
+                loadingText.classList.add('hidden');
+                inputs.forEach(input => input.disabled = false);
+            }
+        }
+        
+        function handleSubmit(event) {
+            event.preventDefault();
+            
+            hideError();
+            hideSuccess();
+            
+            const persona = document.getElementById('persona').value.trim();
+            const industry = document.getElementById('industry').value.trim();
+            
+            // Validation
+            if (!persona || !industry) {
+                showError('Please fill in both Persona and Industry fields');
+                return;
+            }
+            
+            // Simulate API call
+            setLoading(true);
+            
+            setTimeout(() => {
+                setLoading(false);
+                const count = document.getElementById('count').value;
+                showSuccess(`Successfully generated ${count} ideas!`);
+                
+                // Show ideas list
+                document.getElementById('ideas-list').classList.remove('hidden');
+                document.getElementById('total-count').textContent = count;
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
+

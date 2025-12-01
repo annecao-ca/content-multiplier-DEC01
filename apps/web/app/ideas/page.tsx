@@ -8,47 +8,137 @@ import EmptyState from '../components/EmptyState';
 import StatusBadge from '../components/StatusBadge';
 import { useLanguage } from '../contexts/LanguageContext';
 
+// API URL - backend running on port 3001
+const API_URL = 'http://localhost:3001';
+
+// Loading Spinner Component
+function LoadingSpinner() {
+    return (
+        <div style={{
+            width: '20px',
+            height: '20px',
+            border: '3px solid rgba(255, 255, 255, 0.3)',
+            borderTop: '3px solid white',
+            borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite'
+        }}>
+            <style jsx>{`
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            `}</style>
+        </div>
+    );
+}
+
 export default function IdeasPage() {
     const [ideas, setIdeas] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
-    const [promptText, setPromptText] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
+    
+    // Form fields
+    const [persona, setPersona] = useState('Marketing Manager at B2B SaaS');
+    const [industry, setIndustry] = useState('SaaS');
+    const [corpusHints, setCorpusHints] = useState('');
     const [count, setCount] = useState(10);
+    const [temperature, setTemperature] = useState(0.8);
+    
     const [selectedCount, setSelectedCount] = useState(0);
     const [editingTags, setEditingTags] = useState<{ [key: string]: string }>({});
     const { language } = useLanguage();
 
     async function load() {
-        const r = await fetch('/api/ideas');
+        try {
+            const r = await fetch(`${API_URL}/api/ideas`);
+            if (!r.ok) {
+                console.error('Failed to load ideas:', r.status, r.statusText);
+                setIdeas([]);
+                setSelectedCount(0);
+                return;
+            }
         const data = await r.json();
-        setIdeas(data);
-        setSelectedCount(data.filter((i: any) => i.status === 'selected').length);
+            // Ensure data is an array
+            const ideasArray = Array.isArray(data) ? data : (data?.ideas || data?.data || []);
+            setIdeas(ideasArray);
+            setSelectedCount(ideasArray.filter((i: any) => i.status === 'selected').length);
+        } catch (error: any) {
+            console.error('Error loading ideas:', error);
+            setIdeas([]);
+            setSelectedCount(0);
+        }
     }
 
     async function gen() {
+        // Validate inputs
+        if (!persona.trim() || !industry.trim()) {
+            setError('Please fill in both Persona and Industry fields');
+            return;
+        }
+        
         setLoading(true);
-        const r = await fetch('/api/ideas/generate', {
+        setError(null);
+        setSuccess(null);
+        
+        try {
+        const r = await fetch(`${API_URL}/api/ideas/generate`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'x-user-id': 'demo-user',
+                'x-user-role': 'CL'
+            },
             body: JSON.stringify({
-                persona: 'Content Lead',
-                industry: 'SaaS',
+                    persona: persona.trim(),
+                    industry: industry.trim(),
                 language: language,
-                corpus_hints: promptText,
-                count: count
+                    corpus_hints: corpusHints.trim(),
+                    count: count,
+                    temperature: temperature
             })
         });
-        await r.json(); setLoading(false); load();
+            
+            const data = await r.json();
+            
+            if (!r.ok) {
+                throw new Error(data.error || 'Failed to generate ideas');
+            }
+            
+            setSuccess(`Successfully generated ${data.ideas?.length || count} ideas!`);
+            await load();
+            
+            // Auto-hide success message after 5 seconds
+            setTimeout(() => setSuccess(null), 5000);
+            
+        } catch (err: any) {
+            setError(err.message || 'An error occurred while generating ideas');
+        } finally {
+            setLoading(false);
+        }
     }
 
     async function selectIdea(ideaId: string) {
-        await fetch(`/api/ideas/${ideaId}/select`, { method: 'POST' });
+        await fetch(`${API_URL}/api/ideas/${ideaId}/select`, { 
+            method: 'POST',
+            headers: {
+                'x-user-id': 'demo-user',
+                'x-user-role': 'CL'
+            }
+        });
         load();
     }
 
     async function deleteIdea(ideaId: string) {
         const ok = confirm('Delete this idea? This cannot be undone.')
         if (!ok) return
-        const r = await fetch(`/api/ideas/${ideaId}`, { method: 'DELETE' })
+        const r = await fetch(`${API_URL}/api/ideas/${ideaId}`, { 
+            method: 'DELETE',
+            headers: {
+                'x-user-id': 'demo-user',
+                'x-user-role': 'CL'
+            }
+        })
         if (!r.ok) {
             const e = await r.json().catch(() => ({}))
             alert(e.error || 'Failed to delete idea')
@@ -59,9 +149,13 @@ export default function IdeasPage() {
 
     async function updateTags(ideaId: string, tagsString: string) {
         const tags = tagsString.split(',').map(t => t.trim()).filter(t => t);
-        await fetch(`/api/ideas/${ideaId}/tags`, {
+        await fetch(`${API_URL}/api/ideas/${ideaId}/tags`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'x-user-id': 'demo-user',
+                'x-user-role': 'CL'
+            },
             body: JSON.stringify({ tags })
         });
         load();
@@ -116,46 +210,267 @@ export default function IdeasPage() {
             </div>
         </div>
 
-        {/* Prompt & Generate */}
+        {/* Generate Ideas Form */}
         <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 140px 200px',
-            gap: '0.75rem',
-            alignItems: 'center',
-            marginBottom: '1rem'
+            background: 'white',
+            border: '1px solid #e2e8f0',
+            borderRadius: '12px',
+            padding: '1.5rem',
+            marginBottom: '1.5rem',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
         }}>
+            <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.25rem', color: '#1a202c' }}>
+                🎨 Generate Content Ideas
+            </h2>
+            
+            {/* Error Message */}
+            {error && (
+                <div style={{
+                    background: '#fee2e2',
+                    border: '1px solid #ef4444',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    marginBottom: '1rem',
+                    color: '#991b1b',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                }}>
+                    <span style={{ fontSize: '1.25rem' }}>❌</span>
+                    <div>
+                        <strong>Error:</strong> {error}
+                    </div>
+                    <button
+                        onClick={() => setError(null)}
+                        style={{
+                            marginLeft: 'auto',
+                            background: 'transparent',
+                            border: 'none',
+                            fontSize: '1.25rem',
+                            cursor: 'pointer',
+                            padding: '0.25rem'
+                        }}
+                    >
+                        ×
+                    </button>
+                </div>
+            )}
+            
+            {/* Success Message */}
+            {success && (
+                <div style={{
+                    background: '#d1fae5',
+                    border: '1px solid #10b981',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    marginBottom: '1rem',
+                    color: '#065f46',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                }}>
+                    <span style={{ fontSize: '1.25rem' }}>✅</span>
+                    <div>
+                        <strong>Success!</strong> {success}
+                    </div>
+                    <button
+                        onClick={() => setSuccess(null)}
+                        style={{
+                            marginLeft: 'auto',
+                            background: 'transparent',
+                            border: 'none',
+                            fontSize: '1.25rem',
+                            cursor: 'pointer',
+                            padding: '0.25rem'
+                        }}
+                    >
+                        ×
+                    </button>
+                </div>
+            )}
+            
+            {/* Form Grid */}
+            <div style={{ display: 'grid', gap: '1rem' }}>
+                {/* Persona */}
+                <div>
+                    <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem', color: '#374151' }}>
+                        Persona (Target Audience) <span style={{ color: '#ef4444' }}>*</span>
+                    </label>
+                    <input
+                        type="text"
+                        value={persona}
+                        onChange={(e) => setPersona(e.target.value)}
+                        placeholder="e.g., Marketing Manager at B2B SaaS, Startup Founder"
+                        disabled={loading}
+                        style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '8px',
+                            fontSize: '1rem',
+                            opacity: loading ? 0.6 : 1,
+                            cursor: loading ? 'not-allowed' : 'text'
+                        }}
+                    />
+                </div>
+                
+                {/* Industry */}
+                <div>
+                    <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem', color: '#374151' }}>
+                        Industry <span style={{ color: '#ef4444' }}>*</span>
+                    </label>
+                    <input
+                        type="text"
+                        value={industry}
+                        onChange={(e) => setIndustry(e.target.value)}
+                        placeholder="e.g., SaaS, E-commerce, Fintech, Healthcare"
+                        disabled={loading}
+                        style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '8px',
+                            fontSize: '1rem',
+                            opacity: loading ? 0.6 : 1,
+                            cursor: loading ? 'not-allowed' : 'text'
+                        }}
+                    />
+                </div>
+                
+                {/* Corpus Hints */}
+                <div>
+                    <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem', color: '#374151' }}>
+                        Topic Hints (Optional)
+                    </label>
             <input
                 type="text"
-                value={promptText}
-                onChange={(e) => setPromptText(e.target.value)}
-                placeholder="Enter keywords or a prompt, e.g. 'B2B SaaS onboarding • AI in healthcare • remote team productivity'"
+                        value={corpusHints}
+                        onChange={(e) => setCorpusHints(e.target.value)}
+                        placeholder="e.g., AI, automation, productivity, remote work"
+                        disabled={loading}
                 style={{
                     width: '100%',
-                    padding: '0.9rem 1rem',
-                    border: '1px solid #e2e8f0',
+                            padding: '0.75rem',
+                            border: '1px solid #d1d5db',
                     borderRadius: '8px',
-                    fontSize: '1rem'
+                            fontSize: '1rem',
+                            opacity: loading ? 0.6 : 1,
+                            cursor: loading ? 'not-allowed' : 'text'
                 }}
             />
+                    <div style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                        Add keywords to guide AI (comma-separated)
+                    </div>
+                </div>
+                
+                {/* Count & Temperature */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div>
+                        <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem', color: '#374151' }}>
+                            Number of Ideas: {count}
+                        </label>
             <input
-                type="number"
-                min={3}
+                            type="range"
+                            min={5}
                 max={20}
                 value={count}
-                onChange={(e) => setCount(Math.max(3, Math.min(20, Number(e.target.value || 0))))}
+                            onChange={(e) => setCount(Number(e.target.value))}
+                            disabled={loading}
+                            style={{
+                                width: '100%',
+                                opacity: loading ? 0.6 : 1,
+                                cursor: loading ? 'not-allowed' : 'pointer'
+                            }}
+                        />
+                        <div style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                            Recommended: 10 ideas
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem', color: '#374151' }}>
+                            Creativity: {temperature.toFixed(1)} 
+                            {temperature < 0.5 ? ' (Conservative)' : temperature < 0.9 ? ' (Balanced)' : ' (Creative)'}
+                        </label>
+                        <input
+                            type="range"
+                            min={0}
+                            max={2}
+                            step={0.1}
+                            value={temperature}
+                            onChange={(e) => setTemperature(Number(e.target.value))}
+                            disabled={loading}
                 style={{
-                    padding: '0.9rem 0.75rem',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px',
-                    fontSize: '1rem'
-                }}
-            />
-            <Button onClick={gen} disabled={loading} variant={loading ? 'neutral' : 'success'} style={{ padding: '0.9rem 1rem', fontSize: '1rem' }}>
-                {loading ? '🤖 Generating...' : '🚀 Generate ideas'}
-            </Button>
+                                width: '100%',
+                                opacity: loading ? 0.6 : 1,
+                                cursor: loading ? 'not-allowed' : 'pointer'
+                            }}
+                        />
+                        <div style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                            0 = Factual, 1 = Balanced, 2 = Very Creative
+                        </div>
+                    </div>
+                </div>
+                
+                {/* Generate Button */}
+                <button
+                    onClick={gen}
+                    disabled={loading || !persona.trim() || !industry.trim()}
+                    style={{
+                        width: '100%',
+                        padding: '1rem',
+                        background: loading ? '#9ca3af' : (!persona.trim() || !industry.trim()) ? '#d1d5db' : '#10b981',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '1.1rem',
+                        fontWeight: '600',
+                        cursor: loading ? 'not-allowed' : (!persona.trim() || !industry.trim()) ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        transition: 'all 0.2s',
+                        boxShadow: loading ? 'none' : '0 2px 4px rgba(0,0,0,0.1)'
+                    }}
+                    onMouseEnter={(e) => {
+                        if (!loading && persona.trim() && industry.trim()) {
+                            e.currentTarget.style.background = '#059669';
+                            e.currentTarget.style.transform = 'translateY(-1px)';
+                            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        if (!loading && persona.trim() && industry.trim()) {
+                            e.currentTarget.style.background = '#10b981';
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                        }
+                    }}
+                >
+                    {loading ? (
+                        <>
+                            <LoadingSpinner />
+                            Generating Ideas...
+                        </>
+                    ) : (
+                        <>
+                            🚀 Generate Ideas
+                        </>
+                    )}
+                </button>
+                
+                {loading && (
+                    <div style={{
+                        textAlign: 'center',
+                        color: '#6b7280',
+                        fontSize: '0.875rem',
+                        padding: '0.5rem'
+                    }}>
+                        Please wait... AI is generating {count} creative ideas for you
+                    </div>
+                )}
         </div>
-        <div style={{ color: '#6b7280', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-            Tip: add 2-4 short topics separated by commas or bullets to steer results
         </div>
 
         {/* Ideas List */}
