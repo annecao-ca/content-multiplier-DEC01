@@ -1,4 +1,10 @@
 import pg from 'pg';
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+// Đảm bảo luôn load .env từ project root trước khi đọc DATABASE_URL
+const envPath = resolve(process.cwd(), '../../.env');
+config({ path: envPath });
 
 // Create pool with graceful error handling
 const connectionString = process.env.DATABASE_URL;

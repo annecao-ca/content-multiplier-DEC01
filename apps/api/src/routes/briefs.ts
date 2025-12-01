@@ -7,6 +7,32 @@ import { retrieve } from '../services/rag.ts';
 import { logEvent } from '../services/telemetry.ts';
 
 const routes: FastifyPluginAsync = async (app) => {
+    // List all briefs
+    app.get('/', async (req: any) => {
+        try {
+            const briefs = await q('SELECT * FROM briefs ORDER BY created_at DESC');
+            return briefs.map((b: any) => {
+                const safeParse = (val: any) => {
+                    if (!val) return [];
+                    if (typeof val === 'string') {
+                        try { return JSON.parse(val); } catch { return []; }
+                    }
+                    return val;
+                };
+                return {
+                    ...b,
+                    key_points: safeParse(b.key_points),
+                    counterpoints: safeParse(b.counterpoints),
+                    outline: safeParse(b.outline),
+                    claims_ledger: safeParse(b.claims_ledger)
+                };
+            });
+        } catch (error: any) {
+            console.error('Failed to list briefs:', error.message);
+            return [];
+        }
+    });
+
     app.get('/:brief_id', async (req: any) => {
         const { brief_id } = req.params
         const [b] = await q('SELECT * FROM briefs WHERE brief_id=$1', [brief_id])
@@ -88,20 +114,41 @@ const routes: FastifyPluginAsync = async (app) => {
         }
         console.log('Generated brief:', JSON.stringify(brief).slice(0, 200))
         ensureValid(contentSchema, brief);
-        await q('INSERT INTO briefs(brief_id, idea_id, key_points, counterpoints, outline, claims_ledger) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (brief_id) DO UPDATE SET key_points=$3,counterpoints=$4,outline=$5,claims_ledger=$6', [
-            brief_id, idea_id, JSON.stringify(brief.key_points || []), JSON.stringify(brief.counterpoints || []), JSON.stringify(brief.outline || []), JSON.stringify(brief.claims_ledger || [])
-        ]);
-        await logEvent({
-            event_type: 'brief.created',
-            actor_id: (req as any).actor_id,
-            actor_role: (req as any).actor_role,
-            idea_id,
-            brief_id,
-            request_id: (req as any).request_id,
-            timezone: (req as any).timezone,
-            payload: { claims: (brief.claims_ledger || []).length }
-        });
-        return brief;
+        
+        // Try to save to DB (best effort)
+        try {
+            await q('INSERT INTO briefs(brief_id, idea_id, key_points, counterpoints, outline, claims_ledger) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (brief_id) DO UPDATE SET key_points=$3,counterpoints=$4,outline=$5,claims_ledger=$6', [
+                brief_id, idea_id, JSON.stringify(brief.key_points || []), JSON.stringify(brief.counterpoints || []), JSON.stringify(brief.outline || []), JSON.stringify(brief.claims_ledger || [])
+            ]);
+        } catch (dbError: any) {
+            console.warn('Failed to save brief to DB (ignored):', dbError.message);
+        }
+        
+        // Try to log event (best effort)
+        try {
+            await logEvent({
+                event_type: 'brief.created',
+                actor_id: (req as any).actor_id,
+                actor_role: (req as any).actor_role,
+                idea_id,
+                brief_id,
+                request_id: (req as any).request_id,
+                timezone: (req as any).timezone,
+                payload: { claims: (brief.claims_ledger || []).length }
+            });
+        } catch (logError: any) {
+            console.warn('Failed to log brief.created event (ignored):', logError.message);
+        }
+        
+        // Return brief with metadata
+        return {
+            ok: true,
+            brief: {
+                brief_id,
+                idea_id,
+                ...brief
+            }
+        };
     });
 
     app.post('/:brief_id/approve', async (req: any) => {

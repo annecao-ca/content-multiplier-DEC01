@@ -8,15 +8,21 @@ import PageHeader from '../components/PageHeader'
 import EmptyState from '../components/EmptyState'
 import StatusBadge from '../components/StatusBadge'
 
+// API URL - backend running on port 3001
+const API_URL = 'http://localhost:3001';
+
 export default function BriefsPage() {
     const [selectedIdea, setSelectedIdea] = useState<any>(null)
     const [ideas, setIdeas] = useState<any[]>([])
+    const [briefs, setBriefs] = useState<any[]>([])
     const [loading, setLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const [success, setSuccess] = useState<string | null>(null)
     const { language } = useLanguage()
 
     async function loadIdeas() {
         try {
-            const r = await fetch('/api/ideas')
+            const r = await fetch(`${API_URL}/api/ideas`)
             const all = await r.json()
             if (Array.isArray(all)) {
                 setIdeas(all.filter((i: any) => i.status === 'selected'))
@@ -30,24 +36,63 @@ export default function BriefsPage() {
         }
     }
 
-    async function generateBrief(ideaId: string) {
-        setLoading(true)
-        const briefId = `brief-${Date.now()}`
-        await fetch('/api/briefs/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                brief_id: briefId,
-                idea_id: ideaId,
-                query: selectedIdea?.one_liner || 'content research',
-                language: language
-            })
-        })
-        setLoading(false)
-        window.location.href = `/briefs/${briefId}`
+    async function loadBriefs() {
+        try {
+            const r = await fetch(`${API_URL}/api/briefs`)
+            if (r.ok) {
+                const data = await r.json()
+                setBriefs(Array.isArray(data) ? data : [])
+            }
+        } catch (error) {
+            console.error('Failed to load briefs:', error)
+        }
     }
 
-    useEffect(() => { loadIdeas() }, [])
+    async function generateBrief(ideaId: string) {
+        setLoading(true)
+        setError(null)
+        setSuccess(null)
+        
+        try {
+            const briefId = `brief-${Date.now()}`
+            const r = await fetch(`${API_URL}/api/briefs/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    brief_id: briefId,
+                    idea_id: ideaId,
+                    query: selectedIdea?.one_liner || 'content research',
+                    language: language
+                })
+            })
+            
+            if (!r.ok) {
+                const data = await r.json().catch(() => ({}))
+                throw new Error(data.error || 'Failed to generate brief')
+            }
+            
+            const data = await r.json()
+            setSuccess('Brief generated successfully!')
+            
+            // Add new brief to list
+            if (data.brief) {
+                setBriefs((prev) => [data.brief, ...prev])
+            }
+            
+            setSelectedIdea(null)
+            setTimeout(() => setSuccess(null), 5000)
+            
+        } catch (err: any) {
+            setError(err.message || 'Failed to generate brief')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => { 
+        loadIdeas()
+        loadBriefs()
+    }, [])
 
     return (
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
@@ -120,6 +165,35 @@ export default function BriefsPage() {
                         </div>
                     </Card>
 
+                    {/* Error Message */}
+                    {error && (
+                        <div style={{
+                            background: '#fee2e2',
+                            border: '1px solid #ef4444',
+                            borderRadius: '8px',
+                            padding: '1rem',
+                            marginBottom: '1rem',
+                            color: '#991b1b'
+                        }}>
+                            ❌ <strong>Error:</strong> {error}
+                            <button onClick={() => setError(null)} style={{ marginLeft: '1rem', cursor: 'pointer' }}>×</button>
+                        </div>
+                    )}
+                    
+                    {/* Success Message */}
+                    {success && (
+                        <div style={{
+                            background: '#d1fae5',
+                            border: '1px solid #10b981',
+                            borderRadius: '8px',
+                            padding: '1rem',
+                            marginBottom: '1rem',
+                            color: '#065f46'
+                        }}>
+                            ✅ <strong>Success!</strong> {success}
+                        </div>
+                    )}
+
                     {selectedIdea && (
                         <Card
                             icon="🔬"
@@ -174,6 +248,68 @@ export default function BriefsPage() {
                                         Cancel
                                     </Button>
                                 )}
+                            </div>
+                        </Card>
+                    )}
+                    
+                    {/* Generated Briefs List */}
+                    {briefs.length > 0 && (
+                        <Card
+                            title="📋 Generated Briefs"
+                            subtitle={`${briefs.length} brief(s) created`}
+                            style={{ marginTop: '2rem' }}
+                        >
+                            <div style={{ display: 'grid', gap: '1rem' }}>
+                                {briefs.map((brief: any) => (
+                                    <div
+                                        key={brief.brief_id}
+                                        style={{
+                                            padding: '1rem',
+                                            background: '#f8fafc',
+                                            borderRadius: '8px',
+                                            border: '1px solid #e2e8f0'
+                                        }}
+                                    >
+                                        <h4 style={{ margin: '0 0 0.5rem 0', color: '#1f2937' }}>
+                                            📄 {brief.brief_id}
+                                        </h4>
+                                        {brief.key_points && brief.key_points.length > 0 && (
+                                            <div style={{ marginBottom: '0.5rem' }}>
+                                                <strong>Key Points:</strong>
+                                                <ul style={{ margin: '0.25rem 0', paddingLeft: '1.5rem', color: '#4a5568' }}>
+                                                    {brief.key_points.slice(0, 3).map((point: string, idx: number) => (
+                                                        <li key={idx}>{point}</li>
+                                                    ))}
+                                                    {brief.key_points.length > 3 && (
+                                                        <li style={{ color: '#9ca3af' }}>... and {brief.key_points.length - 3} more</li>
+                                                    )}
+                                                </ul>
+                                            </div>
+                                        )}
+                                        {brief.outline && brief.outline.length > 0 && (
+                                            <div>
+                                                <strong>Outline:</strong>
+                                                <ul style={{ margin: '0.25rem 0', paddingLeft: '1.5rem', color: '#4a5568' }}>
+                                                    {brief.outline.slice(0, 4).map((section: any, idx: number) => (
+                                                        <li key={idx}>{section.h2 || section}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                        <Link 
+                                            href={`/briefs/${brief.brief_id}`}
+                                            style={{ 
+                                                color: '#3b82f6', 
+                                                textDecoration: 'none',
+                                                fontWeight: '600',
+                                                display: 'inline-block',
+                                                marginTop: '0.5rem'
+                                            }}
+                                        >
+                                            View Full Brief →
+                                        </Link>
+                                    </div>
+                                ))}
                             </div>
                         </Card>
                     )}

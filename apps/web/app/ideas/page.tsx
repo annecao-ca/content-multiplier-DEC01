@@ -42,7 +42,8 @@ export default function IdeasPage() {
     const [persona, setPersona] = useState('Marketing Manager at B2B SaaS');
     const [industry, setIndustry] = useState('SaaS');
     const [corpusHints, setCorpusHints] = useState('');
-    const [count, setCount] = useState(10);
+    // Giới hạn UI: 1–3 ideas để tránh JSON quá dài
+    const [count, setCount] = useState(3);
     const [temperature, setTemperature] = useState(0.8);
     
     const [selectedCount, setSelectedCount] = useState(0);
@@ -105,8 +106,39 @@ export default function IdeasPage() {
                 throw new Error(data.error || 'Failed to generate ideas');
             }
             
-            setSuccess(`Successfully generated ${data.ideas?.length || count} ideas!`);
-            await load();
+            // Response từ API: data.ideas (mỗi phần tử theo ContentIdea đơn giản)
+            const serverIdeas = Array.isArray(data.ideas) ? data.ideas : [];
+            
+            // Map sang format thống nhất (giữ nguyên field names từ server + thêm fields cần thiết)
+            const mappedIdeas = serverIdeas.map((idea: any, index: number) => ({
+                // ID duy nhất cho React key
+                idea_id: idea.idea_id || idea.id || `temp-${Date.now()}-${index}`,
+                // Tiêu đề chính
+                one_liner: idea.one_liner || idea.title || 'Untitled Idea',
+                // Mô tả / angle
+                angle: idea.description || idea.angle || '',
+                description: idea.description || idea.angle || '',
+                // Thông tin bổ sung
+                personas: idea.personas || [persona],
+                why_now: idea.why_now || [],
+                evidence: idea.evidence || [],
+                // Scores
+                scores: idea.scores || { novelty: 3, demand: 3, fit: 3, white_space: 3 },
+                // Status và tags
+                status: idea.status || 'proposed',
+                tags: idea.tags || [],
+                created_at: idea.created_at || new Date().toISOString()
+            }));
+            
+            if (mappedIdeas.length > 0) {
+                // Thay thế hoàn toàn (không nối thêm để tránh duplicate)
+                setIdeas(mappedIdeas);
+                setSelectedCount(mappedIdeas.filter((i: any) => i.status === 'selected').length);
+            } else {
+                await load();
+            }
+            
+            setSuccess(`Successfully generated ${mappedIdeas.length || count} ideas!`);
             
             // Auto-hide success message after 5 seconds
             setTimeout(() => setSuccess(null), 5000);
@@ -119,47 +151,93 @@ export default function IdeasPage() {
     }
 
     async function selectIdea(ideaId: string) {
-        await fetch(`${API_URL}/api/ideas/${ideaId}/select`, { 
-            method: 'POST',
-            headers: {
-                'x-user-id': 'demo-user',
-                'x-user-role': 'CL'
-            }
-        });
-        load();
+        if (!ideaId) {
+            console.warn('selectIdea called with undefined ideaId');
+            return;
+        }
+        
+        // Optimistic update: cập nhật UI ngay lập tức
+        setIdeas((prev) => prev.map((idea: any) => 
+            (idea.idea_id === ideaId || idea.id === ideaId)
+                ? { ...idea, status: 'selected' } 
+                : idea
+        ));
+        setSelectedCount((prev) => prev + 1);
+        
+        // Gọi API (best effort, không block UI)
+        try {
+            await fetch(`${API_URL}/api/ideas/${ideaId}/select`, { 
+                method: 'POST',
+                headers: {
+                    'x-user-id': 'demo-user',
+                    'x-user-role': 'CL'
+                }
+            });
+        } catch (err) {
+            console.warn('Select API failed (ignored):', err);
+        }
     }
 
     async function deleteIdea(ideaId: string) {
-        const ok = confirm('Delete this idea? This cannot be undone.')
-        if (!ok) return
-        const r = await fetch(`${API_URL}/api/ideas/${ideaId}`, { 
-            method: 'DELETE',
-            headers: {
-                'x-user-id': 'demo-user',
-                'x-user-role': 'CL'
-            }
-        })
-        if (!r.ok) {
-            const e = await r.json().catch(() => ({}))
-            alert(e.error || 'Failed to delete idea')
-            return
+        if (!ideaId) {
+            console.warn('deleteIdea called with undefined ideaId');
+            return;
         }
-        load()
+        
+        const ok = confirm('Delete this idea? This cannot be undone.');
+        if (!ok) return;
+
+        // Optimistic update: xóa khỏi UI ngay lập tức
+        setIdeas((prev) => prev.filter((i: any) => i.idea_id !== ideaId && i.id !== ideaId));
+
+        try {
+            const r = await fetch(`${API_URL}/api/ideas/${ideaId}`, { 
+                method: 'DELETE',
+                headers: {
+                    'x-user-id': 'demo-user',
+                    'x-user-role': 'CL'
+                }
+            });
+            if (!r.ok) {
+                const e = await r.json().catch(() => ({}));
+                console.warn('Delete API failed (ignored):', e.error || r.statusText);
+                // Không alert lỗi nữa để tránh làm phiền user; UI đã xoá rồi
+            }
+        } catch (err) {
+            console.warn('Delete request error (ignored):', err);
+        }
     }
 
     async function updateTags(ideaId: string, tagsString: string) {
+        if (!ideaId) {
+            console.warn('updateTags called with undefined ideaId');
+            return;
+        }
+        
         const tags = tagsString.split(',').map(t => t.trim()).filter(t => t);
-        await fetch(`${API_URL}/api/ideas/${ideaId}/tags`, {
-            method: 'PATCH',
-            headers: { 
-                'Content-Type': 'application/json',
-                'x-user-id': 'demo-user',
-                'x-user-role': 'CL'
-            },
-            body: JSON.stringify({ tags })
-        });
-        load();
+        
+        // Optimistic update: cập nhật UI ngay lập tức
+        setIdeas((prev) => prev.map((idea: any) => 
+            (idea.idea_id === ideaId || idea.id === ideaId)
+                ? { ...idea, tags: tags } 
+                : idea
+        ));
         setEditingTags({ ...editingTags, [ideaId]: '' });
+        
+        // Gọi API (best effort, không block UI)
+        try {
+            await fetch(`${API_URL}/api/ideas/${ideaId}/tags`, {
+                method: 'PATCH',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-user-id': 'demo-user',
+                    'x-user-role': 'CL'
+                },
+                body: JSON.stringify({ tags })
+            });
+        } catch (err) {
+            console.warn('Update tags API failed (ignored):', err);
+        }
     }
 
     useEffect(() => { load(); }, []);
@@ -369,11 +447,11 @@ export default function IdeasPage() {
                         <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem', color: '#374151' }}>
                             Number of Ideas: {count}
                         </label>
-            <input
+                        <input
                             type="range"
-                            min={5}
-                max={20}
-                value={count}
+                            min={1}
+                            max={3}
+                            value={count}
                             onChange={(e) => setCount(Number(e.target.value))}
                             disabled={loading}
                             style={{
@@ -533,8 +611,8 @@ export default function IdeasPage() {
                                     <input
                                         type="text"
                                         placeholder="Add tags (comma-separated)"
-                                        value={editingTags[i.idea_id] || ''}
-                                        onChange={(e) => setEditingTags({ ...editingTags, [i.idea_id]: e.target.value })}
+                                        value={editingTags[i.idea_id || i.id] || ''}
+                                        onChange={(e) => setEditingTags({ ...editingTags, [i.idea_id || i.id]: e.target.value })}
                                         style={{
                                             flex: 1,
                                             padding: '0.5rem',
@@ -544,7 +622,7 @@ export default function IdeasPage() {
                                         }}
                                     />
                                     <Button
-                                        onClick={() => updateTags(i.idea_id, editingTags[i.idea_id] || '')}
+                                        onClick={() => updateTags(i.idea_id || i.id, editingTags[i.idea_id || i.id] || '')}
                                         variant="neutral"
                                         style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
                                     >
@@ -554,10 +632,10 @@ export default function IdeasPage() {
                             </div>
 
                             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-                                <Button onClick={() => selectIdea(i.idea_id)} disabled={i.status === 'selected'} variant={i.status === 'selected' ? 'success' : 'primary'}>
+                                <Button onClick={() => selectIdea(i.idea_id || i.id)} disabled={i.status === 'selected'} variant={i.status === 'selected' ? 'success' : 'primary'}>
                                     {i.status === 'selected' ? '✅ Selected' : '⭐ Select'}
                                 </Button>
-                                <Button onClick={() => deleteIdea(i.idea_id)} variant='danger'>
+                                <Button onClick={() => deleteIdea(i.idea_id || i.id)} variant='danger'>
                                     🗑️ Delete
                                 </Button>
                             </div>

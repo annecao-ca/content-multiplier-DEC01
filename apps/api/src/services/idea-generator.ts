@@ -24,8 +24,13 @@ export interface GenerateIdeasRequest {
 }
 
 export interface ContentIdea {
+    // Schema đơn giản cho mỗi idea (Cách A)
     idea_id: string;
-    one_liner: string;
+    one_liner: string;        // Tiêu đề ngắn gọn
+    description: string;      // Mô tả 2–3 câu
+    tags?: string[];          // Danh sách tag ngắn
+    
+    // Các field còn lại giữ lại để tương thích DB/UI nhưng sẽ được fill mặc định
     angle?: string;
     personas: string[];
     why_now: string[];
@@ -41,7 +46,6 @@ export interface ContentIdea {
         white_space: number;  // 0-5
     };
     status: 'proposed' | 'selected' | 'discarded';
-    tags?: string[];
 }
 
 export interface GenerateIdeasResponse {
@@ -108,122 +112,56 @@ function buildPrompt(request: GenerateIdeasRequest): string {
 - Ngành nghề (Industry): ${industry}
 ${corpus_hints ? `- Gợi ý chủ đề: ${corpus_hints}` : ''}
 
-📝 Yêu cầu định dạng:
-Mỗi ý tưởng phải là một đối tượng JSON với các trường sau:
+📝 Yêu cầu định dạng (schema đơn giản):
+Mỗi ý tưởng phải là một OBJECT JSON với CẤU TRÚC SAU:
 
 {
-  "idea_id": "idea-uuid",           // ID duy nhất
-  "one_liner": "...",               // Tiêu đề hấp dẫn (50-80 ký tự)
-  "angle": "...",                   // Góc nhìn độc đáo (tùy chọn)
-  "personas": ["..."],              // Mảng đối tượng mục tiêu cụ thể
-  "why_now": ["..."],               // Lý do tại sao ý tưởng này phù hợp ngay bây giờ
-  "evidence": [                     // Bằng chứng hỗ trợ
-    {
-      "title": "...",               // Tiêu đề nguồn
-      "url": "https://...",         // URL nguồn tin
-      "quote": "..."                // Trích dẫn quan trọng
-    }
-  ],
-  "scores": {                       // Điểm đánh giá (0-5)
-    "novelty": 4,                   // Độ mới lạ
-    "demand": 5,                    // Nhu cầu thị trường
-    "fit": 4,                       // Phù hợp với persona/industry
-    "white_space": 3                // Khoảng trống cạnh tranh
-  },
-  "status": "proposed",             // Luôn là "proposed"
-  "tags": ["AI", "Marketing"]       // Tags phân loại
+  "idea_id": "idea-uuid",
+  "one_liner": "Tiêu đề ngắn gọn, súc tích",
+  "description": "Mô tả 2–3 câu, ngắn gọn, dễ hiểu, không quá 300 ký tự",
+  "tags": ["tag1", "tag2"]
 }
 
-🎯 Hướng dẫn tạo ý tưởng chất lượng cao:
+⚠️ YÊU CẦU QUAN TRỌNG:
+1. CHỈ trả về JSON HỢP LỆ
+2. KHÔNG có markdown, KHÔNG có code fences, KHÔNG có giải thích, KHÔNG có text trước/sau
+3. Bắt đầu response bằng ký tự '[' và kết thúc bằng ']'
+4. Format: Một MẢNG JSON gồm đúng ${count} ý tưởng:
+[
+  { "idea_id": "...", "one_liner": "...", "description": "...", "tags": ["...", "..."] },
+  { "idea_id": "...", "one_liner": "...", "description": "...", "tags": ["...", "..."] }
+]
 
-1. **One-liner**: Ngắn gọn, hấp dẫn, làm người đọc tò mò
-2. **Angle**: Góc nhìn độc đáo, khác biệt với content thông thường
-3. **Personas**: Cụ thể (ví dụ: "Marketing Manager at B2B SaaS, 30-40 tuổi")
-4. **Why now**: Liên kết với xu hướng, sự kiện, hoặc thay đổi hiện tại
-5. **Evidence**: Nguồn đáng tin (báo cáo, nghiên cứu, case study)
-6. **Scores**: Đánh giá trung thực, cân bằng
-7. **Tags**: 2-5 tags liên quan
-
-💡 Làm cho ý tưởng:
-- Thực tế và có thể thực hiện
-- Có giá trị thực sự cho đối tượng mục tiêu
-- Khác biệt với content đã có
-- Có tiềm năng viral/engagement cao
-
-⚠️ YÊU CẦU FORMAT JSON QUAN TRỌNG:
-1. Chỉ trả về JSON hợp lệ - không markdown, không code blocks, không giải thích, không text trước/sau
-2. Bắt đầu response bằng [ hoặc { - không có gì trước đó
-3. Kết thúc response bằng ] hoặc } - không có gì sau đó
-4. Format: Trả về mảng JSON trực tiếp: [{"idea_id":"...","one_liner":"...",...}, ...]
-5. Tạo chính xác ${count} ý tưởng hoàn chỉnh
-6. Đảm bảo tất cả JSON được đóng đúng với brackets khớp
-
-Ví dụ format:
-[{"idea_id":"uuid-1","one_liner":"Tiêu đề 1",...},{"idea_id":"uuid-2","one_liner":"Tiêu đề 2",...}]
-
-Chỉ trả về mảng JSON, không có gì khác.`;
+Chỉ trả về MẢNG JSON, không thêm bất kỳ ký tự nào khác.`;
     } else {
-        return `Generate exactly ${count} high-quality content ideas for:
+        return `Generate exactly ${count} content ideas with a SIMPLE JSON schema.
 
-📊 Input Parameters:
+📊 Input:
 - Target Persona: ${persona}
 - Industry: ${industry}
 ${corpus_hints ? `- Topic Hints: ${corpus_hints}` : ''}
 
-📝 Required Format:
-Each idea must be a JSON object with these fields:
+📝 JSON SCHEMA (SIMPLE):
+Each idea MUST be a JSON OBJECT with this shape:
 
 {
-  "idea_id": "idea-uuid",           // Unique identifier
-  "one_liner": "...",               // Catchy headline (50-80 chars)
-  "angle": "...",                   // Unique perspective (optional)
-  "personas": ["..."],              // Array of specific target audiences
-  "why_now": ["..."],               // Reasons why this idea is timely
-  "evidence": [                     // Supporting evidence
-    {
-      "title": "...",               // Source title
-      "url": "https://...",         // Source URL
-      "quote": "..."                // Key quote
-    }
-  ],
-  "scores": {                       // Ratings (0-5)
-    "novelty": 4,                   // How original/fresh
-    "demand": 5,                    // Market demand
-    "fit": 4,                       // Fit with persona/industry
-    "white_space": 3                // Competition gap
-  },
-  "status": "proposed",             // Always "proposed"
-  "tags": ["AI", "Marketing"]       // Categorization tags
+  "idea_id": "idea-uuid",           // Unique ID (string)
+  "one_liner": "Short, punchy title", 
+  "description": "2–3 sentences summary, max ~300 characters, plain text only",
+  "tags": ["tag1", "tag2"]          // 1–3 short tags, no # symbol
 }
 
-🎯 Guidelines for High-Quality Ideas:
+⚠️ CRITICAL JSON RULES:
+1. RETURN ONLY VALID JSON
+2. NO markdown, NO code fences (no triple-backticks), NO explanations, NO prose before or after
+3. RESPONSE MUST START WITH '[' and END WITH ']'
+4. FORMAT: A JSON ARRAY with EXACTLY ${count} items:
+[
+  { "idea_id": "...", "one_liner": "...", "description": "...", "tags": ["...", "..."] },
+  { "idea_id": "...", "one_liner": "...", "description": "...", "tags": ["...", "..."] }
+]
 
-1. **One-liner**: Concise, compelling, curiosity-inducing
-2. **Angle**: Unique perspective that differentiates from typical content
-3. **Personas**: Specific (e.g., "Marketing Manager at B2B SaaS, 30-40 years old")
-4. **Why now**: Link to current trends, events, or changes
-5. **Evidence**: Credible sources (reports, research, case studies)
-6. **Scores**: Honest, balanced assessment
-7. **Tags**: 2-5 relevant tags
-
-💡 Make Ideas:
-- Practical and actionable
-- Genuinely valuable to the target audience
-- Different from existing content
-- High viral/engagement potential
-
-⚠️ CRITICAL JSON FORMAT REQUIREMENTS:
-1. Return ONLY valid JSON - no markdown, no code blocks, no explanations, no text before/after
-2. Start your response with [ or { - nothing else before it
-3. End your response with ] or } - nothing else after it
-4. Format: Return a JSON array directly: [{"idea_id":"...","one_liner":"...",...}, ...]
-5. Generate exactly ${count} complete ideas
-6. Ensure all JSON is properly closed with matching brackets
-
-Example format:
-[{"idea_id":"uuid-1","one_liner":"Title 1",...},{"idea_id":"uuid-2","one_liner":"Title 2",...}]
-
-Return ONLY the JSON array, nothing else.`;
+Return ONLY this JSON array. No extra keys, no wrapper object, no comments.`;
     }
 }
 
@@ -288,7 +226,9 @@ export class IdeaGenerator {
         // Default values
         const language = request.language || 'en';
         const temperature = request.temperature ?? 0.8; // Tương đối creative cho ideas
-        const count = request.count || 10;
+        // Giới hạn số lượng ideas để tránh JSON quá dài (chỉ 1–3 ý tưởng)
+        const requestedCount = request.count || 3;
+        const count = Math.min(Math.max(requestedCount, 1), 3); // 1–3 ideas
         
         console.log(`[IdeaGenerator] Generating ${count} ideas for:`, {
             persona: request.persona,
@@ -764,20 +704,23 @@ export class IdeaGenerator {
         // Generate ID nếu không có
         const idea_id = rawIdea?.idea_id || `idea-${randomUUID()}`;
         
-        // Normalize các fields
+        // Normalize các fields theo schema đơn giản (Cách A)
         const normalized: ContentIdea = {
             idea_id,
             one_liner: rawIdea?.one_liner || 'Untitled Idea',
-            angle: rawIdea?.angle || undefined,
-            personas: Array.isArray(rawIdea?.personas) 
-                ? rawIdea.personas.filter((p: any) => typeof p === 'string')
-                : [],
-            why_now: Array.isArray(rawIdea?.why_now)
-                ? rawIdea.why_now.filter((w: any) => typeof w === 'string')
-                : [],
-            evidence: this.normalizeEvidence(rawIdea?.evidence),
-            scores: this.normalizeScores(rawIdea?.scores),
-            status: rawIdea?.status || 'proposed',
+            description: rawIdea?.description || '',
+            // Các field còn lại set mặc định để tương thích DB/UI
+            angle: undefined,
+            personas: [],
+            why_now: [],
+            evidence: [],
+            scores: {
+                novelty: 3,
+                demand: 3,
+                fit: 3,
+                white_space: 3
+            },
+            status: 'proposed',
             tags: Array.isArray(rawIdea?.tags)
                 ? rawIdea.tags.filter((t: any) => typeof t === 'string')
                 : []
@@ -787,7 +730,12 @@ export class IdeaGenerator {
         if (!normalized.one_liner) {
             throw new Error('Missing one_liner');
         }
+        if (!normalized.description) {
+            // Nếu thiếu description, có thể copy từ one_liner để tránh rỗng
+            normalized.description = normalized.one_liner;
+        }
         
+        // Personas tối thiểu 1 phần tử, dùng nhãn chung
         if (normalized.personas.length === 0) {
             normalized.personas = ['General Audience'];
         }
