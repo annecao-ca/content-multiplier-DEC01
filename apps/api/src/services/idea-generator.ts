@@ -197,8 +197,12 @@ export class IdeaGenerator {
         let model = settings?.model;
         
         if (!provider || !apiKey) {
-            // Tự động chọn provider dựa trên API key có sẵn (priority: Gemini > OpenAI > Anthropic > DeepSeek)
-            if (process.env.GEMINI_API_KEY) {
+            // Tự động chọn provider dựa trên API key có sẵn (priority: DeepSeek > Gemini > OpenAI > Anthropic)
+            if (process.env.DEEPSEEK_API_KEY) {
+                provider = 'deepseek';
+                apiKey = process.env.DEEPSEEK_API_KEY;
+                model = model || 'deepseek-chat';
+            } else if (process.env.GEMINI_API_KEY) {
                 provider = 'gemini';
                 apiKey = process.env.GEMINI_API_KEY;
                 model = model || 'gemini-2.5-flash'; // Latest stable Gemini model (June 2025)
@@ -210,12 +214,8 @@ export class IdeaGenerator {
                 provider = 'anthropic';
                 apiKey = process.env.ANTHROPIC_API_KEY;
                 model = model || 'claude-3-5-sonnet-20241022';
-            } else if (process.env.DEEPSEEK_API_KEY) {
-                provider = 'deepseek';
-                apiKey = process.env.DEEPSEEK_API_KEY;
-                model = model || 'deepseek-chat';
             } else {
-                throw new Error('No API key configured. Please set GEMINI_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, or DEEPSEEK_API_KEY in .env file');
+                throw new Error('No API key configured. Please set DEEPSEEK_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY in .env file');
             }
         }
         
@@ -226,9 +226,9 @@ export class IdeaGenerator {
         // Default values
         const language = request.language || 'en';
         const temperature = request.temperature ?? 0.8; // Tương đối creative cho ideas
-        // Giới hạn số lượng ideas để tránh JSON quá dài (chỉ 1–3 ý tưởng)
-        const requestedCount = request.count || 3;
-        const count = Math.min(Math.max(requestedCount, 1), 3); // 1–3 ideas
+        // DeepSeek có max tokens cao (16,384) nên có thể generate 10 ideas dễ dàng
+        const requestedCount = request.count || 10;
+        const count = Math.min(Math.max(requestedCount, 1), 10); // 1–10 ideas
         
         console.log(`[IdeaGenerator] Generating ${count} ideas for:`, {
             persona: request.persona,

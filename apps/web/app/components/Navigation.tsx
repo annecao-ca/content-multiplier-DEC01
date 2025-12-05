@@ -12,6 +12,8 @@ export default function Navigation() {
         { href: '/dashboard', label: 'Dashboard', description: 'Overview' },
         { href: '/ideas', label: 'Ideas', description: 'Generate ideas' },
         { href: '/briefs', label: 'Briefs', description: 'Research' },
+        // RAG Documents / Knowledge Base
+        { href: '/documents', label: 'RAG', description: 'Documents & Search' },
         { href: '/packs', label: 'Content', description: 'Create & manage' },
         { href: '/analytics', label: 'Analytics', description: 'Metrics' },
         { href: '/settings', label: 'Settings', description: 'Configure' }

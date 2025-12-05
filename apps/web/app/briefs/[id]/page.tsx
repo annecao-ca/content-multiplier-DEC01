@@ -3,32 +3,91 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
+// API URL - backend running on port 3001
+const API_URL = 'http://localhost:3001';
+
 export default function BriefDetailPage() {
     const params = useParams()
     const router = useRouter()
     const [brief, setBrief] = useState<any>(null)
     const [loading, setLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
     async function loadBrief() {
-        const r = await fetch(`/api/briefs/${params.id}`)
-        setBrief(await r.json())
+        try {
+            const r = await fetch(`${API_URL}/api/briefs/${params.id}`)
+            if (!r.ok) {
+                throw new Error('Failed to load brief')
+            }
+            const data = await r.json()
+            setBrief(data)
+        } catch (err: any) {
+            console.error('Error loading brief:', err)
+            setError(err.message || 'Failed to load brief')
+        }
     }
 
     async function approveBrief() {
         setLoading(true)
-        await fetch(`/api/briefs/${params.id}/approve`, { method: 'POST' })
-        setLoading(false)
-        router.push(`/packs/new?brief_id=${params.id}`)
+        setError(null)
+        try {
+            const r = await fetch(`${API_URL}/api/briefs/${params.id}/approve`, { method: 'POST' })
+            if (!r.ok) {
+                throw new Error('Failed to approve brief')
+            }
+            router.push(`/packs/new?brief_id=${params.id}`)
+        } catch (err: any) {
+            console.error('Error approving brief:', err)
+            setError(err.message || 'Failed to approve brief')
+        } finally {
+            setLoading(false)
+        }
     }
 
     useEffect(() => { loadBrief() }, [])
 
-    if (!brief) return <p>Loading...</p>
+    if (error) {
+        return (
+            <main style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+                <Link href="/briefs" style={{ color: '#3b82f6', textDecoration: 'none' }}>← Back to Briefs</Link>
+                <div style={{
+                    marginTop: '2rem',
+                    background: '#fee2e2',
+                    border: '1px solid #ef4444',
+                    borderRadius: '8px',
+                    padding: '2rem',
+                    color: '#991b1b'
+                }}>
+                    <h2 style={{ margin: '0 0 1rem 0' }}>❌ Error Loading Brief</h2>
+                    <p>{error}</p>
+                </div>
+            </main>
+        )
+    }
+
+    if (!brief) {
+        return (
+            <main style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+                <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏳</div>
+                    <p style={{ color: '#6b7280', fontSize: '1.1rem' }}>Loading brief...</p>
+                </div>
+            </main>
+        )
+    }
 
     return (
-        <main>
-            <h1>Brief Details</h1>
-            <Link href="/briefs">← Back to Briefs</Link>
+        <main style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+            <Link href="/briefs" style={{ 
+                color: '#3b82f6', 
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                fontWeight: '600'
+            }}>← Back to Briefs</Link>
+            
+            <h1 style={{ marginTop: '1.5rem', marginBottom: '0.5rem' }}>Brief Details</h1>
 
             <div style={{ marginTop: '2rem' }}>
                 <h2>Key Points</h2>

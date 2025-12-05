@@ -32,10 +32,13 @@ const app = Fastify({
 // Register CORS plugin
 await app.register(cors, {
     origin: [
+        // Local development frontends
         'http://localhost:3000',
-        'https://*.pages.dev', // Cloudflare Pages preview URLs
-        'https://content-multiplier.pages.dev', // Your Cloudflare Pages domain
-        /\.pages\.dev$/, // All Cloudflare Pages domains
+        'http://localhost:3002',
+        // Cloudflare Pages preview URLs
+        'https://*.pages.dev',
+        'https://content-multiplier.pages.dev',
+        /\.pages\.dev$/,
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']

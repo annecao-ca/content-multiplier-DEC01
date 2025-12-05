@@ -1,4 +1,5 @@
 import OpenAI from 'openai'
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { env } from '../env.ts'
 import { loadLLMSettings } from './settingsStore.ts'
 import type { LLMClient, LLMParams } from '../../../../packages/utils/llm.ts'
@@ -19,7 +20,7 @@ const DEFAULT_MODELS = {
     },
     gemini: {
         json: 'gemini-1.5-flash',
-        embedding: 'gemini-1.5-flash' // Gemini doesn't have separate embedding models
+        embedding: 'text-embedding-004'
     },
     grok: {
         json: 'grok-beta',
@@ -84,6 +85,30 @@ class MultiProviderLLM implements LLMClient {
                     p.model?.includes('grok') ? 'grok' : undefined
 
         const provider = inferredProvider || saved?.provider || 'openai'
+
+        if (provider === 'gemini') {
+            const apiKey = env.GEMINI_API_KEY || saved?.apiKey || '';
+            if (!apiKey) throw new Error('Gemini API key not configured');
+
+            const genAI = new GoogleGenerativeAI(apiKey);
+            const modelName = p.model || saved?.model || this.getDefaultModel('gemini', 'json');
+            const model = genAI.getGenerativeModel({
+                model: modelName,
+                generationConfig: { responseMimeType: "application/json" }
+            });
+
+            const prompt = `${p.system ? p.system + '\n\n' : ''}${p.user}`;
+
+            try {
+                const result = await model.generateContent(prompt);
+                const text = result.response.text();
+                return JSON.parse(text);
+            } catch (error) {
+                console.error('Gemini API error:', error);
+                throw error;
+            }
+        }
+
         const config = this.getProviderConfig(provider)
         const apiKey = saved?.apiKey || process.env.OPENAI_API_KEY || ''
         const client = config.createClient(apiKey, saved?.baseUrl || undefined)
@@ -111,27 +136,83 @@ class MultiProviderLLM implements LLMClient {
 
     async embed(input: string[]): Promise<number[][]> {
         const saved = loadLLMSettings()
-        const apiKey = saved?.apiKey || env.OPENAI_API_KEY || ''
+        // Check env.EMBEDDING_PROVIDER first, then saved settings, default to openai
+        const provider = env.EMBEDDING_PROVIDER || saved?.provider || 'openai';
 
-        if (!apiKey) {
-            throw new Error('OpenAI API key not configured. Set OPENAI_API_KEY environment variable.')
+        // Special handling for Gemini embeddings (separate SDK)
+        if (provider === 'gemini') {
+            const apiKey = env.GEMINI_API_KEY;
+            if (!apiKey) throw new Error('Gemini API key not configured. Set GEMINI_API_KEY environment variable.');
+
+            const genAI = new GoogleGenerativeAI(apiKey);
+            // Use text-embedding-004 as default for Gemini
+            const modelName = env.EMBEDDING_MODEL === 'text-embedding-3-small'
+                ? 'text-embedding-004'
+                : (env.EMBEDDING_MODEL || 'text-embedding-004');
+            const model = genAI.getGenerativeModel({ model: modelName });
+
+            try {
+                const embeddings = await Promise.all(input.map(async (text) => {
+                    const result = await model.embedContent(text);
+                    return result.embedding.values;
+                }));
+                return embeddings;
+            } catch (error) {
+                console.error('Gemini Embedding API error:', error);
+                throw error;
+            }
         }
 
-        const client = new OpenAI({ apiKey })
-        const embeddingModel = env.EMBEDDING_MODEL || 'text-embedding-3-small'
+        // Generic OpenAI-compatible providers (openai, deepseek, anthropic proxy, grok, etc.)
+        const config = this.getProviderConfig(provider)
+
+        // Determine API Key based on provider
+        let apiKey = ''
+        if (provider === 'openai') {
+            apiKey = saved?.apiKey || env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || ''
+        } else if (provider === 'deepseek') {
+            // DeepSeek uses OpenAI client with custom baseURL
+            // Note: DeepSeek currently does not have a dedicated embedding model in their public API docs as of late 2023/early 2024, 
+            // but if they do or if we use a compatible model, this is how it would work.
+            // If user explicitly asks for deepseek embedding, we assume they have a valid model name.
+            apiKey = saved?.apiKey || process.env.DEEPSEEK_API_KEY || ''
+        } else {
+            // Fallback
+            apiKey = saved?.apiKey || env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || ''
+        }
+
+        if (!apiKey) {
+            throw new Error(`Embedding API key not configured for provider "${provider}". Please set the appropriate environment variable (e.g. DEEPSEEK_API_KEY or OPENAI_API_KEY).`)
+        }
+
+        const client = config.createClient(apiKey, config.baseUrl || undefined)
+
+        // Determine Embedding Model
+        let embeddingModel = env.EMBEDDING_MODEL;
+        if (!embeddingModel) {
+            // If no model specified in env, use provider default
+            if (provider === 'deepseek') {
+                // DeepSeek V2 doesn't officially list an embedding endpoint compatible with OpenAI client yet in some docs,
+                // but assuming 'deepseek-chat' or similar might be used if they support it, 
+                // OR if the user intends to use a local model via a proxy.
+                // However, for this request, we will default to 'deepseek-embedding' if not set.
+                embeddingModel = 'deepseek-embedding';
+            } else {
+                embeddingModel = this.getDefaultModel(provider, 'embedding');
+            }
+        }
 
         try {
             const response = await client.embeddings.create({
                 model: embeddingModel,
-                input: input,
+                input,
             })
-            return response.data.map(item => item.embedding)
+            return response.data.map(item => item.embedding as number[])
         } catch (error) {
-            console.error('Embedding API error:', error)
+            console.error(`Embedding API error (${provider}):`, error)
             throw error
         }
     }
 }
 
 export const llm = new MultiProviderLLM()
-

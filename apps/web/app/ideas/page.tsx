@@ -42,8 +42,8 @@ export default function IdeasPage() {
     const [persona, setPersona] = useState('Marketing Manager at B2B SaaS');
     const [industry, setIndustry] = useState('SaaS');
     const [corpusHints, setCorpusHints] = useState('');
-    // Giới hạn UI: 1–3 ideas để tránh JSON quá dài
-    const [count, setCount] = useState(3);
+    // DeepSeek hỗ trợ generate 10 ideas dễ dàng với max tokens 16,384
+    const [count, setCount] = useState(10);
     const [temperature, setTemperature] = useState(0.8);
     
     const [selectedCount, setSelectedCount] = useState(0);
@@ -83,6 +83,20 @@ export default function IdeasPage() {
         setSuccess(null);
         
         try {
+            // Kiểm tra kết nối backend trước
+            try {
+                const healthCheck = await fetch(`${API_URL}/api/health`, { 
+                    method: 'GET',
+                    signal: AbortSignal.timeout(3000) // 3s timeout
+                });
+                if (!healthCheck.ok) {
+                    throw new Error(`Backend health check failed: ${healthCheck.status}`);
+                }
+            } catch (healthError: any) {
+                console.error('[Ideas] Backend health check failed:', healthError);
+                throw new Error(`Cannot connect to backend server at ${API_URL}. Please ensure the API server is running on port 3001.`);
+            }
+
         const r = await fetch(`${API_URL}/api/ideas/generate`, {
             method: 'POST',
             headers: { 
@@ -97,14 +111,22 @@ export default function IdeasPage() {
                     corpus_hints: corpusHints.trim(),
                     count: count,
                     temperature: temperature
-            })
+                }),
+                signal: AbortSignal.timeout(120000) // 2 minutes timeout cho AI generation
         });
             
-            const data = await r.json();
-            
             if (!r.ok) {
-                throw new Error(data.error || 'Failed to generate ideas');
+                let errorMessage = `Server error: ${r.status} ${r.statusText}`;
+                try {
+                    const errorData = await r.json();
+                    errorMessage = errorData.error || errorData.message || errorMessage;
+                } catch {
+                    // Nếu không parse được JSON, dùng status text
+                }
+                throw new Error(errorMessage);
             }
+            
+            const data = await r.json();
             
             // Response từ API: data.ideas (mỗi phần tử theo ContentIdea đơn giản)
             const serverIdeas = Array.isArray(data.ideas) ? data.ideas : [];
@@ -144,7 +166,20 @@ export default function IdeasPage() {
             setTimeout(() => setSuccess(null), 5000);
             
         } catch (err: any) {
-            setError(err.message || 'An error occurred while generating ideas');
+            console.error('[Ideas] Generation error:', err);
+            
+            // Xử lý các loại lỗi khác nhau
+            let errorMessage = 'An error occurred while generating ideas';
+            
+            if (err.name === 'AbortError' || err.message?.includes('timeout')) {
+                errorMessage = 'Request timed out. The AI generation is taking longer than expected. Please try again.';
+            } else if (err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError')) {
+                errorMessage = `Cannot connect to backend server at ${API_URL}. Please ensure:\n1. The API server is running on port 3001\n2. Check the browser console for more details`;
+            } else if (err.message) {
+                errorMessage = err.message;
+            }
+            
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -450,7 +485,7 @@ export default function IdeasPage() {
                         <input
                             type="range"
                             min={1}
-                            max={3}
+                            max={10}
                             value={count}
                             onChange={(e) => setCount(Number(e.target.value))}
                             disabled={loading}
@@ -461,7 +496,7 @@ export default function IdeasPage() {
                             }}
                         />
                         <div style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-                            Recommended: 10 ideas
+                            Using DeepSeek API (max: 10 ideas)
                         </div>
                     </div>
                     

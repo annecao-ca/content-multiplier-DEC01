@@ -4,6 +4,9 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import Button from '../components/Button'
 
+// API URL - backend running on port 3001
+const API_URL = 'http://localhost:3001';
+
 interface ContentPack {
     pack_id: string
     status: string
@@ -22,7 +25,10 @@ function PacksContent() {
 
     async function loadPacks() {
         try {
-            const res = await fetch('/api/packs')
+            const res = await fetch(`${API_URL}/api/packs`)
+            if (!res.ok) {
+                throw new Error('Failed to fetch packs')
+            }
             const data = await res.json()
             // Ensure we always have an array, even if the API returns an error or unexpected data
             if (Array.isArray(data)) {

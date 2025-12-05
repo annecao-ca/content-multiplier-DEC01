@@ -6,6 +6,11 @@ import RichTextEditor from '../../components/RichTextEditor'
 import { useLanguage } from '../../contexts/LanguageContext'
 import Button from '../../components/Button'
 import PublishingPanel from '../../components/PublishingPanel'
+import { ParsedContentWithCitations } from '../../components/InlineCitation'
+import { Footnotes } from '../../components/Footnotes'
+
+// API URL - backend running on port 3001
+const API_URL = 'http://localhost:3001';
 
 const EditorModal = ({ title, content, onSave, onClose }: {
     title: string
@@ -84,28 +89,35 @@ export default function PackDetailPage() {
     const [activeEditor, setActiveEditor] = useState<string | null>(null)
 
     async function loadPack() {
-        const r = await fetch(`/api/packs/${params.id}`)
-        const data = await r.json()
-        setPack(data)
-        console.log('Loaded draft_markdown:', data.draft_markdown?.substring(0, 200) + '...')
-        setEditedDraft(data.draft_markdown || '')
-        setEditedNewsletter(typeof data.derivatives?.newsletter === 'string'
-            ? data.derivatives.newsletter
-            : JSON.stringify(data.derivatives?.newsletter || ''))
-        const linkedin = Array.isArray(data.derivatives?.linkedin)
-            ? data.derivatives.linkedin.map((p: any) => typeof p === 'string' ? p : JSON.stringify(p))
-            : []
-        const x = Array.isArray(data.derivatives?.x)
-            ? data.derivatives.x.map((p: any) => typeof p === 'string' ? p : JSON.stringify(p))
-            : []
+        try {
+            const r = await fetch(`${API_URL}/api/packs/${params.id}`)
+            if (!r.ok) throw new Error('Failed to load pack')
+            const data = await r.json()
+            setPack(data)
+            
+            // Process data after successful fetch
+            console.log('Loaded draft_markdown:', data.draft_markdown?.substring(0, 200) + '...')
+            setEditedDraft(data.draft_markdown || '')
+            setEditedNewsletter(typeof data.derivatives?.newsletter === 'string'
+                ? data.derivatives.newsletter
+                : JSON.stringify(data.derivatives?.newsletter || ''))
+            const linkedin = Array.isArray(data.derivatives?.linkedin)
+                ? data.derivatives.linkedin.map((p: any) => typeof p === 'string' ? p : JSON.stringify(p))
+                : []
+            const x = Array.isArray(data.derivatives?.x)
+                ? data.derivatives.x.map((p: any) => typeof p === 'string' ? p : JSON.stringify(p))
+                : []
 
-        // Initialize with 3 empty posts if none exist
-        const linkedInPosts = linkedin.length >= 3 ? linkedin : [...linkedin, ...Array(3 - linkedin.length).fill('')]
-        const xPosts = x.length >= 3 ? x : [...x, ...Array(3 - x.length).fill('')]
+            // Initialize with 3 empty posts if none exist
+            const linkedInPosts = linkedin.length >= 3 ? linkedin : [...linkedin, ...Array(3 - linkedin.length).fill('')]
+            const xPosts = x.length >= 3 ? x : [...x, ...Array(3 - x.length).fill('')]
 
-        setEditedLinkedIn(linkedInPosts)
-        setEditedX(xPosts)
-        setEditedSEO(data.seo || { title: '', description: '', keywords: [] })
+            setEditedLinkedIn(linkedInPosts)
+            setEditedX(xPosts)
+            setEditedSEO(data.seo || { title: '', description: '', keywords: [] })
+        } catch (err) {
+            console.error('Error loading pack:', err)
+        }
     }
 
     async function saveEdits() {
@@ -130,7 +142,7 @@ export default function PackDetailPage() {
             updates.seo = editedSEO
         }
 
-        await fetch(`/api/packs/${params.id}`, {
+        await fetch(`${API_URL}/api/packs/${params.id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updates)
@@ -145,7 +157,7 @@ export default function PackDetailPage() {
     async function generateDerivatives() {
         setLoading(true)
         try {
-            const res = await fetch('/api/packs/derivatives', {
+            const res = await fetch(`${API_URL}/api/packs/derivatives`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ pack_id: params.id, language: language })
@@ -176,7 +188,7 @@ export default function PackDetailPage() {
         setLoading(true)
         try {
             console.log('Attempting to publish pack:', params.id)
-            const res = await fetch('/api/packs/publish', {
+            const res = await fetch(`${API_URL}/api/packs/publish`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ pack_id: params.id })
@@ -243,9 +255,40 @@ export default function PackDetailPage() {
                     packId={pack.pack_id}
                 />
             ) : (
-                <pre style={{ whiteSpace: 'pre-wrap', background: '#f5f5f5', padding: '1rem' }}>
-                    {pack.draft_markdown?.slice(0, 500)}...
-                </pre>
+                <div
+                    style={{
+                        whiteSpace: 'pre-wrap',
+                        background: '#f5f5f5',
+                        padding: '1.25rem',
+                        borderRadius: '8px',
+                        border: '1px solid #e5e7eb',
+                        lineHeight: 1.7,
+                    }}
+                >
+                    <ParsedContentWithCitations
+                        content={pack.draft_markdown || ''}
+                        sources={(Array.isArray(pack.claims_ledger) ? pack.claims_ledger : []).map((claim: any, index: number) => ({
+                            id: index + 1,
+                            title: claim.claim || `Source ${index + 1}`,
+                            snippet: claim.snippet || claim.claim || '',
+                            url: Array.isArray(claim.sources) && claim.sources.length > 0 ? claim.sources[0].url : undefined,
+                        }))}
+                    />
+                </div>
+            )}
+
+            {/* Footnotes for citations */}
+            {Array.isArray(pack.claims_ledger) && pack.claims_ledger.length > 0 && !isEditing && (
+                <div style={{ marginTop: '1.5rem' }}>
+                    <Footnotes
+                        sources={pack.claims_ledger.map((claim: any, index: number) => ({
+                            id: index + 1,
+                            title: claim.claim || `Source ${index + 1}`,
+                            snippet: claim.snippet || claim.claim || '',
+                            url: Array.isArray(claim.sources) && claim.sources.length > 0 ? claim.sources[0].url : undefined,
+                        }))}
+                    />
+                </div>
             )}
 
             <Button style={{ marginTop: '1rem' }} onClick={() => isEditing ? saveEdits() : setIsEditing(true)} disabled={loading}>

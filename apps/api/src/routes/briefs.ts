@@ -54,14 +54,65 @@ const routes: FastifyPluginAsync = async (app) => {
     });
 
     app.post('/generate', async (req: any) => {
-        const { brief_id, idea_id, query, language = 'en' } = req.body;
-        let snippets = []
+        const { brief_id, idea_id, query, language = 'en', topK = 8, minSimilarity = 0.7 } = req.body;
+        
+        // Truy vấn RAG bằng cosine similarity
+        let snippets = [];
+        let ragMetadata = {
+            totalResults: 0,
+            averageScore: 0,
+            highConfidenceResults: 0
+        };
+        
         try {
-            const hits = await retrieve(query, 8, llm.embed);
-            snippets = hits.map((h: any) => ({ url: `doc:${h.doc_id}`, quote: h.content.slice(0, 300) }));
-        } catch (err) {
-            console.log('RAG retrieval skipped (no docs):', err)
-            snippets = [{ url: 'placeholder', quote: 'No knowledge base documents available' }]
+            console.log(`[Brief] Querying RAG with: "${query}" (topK: ${topK}, minSimilarity: ${minSimilarity})`);
+            const hits = await retrieve(query, topK, llm.embed);
+            
+            if (hits && hits.length > 0) {
+                // Lọc theo similarity score và format snippets
+                const filteredHits = hits.filter((h: any) => {
+                    const score = parseFloat(h.score) || 0;
+                    return score >= minSimilarity;
+                });
+                
+                snippets = filteredHits.map((h: any) => {
+                    const score = parseFloat(h.score) || 0;
+                    return {
+                        url: h.url || `doc:${h.doc_id}`,
+                        quote: h.content.slice(0, 400), // Tăng độ dài quote
+                        title: h.title || 'Untitled',
+                        author: h.author || null,
+                        similarity: score,
+                        doc_id: h.doc_id
+                    };
+                });
+                
+                // Tính toán metadata
+                const scores = filteredHits.map((h: any) => parseFloat(h.score) || 0);
+                ragMetadata = {
+                    totalResults: filteredHits.length,
+                    averageScore: scores.length > 0 
+                        ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length 
+                        : 0,
+                    highConfidenceResults: scores.filter((s: number) => s >= 0.8).length
+                };
+                
+                console.log(`[Brief] RAG results: ${filteredHits.length} hits (avg score: ${ragMetadata.averageScore.toFixed(3)})`);
+            } else {
+                console.log('[Brief] No RAG results found');
+                snippets = [{ 
+                    url: 'placeholder', 
+                    quote: 'No relevant documents found in knowledge base',
+                    similarity: 0
+                }];
+            }
+        } catch (err: any) {
+            console.log('[Brief] RAG retrieval failed:', err.message);
+            snippets = [{ 
+                url: 'placeholder', 
+                quote: 'RAG retrieval unavailable. Proceeding without knowledge base context.',
+                similarity: 0
+            }];
         }
 
         const contentSchema = {
@@ -76,12 +127,26 @@ const routes: FastifyPluginAsync = async (app) => {
         }
 
         const system = language === 'vn'
-            ? 'Bạn là một nhà nghiên cứu. Xây dựng một bản tóm tắt với dàn ý và sổ cái tuyên bố. Định dạng: {"key_points":[],"outline":[{h2:"",bullets:[]}],"claims_ledger":[{claim:"",sources:[{url:""}]}]}'
-            : 'You are a researcher. Build a brief with outline and a claims_ledger. Format: {"key_points":[],"outline":[{h2:"",bullets:[]}],"claims_ledger":[{claim:"",sources:[{url:""}]}]}';
+            ? 'Bạn là một nhà nghiên cứu. Xây dựng một bản tóm tắt với dàn ý và sổ cái tuyên bố. Mỗi tuyên bố phải có nguồn từ bằng chứng RAG (sử dụng similarity score cao nhất). Định dạng: {"key_points":[],"outline":[{h2:"",bullets:[]}],"claims_ledger":[{claim:"",sources:[{url:""}]}]}'
+            : 'You are a researcher. Build a brief with outline and a claims_ledger. Every claim must cite sources from the RAG evidence (prefer higher similarity scores). Format: {"key_points":[],"outline":[{h2:"",bullets:[]}],"claims_ledger":[{claim:"",sources:[{url:""}]}]}';
+
+        // Format evidence với similarity scores để LLM biết độ tin cậy
+        const evidenceText = snippets.length > 0
+            ? snippets
+                .sort((a: any, b: any) => (b.similarity || 0) - (a.similarity || 0)) // Sắp xếp theo similarity cao nhất
+                .map((s: any, idx: number) => {
+                    const similarityLabel = s.similarity 
+                        ? `[Similarity: ${(s.similarity * 100).toFixed(1)}%]` 
+                        : '';
+                    const sourceInfo = s.title ? `\nSource: ${s.title}${s.author ? ` by ${s.author}` : ''}` : '';
+                    return `${idx + 1}. ${similarityLabel}${sourceInfo}\n   "${s.quote}"\n   URL: ${s.url}`;
+                })
+                .join('\n\n')
+            : 'No evidence available from knowledge base.';
 
         const user = language === 'vn'
-            ? `Chủ đề: ${query}\nÝ tưởng: ${idea_id}\nBằng chứng:\n${JSON.stringify(snippets, null, 2)}\n\nTạo một bản tóm tắt nghiên cứu ở định dạng JSON.`
-            : `Topic: ${query}\nIdea: ${idea_id}\nEvidence:\n${JSON.stringify(snippets, null, 2)}\n\nCreate a research brief in JSON format.`;
+            ? `Chủ đề nghiên cứu: ${query}\nÝ tưởng ID: ${idea_id}\n\nBằng chứng từ RAG (đã sắp xếp theo độ tương đồng cosine similarity):\n${evidenceText}\n\nThống kê RAG: ${ragMetadata.totalResults} kết quả, điểm trung bình: ${(ragMetadata.averageScore * 100).toFixed(1)}%, kết quả độ tin cậy cao (≥80%): ${ragMetadata.highConfidenceResults}\n\nYêu cầu:\n1. Sử dụng bằng chứng RAG có similarity score cao để xây dựng claims_ledger\n2. Mỗi claim phải có ít nhất 1 source từ bằng chứng trên\n3. Ưu tiên sử dụng các snippet có similarity ≥ 0.8\n4. Tạo một bản tóm tắt nghiên cứu chi tiết ở định dạng JSON.`
+            : `Research Topic: ${query}\nIdea ID: ${idea_id}\n\nRAG Evidence (sorted by cosine similarity score):\n${evidenceText}\n\nRAG Statistics: ${ragMetadata.totalResults} results, average score: ${(ragMetadata.averageScore * 100).toFixed(1)}%, high confidence (≥80%): ${ragMetadata.highConfidenceResults}\n\nRequirements:\n1. Use high similarity RAG evidence to build claims_ledger\n2. Each claim must cite at least 1 source from the evidence above\n3. Prefer snippets with similarity ≥ 0.8\n4. Create a detailed research brief in JSON format.`;
         
         let brief;
         try {
@@ -140,13 +205,20 @@ const routes: FastifyPluginAsync = async (app) => {
             console.warn('Failed to log brief.created event (ignored):', logError.message);
         }
         
-        // Return brief with metadata
+        // Return brief with metadata including RAG information
         return {
             ok: true,
             brief: {
                 brief_id,
                 idea_id,
                 ...brief
+            },
+            rag: {
+                query,
+                results: ragMetadata.totalResults,
+                averageSimilarity: ragMetadata.averageScore,
+                highConfidenceCount: ragMetadata.highConfidenceResults,
+                evidenceUsed: snippets.length
             }
         };
     });
