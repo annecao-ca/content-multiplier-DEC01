@@ -1,5 +1,18 @@
 # Project Memory - Content Multiplier / RAG Pipeline
 
+> **Cập nhật lần cuối**: 2025-01-XX  
+> **GitHub Repo**: https://github.com/annecao-ca/content-multiplier-DEC01  
+> **Trạng thái**: ✅ RAG Pipeline hoàn chỉnh với multi-provider embedding support (OpenAI, DeepSeek, Gemini)
+
+## Tóm tắt tính năng chính
+- ✅ **RAG Pipeline hoàn chỉnh**: Ingest documents với metadata, chunking, embedding, similarity search
+- ✅ **Multi-provider Embedding**: Hỗ trợ OpenAI, DeepSeek, Gemini, Cohere, HuggingFace
+- ✅ **Document Management UI**: Upload, form nhập tay, search với filters, stats dashboard
+- ✅ **Inline Citations & Footnotes**: Hiển thị citations trong draft với tooltips và footnotes
+- ✅ **Database Schema**: PostgreSQL + pgvector với migrations đầy đủ
+- ✅ **Document Versioning**: Hỗ trợ versioning cho documents
+- ✅ **Test Scripts**: Scripts test cho RAG pipeline, DeepSeek embedding, document API
+
 ## RAG & Documents (hiện tại)
 - Đã mở rộng schema `documents` với metadata:
   - `author TEXT`, `published_date TIMESTAMPTZ`, `tags TEXT[]`, `description TEXT`, `embedding vector(1536)`, `updated_at TIMESTAMPTZ`.
@@ -8,10 +21,11 @@
 - Endpoint `POST /api/rag/ingest`:
   - Nhận metadata (author, published_date, tags, description, url, title).
   - Chunking token-based (hoặc fallback character-based).
-  - Gọi OpenAI embedding (text-embedding-3-small) để tạo:
+  - Gọi embedding API (tự động dùng provider từ `EMBEDDING_PROVIDER`, mặc định OpenAI) để tạo:
     - Embedding cho từng chunk (lưu vào `doc_chunks.embedding`).
     - Embedding cho toàn bộ document (lưu `documents.embedding`).
   - Lưu/ cập nhật document + metadata + embeddings.
+  - Hỗ trợ multi-provider: OpenAI, DeepSeek, Gemini, Cohere, HuggingFace (cấu hình qua env vars).
 - Endpoint `POST /api/rag/search`:
   - `searchType = "chunks"`: search trên `doc_chunks` + join `documents`.
   - `searchType = "documents"`: dùng `retrieveDocuments()` search trên `documents.embedding`.
@@ -56,13 +70,53 @@
   - `MIGRATION_GUIDE.md`
   - `query-documents-by-similarity.sql`
 
+## Multi-Provider Embedding Support (DeepSeek, OpenAI, Gemini, etc.)
+- Đã tích hợp hỗ trợ nhiều embedding providers:
+  - **OpenAI**: `text-embedding-3-small` (dim = 1536) - mặc định
+  - **DeepSeek**: `deepseek-embedding` hoặc `deepseek-chat` (OpenAI-compatible endpoint tại `https://api.deepseek.com`)
+  - **Gemini**: `text-embedding-004` (qua GoogleGenerativeAI SDK)
+  - **Cohere**: `embed-english-v3.0` (cấu hình sẵn, chưa test)
+  - **HuggingFace**: `sentence-transformers/all-MiniLM-L6-v2` (cấu hình sẵn, chưa test)
+- Cấu hình qua biến môi trường:
+  - `EMBEDDING_PROVIDER`: `'openai' | 'deepseek' | 'gemini' | 'cohere' | 'huggingface'` (default: `'openai'`)
+  - `DEEPSEEK_API_KEY`: API key cho DeepSeek (nếu dùng DeepSeek)
+  - `GEMINI_API_KEY`: API key cho Gemini (nếu dùng Gemini)
+  - `EMBEDDING_MODEL`: Model name cụ thể (override default của provider)
+- Implementation:
+  - `apps/api/src/services/llm.ts`: Class `MultiProviderLLM` với method `embed()` tự động detect provider từ `env.EMBEDDING_PROVIDER`
+  - DeepSeek dùng OpenAI client với `baseURL: 'https://api.deepseek.com'`
+  - Gemini dùng `GoogleGenerativeAI` SDK riêng
+- Test script: `test-deepseek-embedding.ts` - test trực tiếp DeepSeek embedding API
+
 ## Lưu ý kỹ thuật
 - API base cho frontend: `NEXT_PUBLIC_API_URL` (default `http://localhost:3001`).
 - Đã thêm CORS cho:
   - `http://localhost:3000`
   - `http://localhost:3002`
-- Embedding model: `text-embedding-3-small` (dim = 1536).
-- Đảm bảo `OPENAI_API_KEY` (hoặc provider tương ứng) được set trong `.env`.
+- Embedding model mặc định: `text-embedding-3-small` (dim = 1536) - có thể đổi qua `EMBEDDING_PROVIDER` và `EMBEDDING_MODEL`.
+- Đảm bảo API key tương ứng được set trong `.env`:
+  - `OPENAI_API_KEY` (nếu dùng OpenAI)
+  - `DEEPSEEK_API_KEY` (nếu dùng DeepSeek)
+  - `GEMINI_API_KEY` (nếu dùng Gemini)
 
+## GitHub Repository
+- Code đã được push lên: **https://github.com/annecao-ca/content-multiplier-DEC01**
+- Branch: `main`
+- Commit mới nhất: "feat: Complete RAG pipeline with DeepSeek embedding support"
+- Tổng cộng: 105 files changed, 20,232 insertions(+)
+- File `.env` đã được `.gitignore` loại trừ (an toàn cho secrets)
+
+## Files & Scripts mới
+- Test scripts:
+  - `test-deepseek-embedding.ts`: Test DeepSeek embedding model trực tiếp
+  - `test-deepseek.ts`: Test DeepSeek API key và chat completions
+  - `test-rag-pipeline.sh`: Test toàn bộ RAG pipeline (ingest + search với filters)
+- Migration scripts:
+  - `run-migration-010.sh`: Chạy migration `010_extend_documents_metadata.sql`
+  - `run-migrations.sh`: Chạy tất cả migrations theo thứ tự
+- Documentation:
+  - `DEEPSEEK_SETUP_COMPLETE.md`: Hướng dẫn setup DeepSeek
+  - `DEEPSEEK_TEST_RESULT.md`: Kết quả test DeepSeek
+  - `memory.md`: File này - tổng hợp tất cả những gì đã làm
 
 
