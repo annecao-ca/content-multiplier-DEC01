@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { useLanguage } from '../contexts/LanguageContext'
+import { ThemeToggle } from '../components/ui'
 
 export default function Navigation() {
     const pathname = usePathname()
@@ -108,6 +109,9 @@ export default function Navigation() {
                 gap: '1rem',
                 alignItems: 'center'
             }}>
+                {/* Theme Toggle */}
+                <ThemeToggle />
+                
                 {/* Language Toggle */}
                 <div style={{
                     display: 'flex',

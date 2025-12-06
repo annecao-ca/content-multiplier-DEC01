@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Button from '../components/Button'
+import { useToast, ConfirmModal } from '../components/ui'
 
 interface LLMConfig {
     provider: 'openai' | 'deepseek' | 'anthropic' | 'gemini' | 'grok'
@@ -56,6 +57,8 @@ export default function SettingsPage() {
     const [message, setMessage] = useState('')
     const [prompt, setPrompt] = useState('Write a short haiku about content strategies.')
     const [running, setRunning] = useState(false)
+    const [resetModalOpen, setResetModalOpen] = useState(false)
+    const toast = useToast()
 
     useEffect(() => {
         loadConfig()
@@ -86,12 +89,16 @@ export default function SettingsPage() {
 
             if (response.ok) {
                 setMessage('✅ Settings saved successfully!')
+                toast.success('Settings saved successfully!')
             } else {
                 const error = await response.json()
-                setMessage(`❌ Error: ${error.error}`)
+                const errorMsg = `Error: ${error.error}`
+                setMessage(`❌ ${errorMsg}`)
+                toast.error('Failed to save settings', error.error)
             }
         } catch (error) {
             setMessage('❌ Failed to save settings')
+            toast.error('Failed to save settings')
         }
 
         setSaving(false)
@@ -114,13 +121,18 @@ export default function SettingsPage() {
 
             if (response.ok) {
                 const result = await response.json()
-                setMessage(`✅ ${result.provider} connected successfully!`)
+                const successMsg = `${result.provider} connected successfully!`
+                setMessage(`✅ ${successMsg}`)
+                toast.success(successMsg)
             } else {
                 const error = await response.json()
-                setMessage(`❌ Connection failed: ${error.error}`)
+                const errorMsg = `Connection failed: ${error.error}`
+                setMessage(`❌ ${errorMsg}`)
+                toast.error('Connection failed', error.error)
             }
         } catch (error) {
             setMessage('❌ Connection test failed')
+            toast.error('Connection test failed')
         }
 
         setSaving(false)

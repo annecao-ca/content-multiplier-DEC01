@@ -3,6 +3,8 @@ import { useEffect, useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import Button from '../components/Button'
+import { EmptyState, SkeletonList, Badge, useToast } from '../components/ui'
+import { Package } from 'lucide-react'
 
 // API URL - backend running on port 3001
 const API_URL = 'http://localhost:3001';
@@ -22,6 +24,7 @@ function PacksContent() {
     const [loading, setLoading] = useState(true)
     const searchParams = useSearchParams()
     const publishFilter = searchParams.get('filter') || 'all'
+    const toast = useToast()
 
     async function loadPacks() {
         try {
@@ -75,12 +78,7 @@ function PacksContent() {
     }
 
     if (loading) {
-        return (
-            <div style={{ textAlign: 'center', padding: '2rem' }}>
-                <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
-                <p>Loading content packs...</p>
-            </div>
-        )
+        return <SkeletonList type="packs" count={6} />
     }
 
     return (
@@ -170,47 +168,13 @@ function PacksContent() {
             </div>
 
             {filteredPacks.length === 0 ? (
-                <div style={{
-                    textAlign: 'center',
-                    padding: '4rem 2rem',
-                    background: 'white',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                    border: '1px solid #e2e8f0'
-                }}>
-                    <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📦</div>
-                    <h3 style={{ margin: '0 0 1rem 0', color: '#374151' }}>No Content Packs Yet</h3>
-                    <p style={{ color: '#6b7280', marginBottom: '2rem' }}>
-                        Start by creating your first content pack from an approved brief.
-                    </p>
-                    <Link
-                        href="/briefs"
-                        style={{
-                            background: '#2d3748',
-                            color: 'white',
-                            padding: '0.75rem 1.5rem',
-                            borderRadius: '8px',
-                            textDecoration: 'none',
-                            fontWeight: 'bold',
-                            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                            border: '1px solid rgba(0,0,0,0.2)',
-                            transition: 'all 0.2s ease',
-                            display: 'inline-block'
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.background = '#3b475e'
-                            e.currentTarget.style.transform = 'translateY(-2px)'
-                            e.currentTarget.style.boxShadow = '0 6px 25px rgba(0,0,0,0.4)'
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.background = '#2d3748'
-                            e.currentTarget.style.transform = 'translateY(0)'
-                            e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)'
-                        }}
-                    >
-                        Go to Briefs →
-                    </Link>
-                </div>
+                <EmptyState
+                    icon={Package}
+                    title="No Content Packs Yet"
+                    description="Start by creating your first content pack from an approved brief."
+                    actionLabel="Go to Briefs →"
+                    onAction={() => window.location.href = '/briefs'}
+                />
             ) : (
                 <div style={{
                     display: 'grid',
@@ -256,19 +220,16 @@ function PacksContent() {
                                     }}>
                                         Content Pack
                                     </h3>
-                                    <span style={{
-                                        background: getStatusColor(pack.status),
-                                        color: 'white',
-                                        padding: '0.25rem 0.75rem',
-                                        borderRadius: '20px',
-                                        fontSize: '0.8rem',
-                                        fontWeight: 'bold',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '0.25rem'
-                                    }}>
+                                    <Badge 
+                                        status={
+                                            pack.status === 'published' ? 'published' :
+                                            pack.status === 'draft' ? 'draft' :
+                                            pack.status === 'ready_for_review' ? 'review' :
+                                            'approved'
+                                        }
+                                    >
                                         {getStatusIcon(pack.status)} {pack.status.replace('_', ' ')}
-                                    </span>
+                                    </Badge>
                                 </div>
                                 <p style={{
                                     margin: 0,

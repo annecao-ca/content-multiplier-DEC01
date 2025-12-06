@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useToast, SkeletonList, ConfirmModal } from '../../components/ui'
 
 // API URL - backend running on port 3001
 const API_URL = 'http://localhost:3001';
@@ -11,7 +12,10 @@ export default function BriefDetailPage() {
     const router = useRouter()
     const [brief, setBrief] = useState<any>(null)
     const [loading, setLoading] = useState(false)
+    const [initialLoading, setInitialLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+    const toast = useToast()
 
     async function loadBrief() {
         try {
@@ -24,6 +28,9 @@ export default function BriefDetailPage() {
         } catch (err: any) {
             console.error('Error loading brief:', err)
             setError(err.message || 'Failed to load brief')
+            toast.error('Failed to load brief', err.message)
+        } finally {
+            setInitialLoading(false)
         }
     }
 
@@ -35,10 +42,13 @@ export default function BriefDetailPage() {
             if (!r.ok) {
                 throw new Error('Failed to approve brief')
             }
+            toast.success('Brief approved successfully!')
             router.push(`/packs/new?brief_id=${params.id}`)
         } catch (err: any) {
             console.error('Error approving brief:', err)
-            setError(err.message || 'Failed to approve brief')
+            const errorMsg = err.message || 'Failed to approve brief'
+            setError(errorMsg)
+            toast.error('Failed to approve brief', errorMsg)
         } finally {
             setLoading(false)
         }
@@ -65,15 +75,16 @@ export default function BriefDetailPage() {
         )
     }
 
-    if (!brief) {
+    if (initialLoading) {
         return (
             <main style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
-                <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
-                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏳</div>
-                    <p style={{ color: '#6b7280', fontSize: '1.1rem' }}>Loading brief...</p>
-                </div>
+                <SkeletonList type="briefs" count={1} />
             </main>
         )
+    }
+
+    if (!brief) {
+        return null
     }
 
     return (

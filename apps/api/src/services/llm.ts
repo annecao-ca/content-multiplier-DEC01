@@ -19,7 +19,7 @@ const DEFAULT_MODELS = {
         embedding: 'claude-3-5-sonnet-20241022' // Anthropic doesn't have embedding models
     },
     gemini: {
-        json: 'gemini-1.5-flash',
+        json: 'gemini-2.0-flash-lite',
         embedding: 'text-embedding-004'
     },
     grok: {
@@ -67,7 +67,7 @@ const PROVIDER_CONFIGS = {
     }
 }
 
-class MultiProviderLLM implements LLMClient {
+export class MultiProviderLLM implements LLMClient {
     private getProviderConfig(provider: string = 'openai') {
         return PROVIDER_CONFIGS[provider as keyof typeof PROVIDER_CONFIGS] || PROVIDER_CONFIGS.openai
     }
@@ -77,61 +77,159 @@ class MultiProviderLLM implements LLMClient {
         return models[type]
     }
 
-    async completeJSON(p: LLMParams): Promise<any> {
-        const saved = loadLLMSettings()
-        const inferredProvider = p.model?.includes('deepseek') ? 'deepseek' :
-            p.model?.includes('claude') ? 'anthropic' :
-                p.model?.includes('gemini') ? 'gemini' :
-                    p.model?.includes('grok') ? 'grok' : undefined
-
-        const provider = inferredProvider || saved?.provider || 'openai'
-
-        if (provider === 'gemini') {
-            const apiKey = env.GEMINI_API_KEY || saved?.apiKey || '';
-            if (!apiKey) throw new Error('Gemini API key not configured');
-
-            const genAI = new GoogleGenerativeAI(apiKey);
-            const modelName = p.model || saved?.model || this.getDefaultModel('gemini', 'json');
-            const model = genAI.getGenerativeModel({
-                model: modelName,
-                generationConfig: { responseMimeType: "application/json" }
-            });
-
-            const prompt = `${p.system ? p.system + '\n\n' : ''}${p.user}`;
-
+    private async withRetry<T>(fn: () => Promise<T>, retries: number = 3): Promise<T> {
+        let lastError: any;
+        for (let i = 0; i < retries; i++) {
             try {
-                const result = await model.generateContent(prompt);
-                const text = result.response.text();
-                return JSON.parse(text);
+                return await fn();
             } catch (error) {
-                console.error('Gemini API error:', error);
-                throw error;
+                lastError = error;
+                console.warn(`Attempt ${i + 1} failed. Retrying...`, error);
+                await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); // Exponential backoff-ish
             }
         }
+        throw lastError;
+    }
 
-        const config = this.getProviderConfig(provider)
-        const apiKey = saved?.apiKey || process.env.OPENAI_API_KEY || ''
-        const client = config.createClient(apiKey, saved?.baseUrl || undefined)
+    async completeText(p: LLMParams): Promise<string> {
+        return this.withRetry(async () => {
+            const saved = loadLLMSettings()
+            const inferredProvider = p.model?.includes('deepseek') ? 'deepseek' :
+                p.model?.includes('claude') ? 'anthropic' :
+                    p.model?.includes('gemini') ? 'gemini' :
+                        p.model?.includes('grok') ? 'grok' : undefined
 
-        const systemMsg = p.system
-            ? `${p.system}\n\nYou must respond with valid JSON only.`
-            : 'Respond with valid JSON only.'
+            const provider = inferredProvider || saved?.provider || 'openai'
+            const temperature = p.temperature ?? 0.7;
 
-        try {
-            const response = await client.chat.completions.create({
-                model: p.model || saved?.model || this.getDefaultModel(provider, 'json'),
-                messages: [
-                    { role: 'system' as const, content: systemMsg },
-                    { role: 'user' as const, content: p.user }
-                ],
-                response_format: { type: 'json_object' }
-            })
-            const content = response.choices[0]?.message?.content || '{}'
-            return JSON.parse(content)
-        } catch (error) {
-            console.error('LLM API error:', error)
-            throw error
-        }
+            if (provider === 'gemini') {
+                const apiKey = env.GEMINI_API_KEY || saved?.apiKey || '';
+                if (!apiKey) throw new Error('Gemini API key not configured');
+
+                const genAI = new GoogleGenerativeAI(apiKey);
+                const modelName = p.model || saved?.model || this.getDefaultModel('gemini', 'json');
+                const model = genAI.getGenerativeModel({
+                    model: modelName,
+                    generationConfig: {
+                        temperature: temperature
+                    }
+                });
+
+                const prompt = `${p.system ? p.system + '\n\n' : ''}${p.user}`;
+
+                try {
+                    const result = await model.generateContent(prompt);
+                    return result.response.text();
+                } catch (error) {
+                    console.error('Gemini API error:', error);
+                    throw error;
+                }
+            }
+
+            const config = this.getProviderConfig(provider)
+
+            // Determine API Key
+            let apiKey = ''
+            if (provider === 'openai') {
+                apiKey = saved?.apiKey || env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || ''
+            } else if (provider === 'deepseek') {
+                apiKey = saved?.apiKey || process.env.DEEPSEEK_API_KEY || ''
+            } else {
+                apiKey = saved?.apiKey || env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || ''
+            }
+
+            if (!apiKey) throw new Error(`API key not configured for provider ${provider}`);
+
+            const client = config.createClient(apiKey, config.baseUrl || undefined)
+
+            try {
+                const response = await client.chat.completions.create({
+                    model: p.model || saved?.model || this.getDefaultModel(provider, 'json'),
+                    messages: [
+                        ...(p.system ? [{ role: 'system' as const, content: p.system }] : []),
+                        { role: 'user' as const, content: p.user }
+                    ],
+                    temperature: temperature,
+                })
+                return response.choices[0]?.message?.content || ''
+            } catch (error) {
+                console.error('LLM API error:', error)
+                throw error;
+            }
+        }, p.maxRetries ?? 3);
+    }
+
+    async completeJSON(p: LLMParams): Promise<any> {
+        return this.withRetry(async () => {
+            const saved = loadLLMSettings()
+            const inferredProvider = p.model?.includes('deepseek') ? 'deepseek' :
+                p.model?.includes('claude') ? 'anthropic' :
+                    p.model?.includes('gemini') ? 'gemini' :
+                        p.model?.includes('grok') ? 'grok' : undefined
+
+            const provider = inferredProvider || saved?.provider || 'openai'
+            const temperature = p.temperature ?? 0.3; // Lower default for JSON
+
+            if (provider === 'gemini') {
+                const apiKey = env.GEMINI_API_KEY || saved?.apiKey || '';
+                if (!apiKey) throw new Error('Gemini API key not configured');
+
+                const genAI = new GoogleGenerativeAI(apiKey);
+                const modelName = p.model || saved?.model || this.getDefaultModel('gemini', 'json');
+                const model = genAI.getGenerativeModel({
+                    model: modelName,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        temperature: temperature
+                    }
+                });
+
+                const prompt = `${p.system ? p.system + '\n\n' : ''}${p.user}`;
+
+                try {
+                    const result = await model.generateContent(prompt);
+                    const text = result.response.text();
+                    return JSON.parse(text);
+                } catch (error) {
+                    console.error('Gemini API error:', error);
+                    throw error;
+                }
+            }
+
+            const config = this.getProviderConfig(provider)
+            // Determine API Key
+            let apiKey = ''
+            if (provider === 'openai') {
+                apiKey = saved?.apiKey || env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || ''
+            } else if (provider === 'deepseek') {
+                apiKey = saved?.apiKey || process.env.DEEPSEEK_API_KEY || ''
+            } else {
+                apiKey = saved?.apiKey || env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || ''
+            }
+
+            const client = config.createClient(apiKey, saved?.baseUrl || undefined)
+
+            const systemMsg = p.system
+                ? `${p.system}\n\nYou must respond with valid JSON only.`
+                : 'Respond with valid JSON only.'
+
+            try {
+                const response = await client.chat.completions.create({
+                    model: p.model || saved?.model || this.getDefaultModel(provider, 'json'),
+                    messages: [
+                        { role: 'system' as const, content: systemMsg },
+                        { role: 'user' as const, content: p.user }
+                    ],
+                    response_format: { type: 'json_object' },
+                    temperature: temperature
+                })
+                const content = response.choices[0]?.message?.content || '{}'
+                return JSON.parse(content)
+            } catch (error) {
+                console.error('LLM API error:', error)
+                throw error;
+            }
+        }, p.maxRetries ?? 3);
     }
 
     async embed(input: string[]): Promise<number[][]> {
@@ -170,37 +268,19 @@ class MultiProviderLLM implements LLMClient {
         let apiKey = ''
         if (provider === 'openai') {
             apiKey = saved?.apiKey || env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || ''
-        } else if (provider === 'deepseek') {
-            // DeepSeek uses OpenAI client with custom baseURL
-            // Note: DeepSeek currently does not have a dedicated embedding model in their public API docs as of late 2023/early 2024, 
-            // but if they do or if we use a compatible model, this is how it would work.
-            // If user explicitly asks for deepseek embedding, we assume they have a valid model name.
-            apiKey = saved?.apiKey || process.env.DEEPSEEK_API_KEY || ''
         } else {
             // Fallback
             apiKey = saved?.apiKey || env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || ''
         }
 
         if (!apiKey) {
-            throw new Error(`Embedding API key not configured for provider "${provider}". Please set the appropriate environment variable (e.g. DEEPSEEK_API_KEY or OPENAI_API_KEY).`)
+            throw new Error(`Embedding API key not configured for provider "${provider}". Please set the appropriate environment variable (e.g. OPENAI_API_KEY).`)
         }
 
         const client = config.createClient(apiKey, config.baseUrl || undefined)
 
         // Determine Embedding Model
-        let embeddingModel = env.EMBEDDING_MODEL;
-        if (!embeddingModel) {
-            // If no model specified in env, use provider default
-            if (provider === 'deepseek') {
-                // DeepSeek V2 doesn't officially list an embedding endpoint compatible with OpenAI client yet in some docs,
-                // but assuming 'deepseek-chat' or similar might be used if they support it, 
-                // OR if the user intends to use a local model via a proxy.
-                // However, for this request, we will default to 'deepseek-embedding' if not set.
-                embeddingModel = 'deepseek-embedding';
-            } else {
-                embeddingModel = this.getDefaultModel(provider, 'embedding');
-            }
-        }
+        const embeddingModel = env.EMBEDDING_MODEL || this.getDefaultModel(provider, 'embedding');
 
         try {
             const response = await client.embeddings.create({

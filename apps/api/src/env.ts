@@ -13,5 +13,5 @@ export const env = {
     COHERE_EMBEDDING_MODEL: process.env.COHERE_EMBEDDING_MODEL || 'embed-english-v3.0',
     HUGGINGFACE_API_KEY: process.env.HUGGINGFACE_API_KEY || '',
     HUGGINGFACE_EMBEDDING_MODEL: process.env.HUGGINGFACE_EMBEDDING_MODEL || 'sentence-transformers/all-MiniLM-L6-v2',
-    GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY || 'AIzaSyBbnv7hTmerfhIkOvc2HWKRhRRjFPa1_eE',
 };

@@ -1,6 +1,14 @@
-export type LLMParams = { model: string; system?: string; user: string; jsonSchema?: any; };
+export type LLMParams = {
+    model?: string;
+    system?: string;
+    user: string;
+    jsonSchema?: any;
+    temperature?: number;
+    maxRetries?: number;
+};
 export interface LLMClient {
     completeJSON(p: LLMParams): Promise<any>;
+    completeText(p: LLMParams): Promise<string>;
     embed(input: string[]): Promise<number[][]>;
 }
 

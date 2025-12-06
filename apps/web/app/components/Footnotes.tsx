@@ -104,21 +104,20 @@ export function Footnotes({ sources, className = '' }: FootnotesProps) {
                           )}
                         </Button>
                         
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          asChild
-                          className="text-xs"
+                        <a
+                          href={source.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
                         >
-                          <a
-                            href={source.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs"
                           >
                             <ExternalLink className="mr-1 h-3 w-3" />
                             Mở link
-                          </a>
-                        </Button>
+                          </Button>
+                        </a>
                       </>
                     )}
                   </div>
@@ -147,6 +146,8 @@ export function Footnotes({ sources, className = '' }: FootnotesProps) {
     </div>
   )
 }
+
+
 
 
 

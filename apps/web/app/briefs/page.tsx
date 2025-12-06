@@ -5,8 +5,8 @@ import { useLanguage } from '../contexts/LanguageContext'
 import Button from '../components/Button'
 import Card from '../components/Card'
 import PageHeader from '../components/PageHeader'
-import EmptyState from '../components/EmptyState'
-import StatusBadge from '../components/StatusBadge'
+import { EmptyState, useToast, SkeletonList, Badge } from '../components/ui'
+import { FileText } from 'lucide-react'
 
 // API URL - backend running on port 3001
 const API_URL = 'http://localhost:3001';
@@ -16,8 +16,9 @@ export default function BriefsPage() {
     const [ideas, setIdeas] = useState<any[]>([])
     const [briefs, setBriefs] = useState<any[]>([])
     const [loading, setLoading] = useState(false)
+    const [initialLoading, setInitialLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    const [success, setSuccess] = useState<string | null>(null)
+    const toast = useToast()
     const { language } = useLanguage()
 
     async function loadIdeas() {
@@ -33,6 +34,8 @@ export default function BriefsPage() {
         } catch (error) {
             console.error('Failed to load ideas:', error)
             setIdeas([])
+        } finally {
+            setInitialLoading(false)
         }
     }
 
@@ -51,7 +54,6 @@ export default function BriefsPage() {
     async function generateBrief(ideaId: string) {
         setLoading(true)
         setError(null)
-        setSuccess(null)
         
         try {
             const briefId = `brief-${Date.now()}`
@@ -72,7 +74,7 @@ export default function BriefsPage() {
             }
             
             const data = await r.json()
-            setSuccess('Brief generated successfully!')
+            toast.success('Brief generated successfully!')
             
             // Add new brief to list
             if (data.brief) {
@@ -80,10 +82,11 @@ export default function BriefsPage() {
             }
             
             setSelectedIdea(null)
-            setTimeout(() => setSuccess(null), 5000)
             
         } catch (err: any) {
-            setError(err.message || 'Failed to generate brief')
+            const errorMsg = err.message || 'Failed to generate brief'
+            setError(errorMsg)
+            toast.error('Failed to generate brief', errorMsg)
         } finally {
             setLoading(false)
         }
@@ -103,15 +106,15 @@ export default function BriefsPage() {
                 badge={ideas.length > 0 ? { text: `${ideas.length} ideas ready`, color: '#667eea' } : undefined}
             />
 
-            {ideas.length === 0 ? (
+            {initialLoading ? (
+                <SkeletonList type="briefs" count={4} />
+            ) : ideas.length === 0 ? (
                 <EmptyState
-                    icon="📋"
+                    icon={FileText}
                     title="No Selected Ideas"
                     description="You need to select some ideas before creating briefs. Go back to the Ideas page and select the ideas you want to develop."
-                    action={{
-                        label: 'Go to Ideas →',
-                        href: '/ideas'
-                    }}
+                    actionLabel="Go to Ideas →"
+                    onAction={() => window.location.href = '/ideas'}
                 />
             ) : (
                 <div>
@@ -165,34 +168,6 @@ export default function BriefsPage() {
                         </div>
                     </Card>
 
-                    {/* Error Message */}
-                    {error && (
-                        <div style={{
-                            background: '#fee2e2',
-                            border: '1px solid #ef4444',
-                            borderRadius: '8px',
-                            padding: '1rem',
-                            marginBottom: '1rem',
-                            color: '#991b1b'
-                        }}>
-                            ❌ <strong>Error:</strong> {error}
-                            <button onClick={() => setError(null)} style={{ marginLeft: '1rem', cursor: 'pointer' }}>×</button>
-                        </div>
-                    )}
-                    
-                    {/* Success Message */}
-                    {success && (
-                        <div style={{
-                            background: '#d1fae5',
-                            border: '1px solid #10b981',
-                            borderRadius: '8px',
-                            padding: '1rem',
-                            marginBottom: '1rem',
-                            color: '#065f46'
-                        }}>
-                            ✅ <strong>Success!</strong> {success}
-                        </div>
-                    )}
 
                     {selectedIdea && (
                         <Card

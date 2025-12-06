@@ -4,6 +4,8 @@ Dưới đây là **README** ngắn gọn, đủ để bạn (hoặc AI coding a
 
 # Content Multiplier – README cài đặt & chạy
 
+> 📖 **Xem User Workflow Guide**: [USER_WORKFLOW.md](USER_WORKFLOW.md) - Hướng dẫn chi tiết về quy trình làm việc từ ý tưởng đến xuất bản
+
 ## Tổng quan (high-level)
 
 - **Frontend**: Next.js/React (App Router), thanh điều hướng cố định, hỗ trợ EN/VN với `LanguageContext`, các trang quy trình (Ideas → Briefs → Content Packs → Settings), trình soạn thảo Markdown (ảnh base64, embed, xuất tài liệu), gọi API bằng `fetch` và lưu ngôn ngữ trong `localStorage`.
@@ -142,6 +144,8 @@ pnpm dev
 ---
 
 ## 7) Kiểm tra nhanh (Happy Path)
+
+> 💡 **Lưu ý**: Để hiểu rõ hơn về workflow và cách sử dụng từng tính năng, vui lòng xem [USER_WORKFLOW.md](USER_WORKFLOW.md)
 
 ### 7.1 Tạo 10 ý tưởng (Ideas)
 
@@ -294,7 +298,16 @@ WHERE event_type IN ('guardrail.pass','guardrail.fail');
 
 ---
 
-## 12) Bản quyền & bảo mật
+## 12) Tài liệu tham khảo
+
+* **[USER_WORKFLOW.md](USER_WORKFLOW.md)** - Hướng dẫn chi tiết về user workflow, từ generate ideas đến publish & distribute, bao gồm diagrams và best practices
+* **[RAG_PIPELINE_SETUP.md](RAG_PIPELINE_SETUP.md)** - Hướng dẫn thiết lập RAG pipeline
+* **[PUBLISHING_INTEGRATION_PLAN.md](PUBLISHING_INTEGRATION_PLAN.md)** - Kế hoạch tích hợp publishing
+* **[ALL-DOCS-INDEX.md](ALL-DOCS-INDEX.md)** - Index tất cả tài liệu trong project
+
+---
+
+## 13) Bản quyền & bảo mật
 
 * Không log PII vào `events.payload`.
 * Lưu bản thảo/dữ liệu gốc trong bảng chuyên dụng; sự kiện chỉ lưu siêu dữ liệu (độ dài, đếm, mã loại).
