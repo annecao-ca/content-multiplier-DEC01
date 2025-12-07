@@ -1,8 +1,8 @@
 # Project Memory - Content Multiplier / RAG Pipeline
 
-> **Cập nhật lần cuối**: 2025-01-XX  
+> **Cập nhật lần cuối**: 2025-12-05  
 > **GitHub Repo**: https://github.com/annecao-ca/content-multiplier-DEC01  
-> **Trạng thái**: ✅ RAG Pipeline hoàn chỉnh với multi-provider embedding support (OpenAI, DeepSeek, Gemini)
+> **Trạng thái**: ✅ RAG Pipeline hoàn chỉnh + UI Dark Theme đồng nhất với multi-provider embedding support (OpenAI, DeepSeek, Gemini)
 
 ## Tóm tắt tính năng chính
 - ✅ **RAG Pipeline hoàn chỉnh**: Ingest documents với metadata, chunking, embedding, similarity search
@@ -99,11 +99,38 @@
   - `DEEPSEEK_API_KEY` (nếu dùng DeepSeek)
   - `GEMINI_API_KEY` (nếu dùng Gemini)
 
+## UI Refactoring - Dark Theme Consistency (2025-12-05)
+- ✅ **Đồng bộ UI toàn bộ app**: Tất cả pages sử dụng dark theme giống Dashboard & Ideas
+- ✅ **DashboardHero Component**: Gradient hero (`from-[#7c3aed] via-[#9333ea] to-[#db2777]`) cho tất cả pages
+  - Đã áp dụng cho: `/briefs`, `/packs`, `/analytics`, `/settings`, `/documents`
+- ✅ **Webflow UI Kit**: Tạo components mới trong `webflow-ui.tsx`:
+  - `AppShell`, `AppNavbar`, `Section`, `PageHeader`
+  - `Card`, `SubCard`, `StatCard`, `EmptyState`
+  - `PrimaryButton`, `Badge`, `Grid`, `Tabs`, `Table`
+  - `Input`, `Textarea`, `Select` với dark theme support
+- ✅ **DocumentCard Improvements**:
+  - Truncate text: Title (1 dòng), Description (2 dòng), Metadata (1 dòng)
+  - Layout: `flex flex-col`, `max-h-52 overflow-hidden`, `space-y-2`
+  - Border style: `border-white/5 bg-white/5 hover:bg-white/10`
+  - Text colors: `text-white`, `text-white/70`, `text-white/50`
+- ✅ **Pages đã refactor**:
+  - `/briefs`: DashboardHero + dark cards + EmptyState trong Card
+  - `/packs`: DashboardHero + dark cards + gradient buttons
+  - `/analytics`: DashboardHero + filter card dark + StatCard đồng nhất
+  - `/settings`: DashboardHero + dark navigation cards + LLM config card
+  - `/documents`: DashboardHero + DocumentCard với truncate + dark theme
+- ✅ **Consistent Styling**:
+  - Background: `bg-slate-950` cho tất cả pages
+  - Cards: `bg-slate-900/70 border border-slate-800 rounded-3xl`
+  - SubCards: `bg-slate-800/50 border-slate-700`
+  - Primary buttons: Gradient `from-[#a855f7] via-[#ec4899] to-[#f97316]`
+  - Typography: `text-slate-50` (titles), `text-slate-400` (descriptions)
+
 ## GitHub Repository
 - Code đã được push lên: **https://github.com/annecao-ca/content-multiplier-DEC01**
-- Branch: `main`
-- Commit mới nhất: "feat: Complete RAG pipeline with DeepSeek embedding support"
-- Tổng cộng: 105 files changed, 20,232 insertions(+)
+- Branch: `2025-12-05-9f92-a1bef`
+- Commit mới nhất: "Refactor UI: Dark theme consistency across all pages" (commit `0c83688`)
+- Tổng cộng: 101 files changed, 6,151 insertions(+), 2,426 deletions(-)
 - File `.env` đã được `.gitignore` loại trừ (an toàn cho secrets)
 
 ## Files & Scripts mới
@@ -117,6 +144,30 @@
 - Documentation:
   - `DEEPSEEK_SETUP_COMPLETE.md`: Hướng dẫn setup DeepSeek
   - `DEEPSEEK_TEST_RESULT.md`: Kết quả test DeepSeek
-  - `memory.md`: File này - tổng hợp tất cả những gì đã làm
+  - `Memory.md`: File này - tổng hợp tất cả những gì đã làm
+
+## UI Components mới (2025-12-05)
+- **`apps/web/app/components/webflow-ui.tsx`**: UI kit components với dark theme support
+  - Layout: `AppShell`, `AppNavbar`, `Section`, `PageHeader`
+  - Cards: `Card`, `SubCard`, `CardHeader`, `CardTitle`, `CardDescription`
+  - Stats & Empty: `StatCard`, `EmptyState`
+  - Buttons & Badges: `PrimaryButton`, `Badge`
+  - Forms: `Input`, `Textarea`, `Select`
+  - Tables: `Table`, `TableHeader`, `TableBody`, `TableRow`, `TableCell`
+  - Tabs: `Tabs` component
+  - Grid: `Grid` layout component
+- **`apps/web/app/components/dashboard-ui.tsx`**: Dashboard-specific components
+  - `DashboardHero`: Gradient hero với title, description, CTA
+  - `ActivityItemDark`: Activity row với hover states
+  - `ActivitySection`: Section wrapper cho activity list
+  - `PageHeaderDark`: PageHeader với dark background (deprecated, dùng DashboardHero thay thế)
+- **`apps/web/app/components/ThemeProvider.tsx`**: Theme context provider
+  - Quản lý dark/light theme state
+  - Lưu preference vào localStorage
+- **Updated Components**:
+  - `DocumentCard.tsx`: Truncate text, line-clamp, overflow handling, dark theme
+  - `DocumentForm.tsx`: Dark theme cho dialog và form inputs
+  - `DocumentUpload.tsx`: Dark theme cho dialog và drag-drop zone
+  - `DocumentSearch.tsx`: Dark theme cho search bar và results
 
 
