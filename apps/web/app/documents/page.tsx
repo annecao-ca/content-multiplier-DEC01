@@ -5,10 +5,9 @@ import { DocumentForm, DocumentFormData } from '../components/DocumentForm'
 import { DocumentUpload } from '../components/DocumentUpload'
 import { DocumentCard } from '../components/DocumentCard'
 import { DocumentSearch, SearchResult, SearchFilters } from '../components/DocumentSearch'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card'
-import { Button } from '../components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { FileText, Search, BarChart3 } from 'lucide-react'
+import { DashboardHero } from '../components/dashboard-ui'
 
 interface Document {
   doc_id: string
@@ -246,132 +245,123 @@ export default function DocumentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              📚 Quản lý Tài liệu RAG
-            </h1>
-            <p className="text-gray-600 mt-1 leading-relaxed">
-              Hệ thống quản lý tài liệu với tìm kiếm thông minh và phân loại metadata
-            </p>
-          </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            {/* Upload file -> ingest vào RAG */}
-            <DocumentUpload 
-              onUpload={handleUploadFile}
-              accept=".txt,.md"
-            />
-            {/* Form tạo tài liệu thủ công */}
-            <DocumentForm 
-              onSubmit={handleCreateDocument} 
-              availableTags={availableTags}
-            />
-          </div>
-        </div>
+    <div className="min-h-screen bg-slate-950">
+      <div className="mx-auto w-full max-w-6xl px-4 md:px-6 py-8 md:py-10 space-y-6">
+        {/* Hero Header */}
+        <DashboardHero
+          title="📚 Quản lý Tài liệu RAG"
+          description="Hệ thống quản lý tài liệu với tìm kiếm thông minh và phân loại metadata"
+          cta={
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Upload file -> ingest vào RAG */}
+              <DocumentUpload 
+                onUpload={handleUploadFile}
+                accept=".txt,.md"
+                trigger={
+                  <button className="rounded-full border border-white/20 bg-white/10 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white hover:bg-white/20 transition-colors">
+                    Upload Document
+                  </button>
+                }
+              />
+              {/* Form tạo tài liệu thủ công */}
+              <DocumentForm 
+                onSubmit={handleCreateDocument} 
+                availableTags={availableTags}
+                trigger={
+                  <button className="rounded-full bg-white text-slate-900 px-5 py-2.5 text-sm font-medium shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]">
+                    Thêm tài liệu
+                  </button>
+                }
+              />
+            </div>
+          }
+        />
 
         {/* Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Tổng tài liệu</p>
-                    <p className="text-2xl font-bold text-indigo-600">
-                      {stats.total_documents}
-                    </p>
-                  </div>
-                  <FileText className="h-8 w-8 text-indigo-600" />
-                </div>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 mt-6">
+            <div className="rounded-2xl bg-slate-900/80 border border-slate-800 px-5 py-4 flex flex-col justify-between relative">
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500 mb-2">Tổng tài liệu</p>
+                <p className="text-2xl font-bold text-slate-50">
+                  {stats.total_documents}
+                </p>
+              </div>
+              <FileText className="h-6 w-6 text-slate-400 absolute top-4 right-4" />
+            </div>
 
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Chunks</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {stats.total_chunks}
-                    </p>
-                  </div>
-                  <BarChart3 className="h-8 w-8 text-green-600" />
-                </div>
-              </CardContent>
-            </Card>
+            <div className="rounded-2xl bg-slate-900/80 border border-slate-800 px-5 py-4 flex flex-col justify-between relative">
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500 mb-2">Chunks</p>
+                <p className="text-2xl font-bold text-slate-50">
+                  {stats.total_chunks}
+                </p>
+              </div>
+              <BarChart3 className="h-6 w-6 text-slate-400 absolute top-4 right-4" />
+            </div>
 
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Tác giả</p>
-                    <p className="text-2xl font-bold text-purple-600">
-                      {stats.unique_authors}
-                    </p>
-                  </div>
-                  <span className="text-3xl">✍️</span>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="rounded-2xl bg-slate-900/80 border border-slate-800 px-5 py-4 flex flex-col justify-between relative">
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500 mb-2">Tác giả</p>
+                <p className="text-2xl font-bold text-slate-50">
+                  {stats.unique_authors}
+                </p>
+              </div>
+              <span className="text-2xl absolute top-4 right-4">✍️</span>
+            </div>
 
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Chủ đề</p>
-                    <p className="text-2xl font-bold text-orange-600">
-                      {stats.all_tags?.length || 0}
-                    </p>
-                  </div>
-                  <span className="text-3xl">🏷️</span>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="rounded-2xl bg-slate-900/80 border border-slate-800 px-5 py-4 flex flex-col justify-between relative">
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500 mb-2">Chủ đề</p>
+                <p className="text-2xl font-bold text-slate-50">
+                  {stats.all_tags?.length || 0}
+                </p>
+              </div>
+              <span className="text-2xl absolute top-4 right-4">🏷️</span>
+            </div>
           </div>
         )}
 
         {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="list">
-              <FileText className="h-4 w-4 mr-2" />
-              Danh sách tài liệu
-            </TabsTrigger>
-            <TabsTrigger value="search">
-              <Search className="h-4 w-4 mr-2" />
-              Tìm kiếm thông minh
-            </TabsTrigger>
-          </TabsList>
+        <div className="mt-6 rounded-3xl bg-slate-900/70 border border-slate-800 px-4 py-4 md:px-6 md:py-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-6">
+              <TabsList className="bg-slate-800/50 border border-slate-700">
+                <TabsTrigger 
+                  value="list"
+                  className="data-[state=active]:bg-slate-700 data-[state=active]:text-slate-50 text-slate-400"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Danh sách tài liệu
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="search"
+                  className="data-[state=active]:bg-slate-700 data-[state=active]:text-slate-50 text-slate-400"
+                >
+                  <Search className="h-4 w-4 mr-2" />
+                  Tìm kiếm thông minh
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-          {/* Document List Tab */}
-          <TabsContent value="list" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Tất cả tài liệu</CardTitle>
-                <CardDescription>
-                  Quản lý và xem tất cả tài liệu trong hệ thống
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="text-center py-8 text-gray-500">
-                    Đang tải...
-                  </div>
-                ) : documents.length === 0 ? (
-                  <div className="text-center py-8">
-                    <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500">
-                      Chưa có tài liệu nào. Hãy thêm tài liệu đầu tiên!
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {documents.map((doc) => (
+            {/* Document List Tab */}
+            <TabsContent value="list" className="space-y-4 mt-0">
+              {loading ? (
+                <div className="text-center py-12 text-slate-400">
+                  Đang tải...
+                </div>
+              ) : documents.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText className="h-12 w-12 text-slate-600 mx-auto mb-3" />
+                  <p className="text-slate-400">
+                    Chưa có tài liệu nào. Hãy thêm tài liệu đầu tiên!
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {documents.map((doc) => (
+                    <div key={doc.doc_id} className="flex flex-col justify-between max-h-52 overflow-hidden">
                       <DocumentCard
-                        key={doc.doc_id}
                         id={doc.doc_id}
                         title={doc.title || 'Untitled'}
                         url={doc.url}
@@ -381,23 +371,24 @@ export default function DocumentsPage() {
                         description={doc.description}
                         uploadDate={new Date(doc.created_at)}
                         onDelete={handleDeleteDocument}
+                        className="h-full"
                       />
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
 
-          {/* Search Tab */}
-          <TabsContent value="search">
-            <DocumentSearch
-              onSearch={handleSearch}
-              availableAuthors={availableAuthors}
-              availableTags={availableTags}
-            />
-          </TabsContent>
-        </Tabs>
+            {/* Search Tab */}
+            <TabsContent value="search">
+              <DocumentSearch
+                onSearch={handleSearch}
+                availableAuthors={availableAuthors}
+                availableTags={availableTags}
+              />
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </div>
   )

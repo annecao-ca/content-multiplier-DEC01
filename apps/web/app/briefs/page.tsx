@@ -1,15 +1,29 @@
 'use client'
+
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useLanguage } from '../contexts/LanguageContext'
-import Button from '../components/Button'
-import Card from '../components/Card'
-import PageHeader from '../components/PageHeader'
-import { EmptyState, useToast, SkeletonList, Badge } from '../components/ui'
-import { FileText } from 'lucide-react'
+import { FileText, CheckCircle, BookOpen, Target, BarChart, Send } from 'lucide-react'
+import { useToast } from '../components/ui'
+import {
+    PageHeader,
+    Section,
+    Card,
+    SubCard,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+    PrimaryButton,
+    Badge,
+    Grid,
+    EmptyState,
+    LoadingSpinner,
+    Alert,
+} from '../components/webflow-ui'
+import { DashboardHero, ActivityItemDark, ActivitySection } from '../components/dashboard-ui'
 
 // API URL - backend running on port 3001
-const API_URL = 'http://localhost:3001';
+const API_URL = 'http://localhost:3001'
 
 export default function BriefsPage() {
     const [selectedIdea, setSelectedIdea] = useState<any>(null)
@@ -54,7 +68,7 @@ export default function BriefsPage() {
     async function generateBrief(ideaId: string) {
         setLoading(true)
         setError(null)
-        
+
         try {
             const briefId = `brief-${Date.now()}`
             const r = await fetch(`${API_URL}/api/briefs/generate`, {
@@ -67,22 +81,22 @@ export default function BriefsPage() {
                     language: language
                 })
             })
-            
+
             if (!r.ok) {
                 const data = await r.json().catch(() => ({}))
                 throw new Error(data.error || 'Failed to generate brief')
             }
-            
+
             const data = await r.json()
             toast.success('Brief generated successfully!')
-            
+
             // Add new brief to list
             if (data.brief) {
                 setBriefs((prev) => [data.brief, ...prev])
             }
-            
+
             setSelectedIdea(null)
-            
+
         } catch (err: any) {
             const errorMsg = err.message || 'Failed to generate brief'
             setError(errorMsg)
@@ -92,205 +106,225 @@ export default function BriefsPage() {
         }
     }
 
-    useEffect(() => { 
+    useEffect(() => {
         loadIdeas()
         loadBriefs()
     }, [])
 
     return (
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
-            <PageHeader
+        <div className="min-h-screen bg-slate-950">
+            <DashboardHero
                 title="Research Briefs"
-                subtitle="Create comprehensive research briefs from your selected ideas"
-                backLink={{ href: '/ideas', label: 'Back to Ideas' }}
-                badge={ideas.length > 0 ? { text: `${ideas.length} ideas ready`, color: '#667eea' } : undefined}
+                description="Create comprehensive research briefs from your selected ideas"
+                cta={
+                    ideas.length > 0 ? (
+                        <Badge variant="info">{ideas.length} ideas ready</Badge>
+                    ) : (
+                        <PrimaryButton size="lg" onClick={() => window.location.href = '/ideas'}>
+                            Select Ideas →
+                        </PrimaryButton>
+                    )
+                }
             />
 
             {initialLoading ? (
-                <SkeletonList type="briefs" count={4} />
+                <LoadingSpinner />
             ) : ideas.length === 0 ? (
-                <EmptyState
-                    icon={FileText}
-                    title="No Selected Ideas"
-                    description="You need to select some ideas before creating briefs. Go back to the Ideas page and select the ideas you want to develop."
-                    actionLabel="Go to Ideas →"
-                    onAction={() => window.location.href = '/ideas'}
-                />
-            ) : (
-                <div>
-                    <Card
-                        title="Available Ideas for Research"
-                        subtitle="Select an idea to create a comprehensive research brief"
-                        style={{ marginBottom: '2rem' }}
-                    >
-                        <div style={{ display: 'grid', gap: '1rem' }}>
-                            {ideas.map(idea => (
-                                <div
-                                    key={idea.idea_id}
-                                    style={{
-                                        padding: '1rem',
-                                        background: selectedIdea?.idea_id === idea.idea_id ? '#f0f9ff' : '#f8fafc',
-                                        borderRadius: '8px',
-                                        border: selectedIdea?.idea_id === idea.idea_id ? '2px solid #3b82f6' : '1px solid #e2e8f0',
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                >
-                                    <div style={{ flex: 1 }}>
-                                        <h4 style={{ 
-                                            margin: '0 0 0.5rem 0', 
-                                            color: '#1f2937',
-                                            fontSize: '1.1rem'
-                                        }}>
-                                            {idea.one_liner}
-                                        </h4>
-                                        {idea.angle && (
-                                            <p style={{ 
-                                                margin: 0, 
-                                                color: '#6b7280',
-                                                fontSize: '0.9rem'
-                                            }}>
-                                                <strong>Angle:</strong> {idea.angle}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <Button 
-                                        onClick={() => setSelectedIdea(idea)} 
-                                        disabled={loading}
-                                        variant={selectedIdea?.idea_id === idea.idea_id ? 'success' : 'primary'}
-                                    >
-                                        {selectedIdea?.idea_id === idea.idea_id ? '✓ Selected' : '📚 Research This'}
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
+                <Section>
+                    <Card className="bg-slate-900/70 border border-slate-800 rounded-3xl">
+                        <EmptyState
+                            icon={<FileText className="h-8 w-8 text-slate-400" />}
+                            title="No Selected Ideas"
+                            description="You need to select some ideas before creating briefs. Go back to the Ideas page and select the ideas you want to develop."
+                            actionLabel="Go to Ideas →"
+                            onAction={() => window.location.href = '/ideas'}
+                        />
                     </Card>
+                </Section>
+            ) : (
+                <>
+                    {/* Available Ideas */}
+                    <Section>
+                        <Card className="bg-slate-900/70 border border-slate-800 rounded-3xl">
+                            <CardHeader>
+                                <CardTitle className="text-white">Available Ideas for Research</CardTitle>
+                                <CardDescription className="text-slate-400">Select an idea to create a comprehensive research brief</CardDescription>
+                            </CardHeader>
 
-
-                    {selectedIdea && (
-                        <Card
-                            icon="🔬"
-                            title={`Research: ${selectedIdea.one_liner}`}
-                            gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-                        >
-                            <div style={{ 
-                                background: '#f8fafc', 
-                                padding: '1rem', 
-                                borderRadius: '8px',
-                                marginBottom: '1rem'
-                            }}>
-                                <p style={{ 
-                                    margin: '0 0 1rem 0', 
-                                    color: '#4a5568',
-                                    lineHeight: '1.6'
-                                }}>
-                                    This will search the knowledge base and create a comprehensive brief with:
-                                </p>
-                                <ul style={{ 
-                                    margin: 0, 
-                                    paddingLeft: '1.5rem',
-                                    color: '#4a5568'
-                                }}>
-                                    <li>📊 Market research and statistics</li>
-                                    <li>🔍 Relevant sources and citations</li>
-                                    <li>📝 Content outline and key points</li>
-                                    <li>🎯 Target audience insights</li>
-                                    <li>📈 Distribution strategy</li>
-                                </ul>
-                            </div>
-                            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-                                <Button 
-                                    onClick={() => generateBrief(selectedIdea.idea_id)} 
-                                    disabled={loading} 
-                                    variant={loading ? 'neutral' : 'success'}
-                                    style={{
-                                        padding: '0.75rem 2rem',
-                                        fontSize: '1.1rem'
-                                    }}
-                                >
-                                    {loading ? '🔄 Generating Brief...' : '🚀 Generate Research Brief'}
-                                </Button>
-                                {!loading && (
-                                    <Button 
-                                        onClick={() => setSelectedIdea(null)} 
-                                        variant="neutral"
-                                        style={{
-                                            padding: '0.75rem 1.5rem'
-                                        }}
+                            <div className="space-y-3">
+                                {ideas.map(idea => (
+                                    <SubCard
+                                        key={idea.idea_id}
+                                        onClick={() => setSelectedIdea(idea)}
+                                        className={`cursor-pointer transition-all bg-slate-800/50 border border-slate-700 hover:bg-slate-800 ${
+                                            selectedIdea?.idea_id === idea.idea_id
+                                                ? 'ring-2 ring-[#a855f7] bg-slate-800 border-[rgba(168,85,247,0.3)]'
+                                                : ''
+                                        }`}
                                     >
-                                        Cancel
-                                    </Button>
-                                )}
-                            </div>
-                        </Card>
-                    )}
-                    
-                    {/* Generated Briefs List */}
-                    {briefs.length > 0 && (
-                        <Card
-                            title="📋 Generated Briefs"
-                            subtitle={`${briefs.length} brief(s) created`}
-                            style={{ marginTop: '2rem' }}
-                        >
-                            <div style={{ display: 'grid', gap: '1rem' }}>
-                                {briefs.map((brief: any) => (
-                                    <div
-                                        key={brief.brief_id}
-                                        style={{
-                                            padding: '1rem',
-                                            background: '#f8fafc',
-                                            borderRadius: '8px',
-                                            border: '1px solid #e2e8f0'
-                                        }}
-                                    >
-                                        <h4 style={{ margin: '0 0 0.5rem 0', color: '#1f2937' }}>
-                                            📄 {brief.brief_id}
-                                        </h4>
-                                        {brief.key_points && brief.key_points.length > 0 && (
-                                            <div style={{ marginBottom: '0.5rem' }}>
-                                                <strong>Key Points:</strong>
-                                                <ul style={{ margin: '0.25rem 0', paddingLeft: '1.5rem', color: '#4a5568' }}>
-                                                    {brief.key_points.slice(0, 3).map((point: string, idx: number) => (
-                                                        <li key={idx}>{point}</li>
-                                                    ))}
-                                                    {brief.key_points.length > 3 && (
-                                                        <li style={{ color: '#9ca3af' }}>... and {brief.key_points.length - 3} more</li>
-                                                    )}
-                                                </ul>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex-1">
+                                                <h4 className="font-semibold text-slate-50">
+                                                    {idea.one_liner}
+                                                </h4>
+                                                {idea.angle && (
+                                                    <p className="mt-1 text-sm text-slate-400">
+                                                        <strong>Angle:</strong> {idea.angle}
+                                                    </p>
+                                                )}
                                             </div>
-                                        )}
-                                        {brief.outline && brief.outline.length > 0 && (
-                                            <div>
-                                                <strong>Outline:</strong>
-                                                <ul style={{ margin: '0.25rem 0', paddingLeft: '1.5rem', color: '#4a5568' }}>
-                                                    {brief.outline.slice(0, 4).map((section: any, idx: number) => (
-                                                        <li key={idx}>{section.h2 || section}</li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
-                                        <Link 
-                                            href={`/briefs/${brief.brief_id}`}
-                                            style={{ 
-                                                color: '#3b82f6', 
-                                                textDecoration: 'none',
-                                                fontWeight: '600',
-                                                display: 'inline-block',
-                                                marginTop: '0.5rem'
-                                            }}
-                                        >
-                                            View Full Brief →
-                                        </Link>
-                                    </div>
+                                            <PrimaryButton
+                                                variant={selectedIdea?.idea_id === idea.idea_id ? 'primary' : 'secondary'}
+                                                size="sm"
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    setSelectedIdea(idea)
+                                                }}
+                                            >
+                                                {selectedIdea?.idea_id === idea.idea_id ? '✓ Selected' : '📚 Research This'}
+                                            </PrimaryButton>
+                                        </div>
+                                    </SubCard>
                                 ))}
                             </div>
                         </Card>
+                    </Section>
+
+                    {/* Selected Idea - Research Panel */}
+                    {selectedIdea && (
+                        <Section>
+                            <Card className="bg-slate-900/70 border border-slate-800 rounded-3xl">
+                                <CardHeader>
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-violet-500/20 ring-1 ring-indigo-500/30">
+                                            <span className="text-xl">🔬</span>
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-white">Research: {selectedIdea.one_liner}</CardTitle>
+                                            <CardDescription className="text-slate-400">Generate a comprehensive research brief</CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+
+                                {error && (
+                                    <Alert type="error" message={error} onClose={() => setError(null)} />
+                                )}
+
+                                <SubCard className="mb-6 bg-slate-800/50 border-slate-700">
+                                    <p className="mb-4 text-slate-300">
+                                        This will search the knowledge base and create a comprehensive brief with:
+                                    </p>
+                                    <Grid cols={2} className="gap-3">
+                                        <div className="flex items-center gap-2 text-sm text-slate-400">
+                                            <BarChart className="h-4 w-4 text-indigo-400" />
+                                            Market research and statistics
+                                        </div>
+                                        <div className="flex items-center gap-2 text-sm text-slate-400">
+                                            <BookOpen className="h-4 w-4 text-indigo-400" />
+                                            Relevant sources and citations
+                                        </div>
+                                        <div className="flex items-center gap-2 text-sm text-slate-400">
+                                            <FileText className="h-4 w-4 text-indigo-400" />
+                                            Content outline and key points
+                                        </div>
+                                        <div className="flex items-center gap-2 text-sm text-slate-400">
+                                            <Target className="h-4 w-4 text-indigo-400" />
+                                            Target audience insights
+                                        </div>
+                                        <div className="flex items-center gap-2 text-sm text-slate-400">
+                                            <Send className="h-4 w-4 text-indigo-400" />
+                                            Distribution strategy
+                                        </div>
+                                    </Grid>
+                                </SubCard>
+
+                                <div className="flex justify-center gap-4">
+                                    <PrimaryButton
+                                        onClick={() => generateBrief(selectedIdea.idea_id)}
+                                        disabled={loading}
+                                        size="lg"
+                                        className="bg-gradient-to-r from-[#a855f7] via-[#ec4899] to-[#f97316]"
+                                    >
+                                        {loading ? '🔄 Generating Brief...' : '🚀 Generate Research Brief'}
+                                    </PrimaryButton>
+                                    {!loading && (
+                                        <PrimaryButton
+                                            onClick={() => setSelectedIdea(null)}
+                                            variant="ghost"
+                                            size="lg"
+                                        >
+                                            Cancel
+                                        </PrimaryButton>
+                                    )}
+                                </div>
+                            </Card>
+                        </Section>
                     )}
-                </div>
+
+                    {/* Generated Briefs List */}
+                    {briefs.length > 0 && (
+                        <Section>
+                            <Card className="bg-slate-900/70 border border-slate-800 rounded-3xl">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2 text-white">
+                                        📋 Generated Briefs
+                                        <Badge variant="success">{briefs.length}</Badge>
+                                    </CardTitle>
+                                    <CardDescription className="text-slate-400">Your research briefs ready for review</CardDescription>
+                                </CardHeader>
+
+                                <div className="space-y-4">
+                                    {briefs.map((brief: any) => (
+                                        <SubCard key={brief.brief_id} className="transition-all hover:shadow-md bg-slate-800/50 border-slate-700 hover:bg-slate-800">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex-1">
+                                                    <h4 className="flex items-center gap-2 text-lg font-semibold text-slate-50">
+                                                        📄 {brief.brief_id}
+                                                        <Badge variant="success">
+                                                            <CheckCircle className="mr-1 h-3 w-3" /> Complete
+                                                        </Badge>
+                                                    </h4>
+
+                                                    {brief.key_points && brief.key_points.length > 0 && (
+                                                        <div className="mt-3">
+                                                            <p className="text-xs font-semibold uppercase text-slate-500">Key Points:</p>
+                                                            <ul className="mt-1 list-inside list-disc text-sm text-slate-400">
+                                                                {brief.key_points.slice(0, 3).map((point: string, idx: number) => (
+                                                                    <li key={idx}>{point}</li>
+                                                                ))}
+                                                                {brief.key_points.length > 3 && (
+                                                                    <li className="text-slate-500">... and {brief.key_points.length - 3} more</li>
+                                                                )}
+                                                            </ul>
+                                                        </div>
+                                                    )}
+
+                                                    {brief.outline && brief.outline.length > 0 && (
+                                                        <div className="mt-3">
+                                                            <p className="text-xs font-semibold uppercase text-slate-500">Outline:</p>
+                                                            <ul className="mt-1 list-inside list-disc text-sm text-slate-400">
+                                                                {brief.outline.slice(0, 4).map((section: any, idx: number) => (
+                                                                    <li key={idx}>{section.h2 || section}</li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <Link href={`/briefs/${brief.brief_id}`}>
+                                                    <PrimaryButton size="sm">
+                                                        View Full Brief →
+                                                    </PrimaryButton>
+                                                </Link>
+                                            </div>
+                                        </SubCard>
+                                    ))}
+                                </div>
+                            </Card>
+                        </Section>
+                    )}
+                </>
             )}
         </div>
     )
 }
-

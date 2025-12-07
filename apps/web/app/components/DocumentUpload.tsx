@@ -112,10 +112,10 @@ export function DocumentUpload({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[525px]">
+      <DialogContent className="sm:max-w-[525px] bg-slate-900 border-slate-800 text-slate-100">
         <DialogHeader>
-          <DialogTitle>Upload Document</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-slate-50">Upload Document</DialogTitle>
+          <DialogDescription className="text-slate-400">
             Tải lên tài liệu để sử dụng làm nguồn tham khảo cho RAG system.
           </DialogDescription>
         </DialogHeader>
@@ -124,8 +124,8 @@ export function DocumentUpload({
           <div
             className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
               dragActive
-                ? 'border-indigo-600 bg-indigo-50'
-                : 'border-gray-300 hover:border-gray-400'
+                ? 'border-indigo-500 bg-indigo-500/10'
+                : 'border-slate-700 hover:border-slate-600'
             }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -144,23 +144,23 @@ export function DocumentUpload({
 
             {!file ? (
               <div className="cursor-pointer">
-                <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                <p className="mt-2 text-sm font-medium text-gray-900">
+                <Upload className="mx-auto h-12 w-12 text-slate-500" />
+                <p className="mt-2 text-sm font-medium text-slate-200">
                   Click to upload hoặc kéo thả file vào đây
                 </p>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-slate-500">
                   PDF, DOC, DOCX, TXT (max. 10MB)
                 </p>
               </div>
             ) : (
-              <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+              <div className="flex items-center justify-between bg-slate-800 rounded-lg p-3">
                 <div className="flex items-center space-x-3">
-                  <File className="h-8 w-8 text-indigo-600" />
+                  <File className="h-8 w-8 text-indigo-400" />
                   <div className="text-left">
-                    <p className="text-sm font-medium text-gray-900 truncate max-w-[300px]">
+                    <p className="text-sm font-medium text-slate-200 truncate max-w-[300px]">
                       {file.name}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-slate-500">
                       {(file.size / 1024 / 1024).toFixed(2)} MB
                     </p>
                   </div>
@@ -171,9 +171,9 @@ export function DocumentUpload({
                       e.stopPropagation()
                       handleRemoveFile()
                     }}
-                    className="p-1 hover:bg-gray-200 rounded-full transition-colors"
+                    className="p-1 hover:bg-slate-700 rounded-full transition-colors"
                   >
-                    <X className="h-4 w-4 text-gray-500" />
+                    <X className="h-4 w-4 text-slate-400" />
                   </button>
                 )}
               </div>
@@ -182,11 +182,11 @@ export function DocumentUpload({
 
           {uploading && (
             <div className="space-y-2">
-              <div className="flex justify-between text-sm text-gray-600">
+              <div className="flex justify-between text-sm text-slate-400">
                 <span>Đang upload...</span>
                 <span>{progress}%</span>
               </div>
-              <Progress value={progress} className="h-2" />
+              <Progress value={progress} className="h-2 bg-slate-800" />
             </div>
           )}
         </div>
@@ -196,12 +196,14 @@ export function DocumentUpload({
             variant="outline"
             onClick={() => setOpen(false)}
             disabled={uploading}
+            className="border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700"
           >
             Hủy
           </Button>
           <Button
             onClick={handleUpload}
             disabled={!file || uploading}
+            className="bg-gradient-to-r from-[#a855f7] via-[#ec4899] to-[#f97316] hover:opacity-90"
           >
             {uploading ? 'Đang tải...' : 'Upload'}
           </Button>
@@ -210,6 +212,9 @@ export function DocumentUpload({
     </Dialog>
   )
 }
+
+
+
 
 
 

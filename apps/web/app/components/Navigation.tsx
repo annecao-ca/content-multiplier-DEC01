@@ -1,19 +1,36 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useLanguage } from '../contexts/LanguageContext'
-import { ThemeToggle } from '../components/ui'
+import { Sun, Moon } from 'lucide-react'
 
 export default function Navigation() {
     const pathname = usePathname()
     const { language, setLanguage } = useLanguage()
+    const [theme, setTheme] = useState<'light' | 'dark'>('light')
+    const [mounted, setMounted] = useState(false)
+
+    useEffect(() => {
+        setMounted(true)
+        const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        const initialTheme = savedTheme || systemTheme
+        setTheme(initialTheme)
+        document.documentElement.classList.toggle('dark', initialTheme === 'dark')
+    }, [])
+
+    const toggleTheme = () => {
+        const newTheme = theme === 'light' ? 'dark' : 'light'
+        setTheme(newTheme)
+        localStorage.setItem('theme', newTheme)
+        document.documentElement.classList.toggle('dark', newTheme === 'dark')
+    }
 
     const navItems = [
         { href: '/dashboard', label: 'Dashboard', description: 'Overview' },
         { href: '/ideas', label: 'Ideas', description: 'Generate ideas' },
         { href: '/briefs', label: 'Briefs', description: 'Research' },
-        // RAG Documents / Knowledge Base
         { href: '/documents', label: 'RAG', description: 'Documents & Search' },
         { href: '/packs', label: 'Content', description: 'Create & manage' },
         { href: '/analytics', label: 'Analytics', description: 'Metrics' },
@@ -31,15 +48,16 @@ export default function Navigation() {
             top: 0,
             left: 0,
             right: 0,
-            background: 'white',
-            borderBottom: '1px solid #e2e8f0',
+            background: theme === 'dark' ? '#1a1a2e' : 'white',
+            borderBottom: theme === 'dark' ? '1px solid #2d2d44' : '1px solid #e2e8f0',
             padding: '1rem 2rem',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            boxShadow: theme === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.1)',
             zIndex: 1000,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: '1rem'
+            gap: '1rem',
+            transition: 'all 0.3s ease'
         }}>
             {/* Logo/Brand */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
@@ -60,7 +78,7 @@ export default function Navigation() {
                         margin: 0,
                         fontSize: '1.25rem',
                         fontWeight: '700',
-                        color: '#2d3748'
+                        color: theme === 'dark' ? '#f1f5f9' : '#2d3748'
                     }}>
                         Content Multiplier
                     </h1>
@@ -79,7 +97,9 @@ export default function Navigation() {
                             style={{
                                 padding: '0.5rem 1rem',
                                 textDecoration: 'none',
-                                color: isActive(item.href) ? '#667eea' : '#4a5568',
+                                color: isActive(item.href) 
+                                    ? '#667eea' 
+                                    : theme === 'dark' ? '#a0aec0' : '#4a5568',
                                 fontWeight: isActive(item.href) ? '600' : '500',
                                 fontSize: '0.95rem',
                                 borderBottom: isActive(item.href) ? '2px solid #667eea' : '2px solid transparent',
@@ -93,7 +113,7 @@ export default function Navigation() {
                             }}
                             onMouseLeave={(e) => {
                                 if (!isActive(item.href)) {
-                                    e.currentTarget.style.color = '#4a5568'
+                                    e.currentTarget.style.color = theme === 'dark' ? '#a0aec0' : '#4a5568'
                                 }
                             }}
                         >
@@ -110,21 +130,43 @@ export default function Navigation() {
                 alignItems: 'center'
             }}>
                 {/* Theme Toggle */}
-                <ThemeToggle />
+                {mounted && (
+                    <button
+                        onClick={toggleTheme}
+                        style={{
+                            background: theme === 'dark' ? '#2d2d44' : '#f7fafc',
+                            border: theme === 'dark' ? '1px solid #3d3d5c' : '1px solid #e2e8f0',
+                            borderRadius: '50%',
+                            width: '40px',
+                            height: '40px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            color: theme === 'dark' ? '#fbbf24' : '#667eea'
+                        }}
+                        title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                    >
+                        {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+                    </button>
+                )}
                 
                 {/* Language Toggle */}
                 <div style={{
                     display: 'flex',
-                    background: '#f7fafc',
+                    background: theme === 'dark' ? '#2d2d44' : '#f7fafc',
                     borderRadius: '20px',
                     padding: '0.25rem',
-                    border: '1px solid #e2e8f0'
+                    border: theme === 'dark' ? '1px solid #3d3d5c' : '1px solid #e2e8f0'
                 }}>
                     <button
                         onClick={() => setLanguage('en')}
                         style={{
-                            background: language === 'en' ? 'white' : 'transparent',
-                            color: language === 'en' ? '#667eea' : '#718096',
+                            background: language === 'en' 
+                                ? (theme === 'dark' ? '#3d3d5c' : 'white') 
+                                : 'transparent',
+                            color: language === 'en' ? '#667eea' : (theme === 'dark' ? '#a0aec0' : '#718096'),
                             border: 'none',
                             padding: '0.35rem 0.75rem',
                             borderRadius: '16px',
@@ -140,8 +182,10 @@ export default function Navigation() {
                     <button
                         onClick={() => setLanguage('vn')}
                         style={{
-                            background: language === 'vn' ? 'white' : 'transparent',
-                            color: language === 'vn' ? '#667eea' : '#718096',
+                            background: language === 'vn' 
+                                ? (theme === 'dark' ? '#3d3d5c' : 'white') 
+                                : 'transparent',
+                            color: language === 'vn' ? '#667eea' : (theme === 'dark' ? '#a0aec0' : '#718096'),
                             border: 'none',
                             padding: '0.35rem 0.75rem',
                             borderRadius: '16px',
@@ -188,7 +232,3 @@ export default function Navigation() {
         </nav>
     )
 }
-
-
-
-

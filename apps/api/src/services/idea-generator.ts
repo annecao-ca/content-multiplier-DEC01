@@ -1,4 +1,6 @@
 import { MultiProviderLLM } from './llm';
+import { loadLLMSettings } from './settingsStore.ts';
+import { env } from '../env.ts';
 import Ajv from 'ajv';
 
 const ajv = new Ajv();
@@ -18,6 +20,40 @@ const ideaSchema = {
 
 const validate = ajv.compile(ideaSchema);
 
+// Get available providers based on API keys
+function getAvailableProviders(): string[] {
+    const providers: string[] = [];
+    
+    // Check which providers have API keys configured
+    if (env.OPENAI_API_KEY || process.env.OPENAI_API_KEY) {
+        providers.push('openai');
+    }
+    if (env.DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY) {
+        providers.push('deepseek');
+    }
+    // Skip Gemini if API key is empty or known to be leaked
+    if (env.GEMINI_API_KEY && env.GEMINI_API_KEY.trim() !== '') {
+        providers.push('gemini');
+    }
+    // Add other providers if they have API keys
+    if (process.env.ANTHROPIC_API_KEY) {
+        providers.push('anthropic');
+    }
+    if (process.env.GROK_API_KEY) {
+        providers.push('grok');
+    }
+    
+    // Default fallback order if no API keys found
+    if (providers.length === 0) {
+        return ['deepseek', 'openai']; // DeepSeek has a default key in env
+    }
+    
+    return providers;
+}
+
+// Fallback providers in order of preference (will be filtered by available providers)
+const PREFERRED_PROVIDERS = ['deepseek', 'openai', 'gemini', 'anthropic', 'grok'];
+
 export class IdeaGenerator {
     private llm: MultiProviderLLM;
 
@@ -25,74 +61,176 @@ export class IdeaGenerator {
         this.llm = new MultiProviderLLM();
     }
 
+    private isAPIKeyError(error: any): boolean {
+        const errorMessage = error?.message || error?.toString() || '';
+        return (
+            errorMessage.includes('403') ||
+            errorMessage.includes('401') ||
+            errorMessage.includes('API key') ||
+            errorMessage.includes('leaked') ||
+            errorMessage.includes('Forbidden') ||
+            errorMessage.includes('Unauthorized')
+        );
+    }
+
     async generateIdeas(persona: string, industry: string, count: number = 10) {
         const prompt = `
             Generate ${count} content ideas for a ${persona} in the ${industry} industry.
-            Format the output strictly as a JSON array of objects.
-            Each object must have these fields:
-            - title: A catchy headline
-            - description: A brief summary of the content
-            - rationale: Why this idea works for this audience
+            Format the output as a JSON object with an "ideas" array.
+            Each idea object must have these fields:
+            - title: A catchy headline (required)
+            - description: A brief summary of the content (required)
+            - rationale: Why this idea works for this audience (required)
 
             Example format:
-            [
-                {
-                    "title": "5 Ways to Optimize...",
-                    "description": "A guide about...",
-                    "rationale": "This addresses the pain point of..."
-                }
-            ]
-            
-            Do not include any markdown formatting (like \`\`\`json). Just the raw JSON string.
+            {
+                "ideas": [
+                    {
+                        "title": "5 Ways to Optimize...",
+                        "description": "A guide about...",
+                        "rationale": "This addresses the pain point of..."
+                    }
+                ]
+            }
         `;
 
         let attempts = 0;
-        const maxRetries = 3;
+        const maxRetries = 4;
+        const saved = loadLLMSettings();
+        const availableProviders = getAvailableProviders();
+        
+        // Determine starting provider
+        let currentProvider = saved?.provider || 'deepseek'; // Default to DeepSeek (has API key)
+        
+        // If saved provider is not available, use first available provider
+        if (!availableProviders.includes(currentProvider)) {
+            currentProvider = availableProviders[0] || 'deepseek';
+        }
+        
+        // Build provider list: start with current, then add others in preferred order
+        const providersToTry = [
+            currentProvider,
+            ...PREFERRED_PROVIDERS.filter(p => 
+                p !== currentProvider && availableProviders.includes(p)
+            )
+        ];
+        
+        console.log(`[IdeaGenerator] Available providers: ${availableProviders.join(', ')}`);
+        console.log(`[IdeaGenerator] Will try providers in order: ${providersToTry.join(' -> ')}`);
+        
+        let providerIndex = 0;
+        let lastError: any = null;
 
-        while (attempts <= maxRetries) {
+        while (attempts <= maxRetries && providerIndex < providersToTry.length) {
+            const provider = providersToTry[providerIndex];
             try {
-                console.log(`[IdeaGenerator] Attempt ${attempts + 1}/${maxRetries + 1}`);
+                console.log(`[IdeaGenerator] Attempt ${attempts + 1}/${maxRetries + 1} using provider: ${provider}`);
 
-                // 1. Call LLM
-                const responseText = await this.llm.completeText({
-                    user: prompt,
-                    temperature: 0.8,
-                    maxRetries: 1 // Internal LLM retry
-                });
-
-                // 2. Clean response (remove markdown if present)
-                const cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-
-                // 3. Parse JSON
-                let data;
+                // 1. Call LLM with completeJSON for better JSON output
+                let responseData;
                 try {
-                    data = JSON.parse(cleanedText);
-                } catch (e) {
-                    throw new Error('Failed to parse JSON');
+                    // Force provider by using model name that matches provider
+                    const modelHint = provider === 'deepseek' ? 'deepseek-chat' :
+                        provider === 'gemini' ? 'gemini-2.0-flash-lite' :
+                        provider === 'openai' ? 'gpt-4o-mini' : undefined;
+
+                    responseData = await this.llm.completeJSON({
+                        user: prompt,
+                        temperature: 0.8,
+                        model: modelHint,
+                        maxRetries: 1 // Internal LLM retry
+                    });
+                } catch (jsonError: any) {
+                    // If API key error, try next provider
+                    if (this.isAPIKeyError(jsonError)) {
+                        console.warn(`[IdeaGenerator] API key error with ${provider}, trying next provider...`);
+                        providerIndex++;
+                        lastError = jsonError;
+                        continue;
+                    }
+
+                    // Fallback to completeText if completeJSON fails (non-API-key error)
+                    console.warn('[IdeaGenerator] completeJSON failed, trying completeText:', jsonError);
+                    const modelHint = provider === 'deepseek' ? 'deepseek-chat' :
+                        provider === 'gemini' ? 'gemini-2.0-flash-lite' :
+                        provider === 'openai' ? 'gpt-4o-mini' : undefined;
+
+                    const responseText = await this.llm.completeText({
+                        user: prompt,
+                        temperature: 0.8,
+                        model: modelHint,
+                        maxRetries: 1
+                    });
+                    const cleanedText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+                    responseData = JSON.parse(cleanedText);
                 }
 
-                // 4. Validate with AJV
-                const valid = validate(data);
+                // 2. Extract ideas array from response
+                let ideasArray;
+                if (Array.isArray(responseData)) {
+                    ideasArray = responseData;
+                } else if (responseData.ideas && Array.isArray(responseData.ideas)) {
+                    ideasArray = responseData.ideas;
+                } else if (responseData.data && Array.isArray(responseData.data)) {
+                    ideasArray = responseData.data;
+                } else {
+                    throw new Error('Response does not contain a valid ideas array');
+                }
+
+                // 3. Validate with AJV
+                const valid = validate(ideasArray);
                 if (!valid) {
                     console.error('[IdeaGenerator] Validation errors:', validate.errors);
-                    throw new Error('JSON structure validation failed');
+                    throw new Error(`JSON structure validation failed: ${JSON.stringify(validate.errors)}`);
                 }
 
-                return data;
+                // 4. Ensure we have at least one idea
+                if (ideasArray.length === 0) {
+                    throw new Error('Generated ideas array is empty');
+                }
 
-            } catch (error) {
-                console.warn(`[IdeaGenerator] Attempt ${attempts + 1} failed:`, error);
+                console.log(`[IdeaGenerator] ✅ Successfully generated ${ideasArray.length} ideas`);
+                return ideasArray;
+
+            } catch (error: any) {
+                lastError = error;
+                const isAPIKeyErr = this.isAPIKeyError(error);
+
+                if (isAPIKeyErr && providerIndex < providersToTry.length - 1) {
+                    // API key error - try next provider immediately
+                    console.warn(`[IdeaGenerator] API key error with ${provider}, switching to next provider...`);
+                    providerIndex++;
+                    continue;
+                }
+
+                console.warn(`[IdeaGenerator] Attempt ${attempts + 1} failed with ${provider}:`, error.message || error);
                 attempts++;
 
                 if (attempts > maxRetries) {
-                    throw new Error(`Failed to generate valid ideas after ${maxRetries + 1} attempts`);
+                    // If we've tried all providers, give up
+                    if (providerIndex >= providersToTry.length - 1) {
+                        const errorMsg = isAPIKeyErr
+                            ? `API key error: ${error.message}. Please configure a valid API key in Settings.`
+                            : `Failed to generate valid ideas after ${maxRetries + 1} attempts: ${error.message || error}`;
+                        throw new Error(errorMsg);
+                    }
+                    // Try next provider
+                    providerIndex++;
+                    attempts = 0; // Reset attempts for new provider
+                } else {
+                    // Exponential backoff: 1s, 2s, 4s
+                    const delay = Math.pow(2, attempts - 1) * 1000;
+                    console.log(`[IdeaGenerator] Retrying in ${delay}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
                 }
-
-                // Exponential backoff: 1s, 2s, 4s
-                const delay = Math.pow(2, attempts - 1) * 1000;
-                console.log(`[IdeaGenerator] Retrying in ${delay}ms...`);
-                await new Promise(resolve => setTimeout(resolve, delay));
             }
         }
+
+        // If we exhausted all providers
+        throw new Error(
+            lastError && this.isAPIKeyError(lastError)
+                ? `API key error: ${lastError.message}. Please configure a valid API key in Settings page.`
+                : `Failed to generate ideas with all available providers. Last error: ${lastError?.message || 'Unknown error'}`
+        );
     }
 }

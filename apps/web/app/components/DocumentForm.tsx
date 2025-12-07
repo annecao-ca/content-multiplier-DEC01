@@ -122,13 +122,13 @@ export function DocumentForm({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-800 text-slate-100">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-slate-50">
               {mode === 'create' ? '📝 Thêm tài liệu mới' : '✏️ Chỉnh sửa tài liệu'}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-slate-400">
               Điền thông tin tài liệu. Hệ thống sẽ tự động chia nhỏ văn bản và tạo vector để tìm kiếm.
             </DialogDescription>
           </DialogHeader>
@@ -136,8 +136,8 @@ export function DocumentForm({
           <div className="grid gap-4 py-4">
             {/* Title */}
             <div className="space-y-2">
-              <Label htmlFor="title">
-                Tiêu đề <span className="text-red-500">*</span>
+              <Label htmlFor="title" className="text-slate-300">
+                Tiêu đề <span className="text-red-400">*</span>
               </Label>
               <Input
                 id="title"
@@ -145,23 +145,25 @@ export function DocumentForm({
                 onChange={(e) => handleChange('title', e.target.value)}
                 placeholder="Nhập tiêu đề tài liệu"
                 required
+                className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
               />
             </div>
 
             {/* Author */}
             <div className="space-y-2">
-              <Label htmlFor="author">Tác giả</Label>
+              <Label htmlFor="author" className="text-slate-300">Tác giả</Label>
               <Input
                 id="author"
                 value={formData.author}
                 onChange={(e) => handleChange('author', e.target.value)}
                 placeholder="Nhập tên tác giả"
+                className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
               />
             </div>
 
             {/* Published Date */}
             <div className="space-y-2">
-              <Label htmlFor="published_date">Ngày xuất bản</Label>
+              <Label htmlFor="published_date" className="text-slate-300">Ngày xuất bản</Label>
               <Input
                 id="published_date"
                 type="datetime-local"
@@ -188,21 +190,23 @@ export function DocumentForm({
                   // Store datetime-local value, will be converted to ISO on submit
                   handleChange('published_date', e.target.value || '')
                 }}
+                className="bg-slate-800 border-slate-700 text-slate-100"
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-slate-500">
                 Chọn ngày và giờ xuất bản (sẽ được lưu dạng TIMESTAMPTZ)
               </p>
             </div>
 
             {/* URL */}
             <div className="space-y-2">
-              <Label htmlFor="url">URL nguồn</Label>
+              <Label htmlFor="url" className="text-slate-300">URL nguồn</Label>
               <Input
                 id="url"
                 type="url"
                 value={formData.url}
                 onChange={(e) => handleChange('url', e.target.value)}
                 placeholder="https://example.com/document"
+                className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
               />
             </div>
 
@@ -213,7 +217,7 @@ export function DocumentForm({
               {/* Available tags dropdown */}
               {availableTags.length > 0 && (
                 <div className="mb-2">
-                  <p className="text-xs text-gray-500 mb-1">Chọn từ tags có sẵn:</p>
+                  <p className="text-xs text-slate-500 mb-1">Chọn từ tags có sẵn:</p>
                   <div className="flex flex-wrap gap-2">
                     {availableTags
                       .filter(tag => !formData.tags.includes(tag))
@@ -221,7 +225,7 @@ export function DocumentForm({
                         <Badge
                           key={tag}
                           variant="outline"
-                          className="cursor-pointer hover:bg-indigo-50 hover:border-indigo-400"
+                          className="cursor-pointer hover:bg-slate-700 hover:border-slate-600 bg-slate-800 border-slate-700 text-slate-300"
                           onClick={() => handleChange('tags', [...formData.tags, tag])}
                         >
                           <Plus className="h-3 w-3 mr-1" />
@@ -245,12 +249,14 @@ export function DocumentForm({
                     }
                   }}
                   placeholder="Nhập tag mới và nhấn Enter"
+                  className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
                 />
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleAddTag}
                   disabled={!tagInput.trim()}
+                  className="border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
@@ -259,19 +265,19 @@ export function DocumentForm({
               {/* Selected tags */}
               {formData.tags.length > 0 && (
                 <div className="mt-2">
-                  <p className="text-xs text-gray-500 mb-1">Tags đã chọn:</p>
+                  <p className="text-xs text-slate-500 mb-1">Tags đã chọn:</p>
                   <div className="flex flex-wrap gap-2">
                   {formData.tags.map((tag) => (
                     <Badge
                       key={tag}
                       variant="secondary"
-                      className="cursor-pointer hover:bg-gray-300"
+                      className="cursor-pointer hover:bg-slate-700 bg-slate-800 text-slate-300"
                     >
                       {tag}
                       <button
                         type="button"
                         onClick={() => handleRemoveTag(tag)}
-                        className="ml-1 hover:text-red-600"
+                        className="ml-1 hover:text-red-400"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -284,20 +290,21 @@ export function DocumentForm({
 
             {/* Description */}
             <div className="space-y-2">
-              <Label htmlFor="description">Mô tả ngắn</Label>
+              <Label htmlFor="description" className="text-slate-300">Mô tả ngắn</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => handleChange('description', e.target.value)}
                 placeholder="Nhập mô tả ngắn về tài liệu"
                 rows={2}
+                className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
               />
             </div>
 
             {/* Content */}
             <div className="space-y-2">
-              <Label htmlFor="raw">
-                Nội dung <span className="text-red-500">*</span>
+              <Label htmlFor="raw" className="text-slate-300">
+                Nội dung <span className="text-red-400">*</span>
               </Label>
               <Textarea
                 id="raw"
@@ -306,8 +313,9 @@ export function DocumentForm({
                 placeholder="Dán nội dung tài liệu vào đây..."
                 rows={10}
                 required
+                className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-slate-500">
                 <FileText className="inline h-3 w-3 mr-1" />
                 Nội dung sẽ được tự động chia nhỏ thành chunks và tạo vector embeddings
               </p>
@@ -320,10 +328,15 @@ export function DocumentForm({
               variant="outline"
               onClick={() => setOpen(false)}
               disabled={loading}
+              className="border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700"
             >
               Hủy
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button 
+              type="submit" 
+              disabled={loading}
+              className="bg-gradient-to-r from-[#a855f7] via-[#ec4899] to-[#f97316] hover:opacity-90"
+            >
               {loading ? 'Đang xử lý...' : mode === 'create' ? 'Tạo tài liệu' : 'Lưu thay đổi'}
             </Button>
           </DialogFooter>

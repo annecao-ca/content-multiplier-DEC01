@@ -93,61 +93,43 @@ export function DocumentCard({
   }
 
   return (
-    <Card 
-      className={`transition-all hover:shadow-md hover:border-indigo-300 ${className}`}
+    <div 
+      className={`rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all overflow-hidden max-h-52 flex flex-col ${className}`}
     >
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start space-x-3 flex-1">
-            <div className="p-2 bg-indigo-50 rounded-lg">
-              <File className="h-5 w-5 text-indigo-600" />
+      <div className="p-4 flex flex-col gap-2 flex-1 min-h-0">
+        {/* Header: Icon + Title + Delete */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-start gap-2 flex-1 min-w-0">
+            <div className="p-1.5 bg-white/5 rounded-lg flex-shrink-0">
+              <File className="h-4 w-4 text-white/60" />
             </div>
             <div className="flex-1 min-w-0">
-              <CardTitle className="text-lg truncate">{title}</CardTitle>
-              <CardDescription className="mt-1 space-y-1">
-                <div className="text-xs text-gray-500">
-                  Tạo: {formatDate(uploadDate)}
-                </div>
-                {published_date && (
-                  <div className="flex items-center gap-1 text-xs text-indigo-600">
-                    <Calendar className="h-3 w-3" />
-                    <span>Xuất bản: {formatDateTime(published_date)}</span>
-                  </div>
-                )}
-                {author && (
-                  <div className="flex items-center gap-1 text-xs text-gray-600">
-                    <User className="h-3 w-3" />
-                    <span>{author}</span>
-                  </div>
-                )}
-              </CardDescription>
+              <h3 className="truncate text-base font-semibold text-white">{title}</h3>
             </div>
           </div>
           
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              <button
+                className="bg-slate-900/50 border border-white/10 rounded-full p-1.5 text-white/50 hover:text-red-400 hover:border-red-500/50 transition-colors flex-shrink-0 disabled:opacity-50"
                 disabled={deleting}
               >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
             </AlertDialogTrigger>
-            <AlertDialogContent>
+            <AlertDialogContent className="bg-slate-900 border border-slate-800">
               <AlertDialogHeader>
-                <AlertDialogTitle>Xác nhận xóa tài liệu</AlertDialogTitle>
-                <AlertDialogDescription>
+                <AlertDialogTitle className="text-slate-50">Xác nhận xóa tài liệu</AlertDialogTitle>
+                <AlertDialogDescription className="text-slate-400">
                   Bạn có chắc chắn muốn xóa tài liệu "{title}"? 
                   Hành động này không thể hoàn tác.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Hủy</AlertDialogCancel>
+                <AlertDialogCancel className="bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700">Hủy</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleDelete}
-                  className="bg-red-600 hover:bg-red-700"
+                  className="bg-red-600 hover:bg-red-700 text-white"
                 >
                   {deleting ? 'Đang xóa...' : 'Xóa'}
                 </AlertDialogAction>
@@ -155,44 +137,63 @@ export function DocumentCard({
             </AlertDialogContent>
           </AlertDialog>
         </div>
-      </CardHeader>
 
-      <CardContent className="pt-0 space-y-3">
+        {/* Metadata: Upload date, Published date, Author */}
+        <div className="space-y-1">
+          <div className="truncate text-xs text-white/50">
+            Tạo: {formatDate(uploadDate)}
+          </div>
+          {published_date && (
+            <div className="flex items-center gap-1 text-xs text-white/50 truncate">
+              <Calendar className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">Xuất bản: {formatDateTime(published_date)}</span>
+            </div>
+          )}
+          {author && (
+            <div className="flex items-center gap-1 text-xs text-white/50 truncate">
+              <User className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">{author}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Description */}
         {description && (
-          <p className="text-sm text-gray-600 line-clamp-2">{description}</p>
+          <p className="line-clamp-2 text-sm text-white/70 break-words">{description}</p>
         )}
         
+        {/* Tags */}
         {tags && tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
-            <Tag className="h-3 w-3 text-gray-400 mt-1" />
+            <Tag className="h-3 w-3 text-white/40 mt-0.5 flex-shrink-0" />
             {tags.map((tag) => (
-              <Badge
+              <span
                 key={tag}
-                variant="secondary"
-                className="text-xs"
+                className="bg-white/10 text-white/80 text-[11px] rounded-full px-2 py-0.5 break-words"
               >
                 {tag}
-              </Badge>
+              </span>
             ))}
           </div>
         )}
 
-      {url && (
-          <div className="flex items-center space-x-2 text-sm pt-2 border-t">
-            <ExternalLink className="h-4 w-4 text-gray-400 flex-shrink-0" />
+        {/* URL */}
+        {url && (
+          <div className="flex items-center gap-2 text-xs pt-2 border-t border-white/10 mt-auto">
+            <ExternalLink className="h-3.5 w-3.5 text-white/40 flex-shrink-0" />
             <a
               href={url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-indigo-600 hover:text-indigo-800 hover:underline truncate"
+              className="text-sky-400 hover:text-sky-300 hover:underline truncate break-all"
               title={url}
             >
-              {truncateUrl(url)}
+              {truncateUrl(url, 40)}
             </a>
           </div>
         )}
-        </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
 

@@ -1,8 +1,25 @@
 'use client'
+
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import Button from '../components/Button'
+import { Settings, Zap, Send, Bot, Save, TestTube, Play, ChevronRight } from 'lucide-react'
 import { useToast, ConfirmModal } from '../components/ui'
+import {
+    Section,
+    Card,
+    SubCard,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+    PrimaryButton,
+    Badge,
+    Grid,
+    Input,
+    Textarea,
+    Select,
+    Alert,
+} from '../components/webflow-ui'
+import { DashboardHero } from '../components/dashboard-ui'
 
 interface LLMConfig {
     provider: 'openai' | 'deepseek' | 'anthropic' | 'gemini' | 'grok'
@@ -16,36 +33,56 @@ const LLM_PROVIDERS = {
         name: 'OpenAI',
         models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4', 'gpt-3.5-turbo'],
         defaultModel: 'gpt-4o-mini',
-        requiresApiKey: true
+        requiresApiKey: true,
+        description: 'OpenAI provides GPT models for general AI tasks with strong language understanding.'
     },
     deepseek: {
         name: 'DeepSeek',
         models: ['deepseek-chat', 'deepseek-coder'],
         defaultModel: 'deepseek-chat',
         baseUrl: 'https://api.deepseek.com',
-        requiresApiKey: true
+        requiresApiKey: true,
+        description: 'DeepSeek offers competitive AI models with strong coding capabilities and cost-effective pricing.'
     },
     anthropic: {
         name: 'Anthropic',
         models: ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'],
         defaultModel: 'claude-3-5-sonnet-20241022',
-        requiresApiKey: true
+        requiresApiKey: true,
+        description: 'Anthropic provides Claude models with strong reasoning, safety features, and long context windows.'
     },
     gemini: {
         name: 'Google Gemini',
         models: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro'],
         defaultModel: 'gemini-1.5-flash',
         baseUrl: 'https://generativelanguage.googleapis.com',
-        requiresApiKey: true
+        requiresApiKey: true,
+        description: 'Google Gemini offers powerful multimodal AI with strong reasoning and real-time access to current information.'
     },
     grok: {
         name: 'xAI Grok',
         models: ['grok-beta', 'grok-1.5', 'grok-4-fast-non-reasoning'],
         defaultModel: 'grok-beta',
         baseUrl: 'https://api.x.ai',
-        requiresApiKey: true
+        requiresApiKey: true,
+        description: 'xAI Grok provides helpful AI with a focus on truth-seeking and real-time access to current events.'
     }
 }
+
+const settingsLinks = [
+    {
+        href: '/settings/publishing',
+        icon: Send,
+        title: 'Publishing Settings',
+        description: 'Connect social media platforms, configure webhooks, and manage publishing credentials'
+    },
+    {
+        href: '/settings/twitter-bot',
+        icon: Bot,
+        title: 'Twitter Bot',
+        description: 'Automated Twitter posting with AI-generated content and scheduling'
+    }
+]
 
 export default function SettingsPage() {
     const [config, setConfig] = useState<LLMConfig>({
@@ -55,9 +92,9 @@ export default function SettingsPage() {
     })
     const [saving, setSaving] = useState(false)
     const [message, setMessage] = useState('')
+    const [messageType, setMessageType] = useState<'success' | 'error'>('success')
     const [prompt, setPrompt] = useState('Write a short haiku about content strategies.')
     const [running, setRunning] = useState(false)
-    const [resetModalOpen, setResetModalOpen] = useState(false)
     const toast = useToast()
 
     useEffect(() => {
@@ -88,16 +125,18 @@ export default function SettingsPage() {
             })
 
             if (response.ok) {
-                setMessage('✅ Settings saved successfully!')
+                setMessage('Settings saved successfully!')
+                setMessageType('success')
                 toast.success('Settings saved successfully!')
             } else {
                 const error = await response.json()
-                const errorMsg = `Error: ${error.error}`
-                setMessage(`❌ ${errorMsg}`)
+                setMessage(`Error: ${error.error}`)
+                setMessageType('error')
                 toast.error('Failed to save settings', error.error)
             }
         } catch (error) {
-            setMessage('❌ Failed to save settings')
+            setMessage('Failed to save settings')
+            setMessageType('error')
             toast.error('Failed to save settings')
         }
 
@@ -121,17 +160,18 @@ export default function SettingsPage() {
 
             if (response.ok) {
                 const result = await response.json()
-                const successMsg = `${result.provider} connected successfully!`
-                setMessage(`✅ ${successMsg}`)
-                toast.success(successMsg)
+                setMessage(`${result.provider} connected successfully!`)
+                setMessageType('success')
+                toast.success(`${result.provider} connected successfully!`)
             } else {
                 const error = await response.json()
-                const errorMsg = `Connection failed: ${error.error}`
-                setMessage(`❌ ${errorMsg}`)
+                setMessage(`Connection failed: ${error.error}`)
+                setMessageType('error')
                 toast.error('Connection failed', error.error)
             }
         } catch (error) {
-            setMessage('❌ Connection test failed')
+            setMessage('Connection test failed')
+            setMessageType('error')
             toast.error('Connection test failed')
         }
 
@@ -149,270 +189,161 @@ export default function SettingsPage() {
             })
             const data = await res.json()
             if (!res.ok) throw new Error(data.error || 'Run failed')
-            setMessage(`✅ Output (model: ${data.model}):\n\n${data.output}`)
+            setMessage(`Output (model: ${data.model}):\n\n${data.output}`)
+            setMessageType('success')
         } catch (e: any) {
-            setMessage(`❌ ${e.message}`)
+            setMessage(e.message)
+            setMessageType('error')
         } finally {
             setRunning(false)
         }
     }
 
+    const providerOptions = Object.entries(LLM_PROVIDERS).map(([key, provider]) => ({
+        value: key,
+        label: provider.name
+    }))
+
+    const modelOptions = LLM_PROVIDERS[config.provider].models.map(model => ({
+        value: model,
+        label: model
+    }))
+
     return (
-        <main style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2rem' }}>
-                <Link href="/" style={{
-                    marginRight: '1rem',
-                    padding: '0.5rem 1rem',
-                    background: '#2d3748',
-                    color: 'white',
-                    textDecoration: 'none',
-                    borderRadius: '8px',
-                    border: '1px solid rgba(0,0,0,0.2)',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                    transition: 'all 0.2s ease'
-                }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#3b475e'
-                        e.currentTarget.style.transform = 'translateY(-1px)'
-                        e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.25)'
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#2d3748'
-                        e.currentTarget.style.transform = 'translateY(0)'
-                        e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)'
-                    }}>
-                    ← Back
-                </Link>
-                <h1 style={{ margin: 0 }}>Settings</h1>
-            </div>
+        <div className="min-h-screen bg-slate-950">
+            <DashboardHero
+                title="Settings"
+                description="Configure AI providers, publishing platforms, and automation settings"
+            />
 
-            {/* Navigation Menu */}
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                gap: '1rem',
-                marginBottom: '2rem'
-            }}>
-                <Link
-                    href="/settings/publishing"
-                    style={{
-                        display: 'block',
-                        padding: '1.5rem',
-                        background: '#f8f9fa',
-                        border: '1px solid #dee2e6',
-                        borderRadius: '8px',
-                        textDecoration: 'none',
-                        color: '#495057',
-                        transition: 'all 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#e9ecef'
-                        e.currentTarget.style.transform = 'translateY(-2px)'
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#f8f9fa'
-                        e.currentTarget.style.transform = 'translateY(0)'
-                        e.currentTarget.style.boxShadow = 'none'
-                    }}
-                >
-                    <h3 style={{ margin: '0 0 0.5rem 0', color: '#343a40' }}>📡 Publishing Settings</h3>
-                    <p style={{ margin: 0, fontSize: '0.9rem' }}>
-                        Connect social media platforms, configure webhooks, and manage publishing credentials
-                    </p>
-                </Link>
-                
-                <Link
-                    href="/settings/twitter-bot"
-                    style={{
-                        display: 'block',
-                        padding: '1.5rem',
-                        background: '#f8f9fa',
-                        border: '1px solid #dee2e6',
-                        borderRadius: '8px',
-                        textDecoration: 'none',
-                        color: '#495057',
-                        transition: 'all 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#e9ecef'
-                        e.currentTarget.style.transform = 'translateY(-2px)'
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#f8f9fa'
-                        e.currentTarget.style.transform = 'translateY(0)'
-                        e.currentTarget.style.boxShadow = 'none'
-                    }}
-                >
-                    <h3 style={{ margin: '0 0 0.5rem 0', color: '#343a40' }}>🐦 Twitter Bot</h3>
-                    <p style={{ margin: 0, fontSize: '0.9rem' }}>
-                        Automated Twitter posting with AI-generated content and scheduling
-                    </p>
-                </Link>
-            </div>
+            {/* Quick Navigation */}
+            <Section>
+                <Grid cols={2}>
+                    {settingsLinks.map((link) => {
+                        const Icon = link.icon
+                        return (
+                            <Link key={link.href} href={link.href}>
+                                <SubCard className="group h-full cursor-pointer rounded-2xl bg-slate-900/70 border border-slate-800 p-6 transition-all hover:shadow-md hover:ring-2 hover:ring-indigo-500/20 hover:bg-slate-800">
+                                    <div className="flex items-start gap-4">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 text-slate-400">
+                                            <Icon className="h-6 w-6" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <h3 className="font-semibold text-slate-50">{link.title}</h3>
+                                            <p className="mt-1 text-sm text-slate-400">{link.description}</p>
+                                        </div>
+                                        <ChevronRight className="h-5 w-5 text-slate-500 transition-transform group-hover:translate-x-1" />
+                                    </div>
+                                </SubCard>
+                            </Link>
+                        )
+                    })}
+                </Grid>
+            </Section>
 
-            <div style={{
-                background: '#f8f9fa',
-                padding: '2rem',
-                borderRadius: '8px',
-                border: '1px solid #dee2e6'
-            }}>
-                <h2 style={{ marginTop: 0, color: '#495057' }}>LLM Configuration</h2>
+            {/* LLM Configuration */}
+            <Section>
+                <Card className="bg-slate-900/70 border border-slate-800 rounded-3xl">
+                    <CardHeader>
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 ring-1 ring-violet-500/30">
+                                <Zap className="h-5 w-5 text-violet-400" />
+                            </div>
+                            <div>
+                                <CardTitle className="text-white">LLM Configuration</CardTitle>
+                                <CardDescription className="text-slate-400">Configure your AI provider and model settings</CardDescription>
+                            </div>
+                        </div>
+                    </CardHeader>
 
-                {/* Provider Selection */}
-                <div style={{ marginBottom: '2rem' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                        AI Provider
-                    </label>
-                    <select
-                        value={config.provider}
-                        onChange={(e) => updateConfig({
-                            provider: e.target.value as any,
-                            model: LLM_PROVIDERS[e.target.value as keyof typeof LLM_PROVIDERS].defaultModel
-                        })}
-                        style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            border: '1px solid #ced4da',
-                            borderRadius: '4px',
-                            fontSize: '16px'
-                        }}
-                    >
-                        {Object.entries(LLM_PROVIDERS).map(([key, provider]) => (
-                            <option key={key} value={key}>{provider.name}</option>
-                        ))}
-                    </select>
-                </div>
+                    <Grid cols={2} className="mb-6">
+                        <Select
+                            label="AI Provider"
+                            value={config.provider}
+                            onChange={(e) => updateConfig({
+                                provider: e.target.value as any,
+                                model: LLM_PROVIDERS[e.target.value as keyof typeof LLM_PROVIDERS].defaultModel
+                            })}
+                            options={providerOptions}
+                        />
+                        <Select
+                            label="Model"
+                            value={config.model}
+                            onChange={(e) => updateConfig({ model: e.target.value })}
+                            options={modelOptions}
+                        />
+                    </Grid>
 
-                {/* API Key */}
-                <div style={{ marginBottom: '2rem' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                        API Key ({LLM_PROVIDERS[config.provider].name})
-                    </label>
-                    <input
-                        type="password"
-                        value={config.apiKey}
-                        onChange={(e) => updateConfig({ apiKey: e.target.value })}
-                        placeholder={`Enter your ${LLM_PROVIDERS[config.provider].name} API key`}
-                        style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            border: '1px solid #ced4da',
-                            borderRadius: '4px',
-                            fontSize: '16px'
-                        }}
-                    />
-                    <small style={{ color: '#6c757d', marginTop: '0.25rem', display: 'block' }}>
-                        🔒 Your API key is stored locally and never sent to our servers
-                    </small>
-                </div>
+                    <div className="mb-6">
+                        <Input
+                            label={`API Key (${LLM_PROVIDERS[config.provider].name})`}
+                            type="password"
+                            value={config.apiKey}
+                            onChange={(e) => updateConfig({ apiKey: e.target.value })}
+                            placeholder={`Enter your ${LLM_PROVIDERS[config.provider].name} API key`}
+                        />
+                        <p className="mt-1 text-xs text-slate-500">
+                            🔒 Your API key is stored locally and never sent to our servers
+                        </p>
+                    </div>
 
-                {/* Model Selection */}
-                <div style={{ marginBottom: '2rem' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                        Model
-                    </label>
-                    <select
-                        value={config.model}
-                        onChange={(e) => updateConfig({ model: e.target.value })}
-                        style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            border: '1px solid #ced4da',
-                            borderRadius: '4px',
-                            fontSize: '16px'
-                        }}
-                    >
-                        {LLM_PROVIDERS[config.provider].models.map(model => (
-                            <option key={model} value={model}>{model}</option>
-                        ))}
-                    </select>
-                </div>
+                    {/* Custom Base URL */}
+                    {['deepseek', 'gemini', 'grok'].includes(config.provider) && (
+                        <div className="mb-6">
+                            <Input
+                                label="Base URL"
+                                value={config.baseUrl || (LLM_PROVIDERS[config.provider] as any).baseUrl}
+                                onChange={(e) => updateConfig({ baseUrl: e.target.value })}
+                            />
+                        </div>
+                    )}
 
-                {/* Custom Base URL (for providers that need it) */}
-                {['deepseek', 'gemini', 'grok'].includes(config.provider) && (
-                    <div style={{ marginBottom: '2rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                            Base URL
-                        </label>
-                        <input
-                            type="text"
-                            value={config.baseUrl || (LLM_PROVIDERS[config.provider] as any).baseUrl}
-                            onChange={(e) => updateConfig({ baseUrl: e.target.value })}
-                            style={{
-                                width: '100%',
-                                padding: '0.75rem',
-                                border: '1px solid #ced4da',
-                                borderRadius: '4px',
-                                fontSize: '16px'
-                            }}
+                    {/* Action Buttons */}
+                    <div className="mb-6 flex flex-wrap gap-3">
+                        <PrimaryButton onClick={saveConfig} disabled={saving} className="bg-gradient-to-r from-[#a855f7] via-[#ec4899] to-[#f97316]">
+                            <Save className="mr-2 h-4 w-4" />
+                            {saving ? 'Saving...' : 'Save Settings'}
+                        </PrimaryButton>
+                        <PrimaryButton onClick={testConnection} disabled={saving || !config.apiKey} variant="secondary">
+                            <TestTube className="mr-2 h-4 w-4" />
+                            Test Connection
+                        </PrimaryButton>
+                        <PrimaryButton onClick={runPrompt} disabled={running} variant="secondary">
+                            <Play className="mr-2 h-4 w-4" />
+                            {running ? 'Running...' : 'Run Prompt'}
+                        </PrimaryButton>
+                    </div>
+
+                    {/* Test Prompt */}
+                    <div className="mb-6">
+                        <Textarea
+                            label="Test Prompt (uses saved provider & model)"
+                            value={prompt}
+                            onChange={(e) => setPrompt(e.target.value)}
+                            rows={4}
                         />
                     </div>
-                )}
 
-                {/* Action Buttons */}
-                <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem', flexWrap: 'wrap' }}>
-                    <Button onClick={saveConfig} disabled={saving} variant={saving ? 'neutral' : 'success'} style={{ padding: '0.75rem 1.5rem', fontSize: '16px' }}>
-                        {saving ? '💾 Saving...' : '💾 Save Settings'}
-                    </Button>
+                    {/* Status Message */}
+                    {message && (
+                        <Alert
+                            type={messageType}
+                            message={message}
+                            onClose={() => setMessage('')}
+                        />
+                    )}
 
-                    <Button onClick={testConnection} disabled={saving || !config.apiKey} variant={saving || !config.apiKey ? 'neutral' : 'primary'} style={{ padding: '0.75rem 1.5rem', fontSize: '16px' }}>
-                        🧪 Test Connection
-                    </Button>
-
-                    <Button onClick={runPrompt} disabled={running} variant={running ? 'neutral' : 'primary'} style={{ padding: '0.75rem 1.5rem', fontSize: '16px' }}>
-                        ▶️ Run prompt
-                    </Button>
-                </div>
-
-                {/* Prompt Runner */}
-                <div style={{ marginTop: '1.5rem' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                        Test prompt (uses saved provider & model)
-                    </label>
-                    <textarea
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        rows={5}
-                        style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            border: '1px solid #ced4da',
-                            borderRadius: '4px',
-                            fontSize: '16px',
-                            fontFamily: 'inherit'
-                        }}
-                    />
-                </div>
-
-                {/* Status Message */}
-                {message && (
-                    <div style={{
-                        marginTop: '1rem',
-                        padding: '1rem',
-                        borderRadius: '4px',
-                        background: message.includes('✅') ? '#d4edda' : '#f8d7da',
-                        color: message.includes('✅') ? '#155724' : '#721c24',
-                        border: `1px solid ${message.includes('✅') ? '#c3e6cb' : '#f5c6cb'}`
-                    }}>
-                        {message}
-                    </div>
-                )}
-
-                {/* Provider Info */}
-                <div style={{ marginTop: '2rem', padding: '1rem', background: '#e9ecef', borderRadius: '4px' }}>
-                    <h4 style={{ margin: '0 0 0.5rem 0' }}>About {LLM_PROVIDERS[config.provider].name}</h4>
-                    <p style={{ margin: 0, fontSize: '14px', color: '#495057' }}>
-                        {config.provider === 'openai' && 'OpenAI provides GPT models for general AI tasks with strong language understanding.'}
-                        {config.provider === 'deepseek' && 'DeepSeek offers competitive AI models with strong coding capabilities and cost-effective pricing.'}
-                        {config.provider === 'anthropic' && 'Anthropic provides Claude models with strong reasoning, safety features, and long context windows.'}
-                        {config.provider === 'gemini' && 'Google Gemini offers powerful multimodal AI with strong reasoning and real-time access to current information.'}
-                        {config.provider === 'grok' && 'xAI Grok provides helpful AI with a focus on truth-seeking and real-time access to current events.'}
-                    </p>
-                </div>
-            </div>
-        </main>
+                    {/* Provider Info */}
+                    <SubCard className="rounded-2xl bg-slate-800/50 border-slate-700">
+                        <h4 className="mb-2 font-semibold text-slate-50">
+                            About {LLM_PROVIDERS[config.provider].name}
+                        </h4>
+                        <p className="text-sm text-slate-400">
+                            {LLM_PROVIDERS[config.provider].description}
+                        </p>
+                    </SubCard>
+                </Card>
+            </Section>
+        </div>
     )
 }
-

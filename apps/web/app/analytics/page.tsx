@@ -1,10 +1,32 @@
 'use client'
+
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import Button from '../components/Button'
-import Card from '../components/Card'
-import PageHeader from '../components/PageHeader'
-import StatusBadge from '../components/StatusBadge'
+import { RefreshCw, TrendingUp, TrendingDown, ExternalLink, AlertCircle, CheckCircle } from 'lucide-react'
+import {
+    Section,
+    Card,
+    SubCard,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+    PrimaryButton,
+    Badge,
+    Grid,
+    StatCard,
+    Table,
+    TableHeader,
+    TableBody,
+    TableRow,
+    TableHead,
+    TableCell,
+    Select,
+    Input,
+    EmptyState,
+    LoadingSpinner,
+    Alert,
+} from '../components/webflow-ui'
+import { DashboardHero } from '../components/dashboard-ui'
 
 interface AnalyticsData {
     pack_id: string
@@ -53,14 +75,14 @@ export default function AnalyticsPage() {
             // Load analytics for all content packs
             const packsRes = await fetch('/api/packs')
             const packsData = await packsRes.json()
-            
+
             const allAnalytics: AnalyticsData[] = []
-            
+
             for (const pack of packsData.packs || []) {
                 try {
                     const analyticsRes = await fetch(`/api/publishing/analytics/${pack.pack_id}`)
                     const analyticsData = await analyticsRes.json()
-                    
+
                     if (analyticsData.ok && analyticsData.analytics) {
                         allAnalytics.push(...analyticsData.analytics.map((item: any) => ({
                             ...item,
@@ -71,7 +93,7 @@ export default function AnalyticsPage() {
                     console.error(`Failed to load analytics for pack ${pack.pack_id}:`, error)
                 }
             }
-            
+
             setAnalytics(allAnalytics)
             calculatePlatformSummary(allAnalytics)
         } catch (error) {
@@ -83,7 +105,7 @@ export default function AnalyticsPage() {
 
     function calculatePlatformSummary(data: AnalyticsData[]) {
         const platformStats: Record<string, PlatformSummary> = {}
-        
+
         data.forEach(item => {
             if (!platformStats[item.platform]) {
                 platformStats[item.platform] = {
@@ -95,44 +117,44 @@ export default function AnalyticsPage() {
                     total_engagement: 0
                 }
             }
-            
+
             const stats = platformStats[item.platform]
             stats.total_posts++
-            
+
             if (item.status === 'published') {
                 stats.successful_posts++
-                
+
                 // Calculate engagement based on platform
                 let engagement = 0
                 if (item.metrics) {
                     switch (item.platform) {
                         case 'twitter':
-                            engagement = (item.metrics.like_count || 0) + 
-                                       (item.metrics.retweet_count || 0) + 
-                                       (item.metrics.reply_count || 0)
+                            engagement = (item.metrics.like_count || 0) +
+                                (item.metrics.retweet_count || 0) +
+                                (item.metrics.reply_count || 0)
                             break
                         case 'linkedin':
-                            engagement = (item.metrics.views || 0) + 
-                                       (item.metrics.likes || 0) + 
-                                       (item.metrics.comments || 0) + 
-                                       (item.metrics.shares || 0)
+                            engagement = (item.metrics.views || 0) +
+                                (item.metrics.likes || 0) +
+                                (item.metrics.comments || 0) +
+                                (item.metrics.shares || 0)
                             break
                         case 'facebook':
-                            engagement = (item.metrics.reach || 0) + 
-                                       (item.metrics.likes || 0) + 
-                                       (item.metrics.comments || 0) + 
-                                       (item.metrics.shares || 0)
+                            engagement = (item.metrics.reach || 0) +
+                                (item.metrics.likes || 0) +
+                                (item.metrics.comments || 0) +
+                                (item.metrics.shares || 0)
                             break
                         case 'instagram':
-                            engagement = (item.metrics.views || 0) + 
-                                       (item.metrics.likes || 0) + 
-                                       (item.metrics.comments || 0) + 
-                                       (item.metrics.saves || 0)
+                            engagement = (item.metrics.views || 0) +
+                                (item.metrics.likes || 0) +
+                                (item.metrics.comments || 0) +
+                                (item.metrics.saves || 0)
                             break
                         case 'sendgrid':
                         case 'mailchimp':
-                            engagement = (item.metrics.opens || 0) + 
-                                       (item.metrics.clicks || 0)
+                            engagement = (item.metrics.opens || 0) +
+                                (item.metrics.clicks || 0)
                             break
                         default:
                             engagement = item.metrics.views || item.metrics.visits || 0
@@ -142,10 +164,10 @@ export default function AnalyticsPage() {
             } else {
                 stats.failed_posts++
             }
-            
+
             stats.success_rate = (stats.successful_posts / stats.total_posts) * 100
         })
-        
+
         setPlatformSummary(Object.values(platformStats))
     }
 
@@ -153,10 +175,10 @@ export default function AnalyticsPage() {
         const publishedDate = new Date(item.published_at)
         const fromDate = new Date(dateRange.from)
         const toDate = new Date(dateRange.to)
-        
+
         const withinDateRange = publishedDate >= fromDate && publishedDate <= toDate
         const matchesPlatform = selectedPlatform === 'all' || item.platform === selectedPlatform
-        
+
         return withinDateRange && matchesPlatform
     })
 
@@ -169,322 +191,229 @@ export default function AnalyticsPage() {
         loadAnalytics()
     }, [])
 
+    const platformOptions = [
+        { value: 'all', label: 'All Platforms' },
+        ...Object.keys(PLATFORM_ICONS).map(platform => ({
+            value: platform,
+            label: `${PLATFORM_ICONS[platform]} ${platform}`
+        }))
+    ]
+
     return (
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
-            <PageHeader
+        <div className="min-h-screen bg-slate-950">
+            <DashboardHero
                 title="Publishing Analytics"
-                subtitle="Track performance and engagement across all your publishing platforms"
-                backLink={{ href: '/', label: 'Dashboard' }}
-                badge={totalPosts > 0 ? { text: `${totalPosts} published posts`, color: '#10b981' } : undefined}
-                actions={
-                    <Button onClick={loadAnalytics} disabled={loading} variant="neutral">
-                        {loading ? '🔄 Loading...' : '🔄 Refresh Data'}
-                    </Button>
+                description="Track performance and engagement across all your publishing platforms"
+                cta={
+                    <div className="flex items-center gap-3">
+                        {totalPosts > 0 && (
+                            <Badge variant="success">{totalPosts} published posts</Badge>
+                        )}
+                        <PrimaryButton onClick={loadAnalytics} disabled={loading} variant="secondary">
+                            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                            {loading ? 'Loading...' : 'Refresh Data'}
+                        </PrimaryButton>
+                    </div>
                 }
             />
 
             {/* Filters */}
-            <div style={{
-                background: 'white',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                padding: '1.5rem',
-                marginBottom: '2rem'
-            }}>
-                <h2 style={{ margin: '0 0 1rem 0', color: '#1f2937' }}>Filters</h2>
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                    gap: '1rem',
-                    alignItems: 'end'
-                }}>
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                            Platform
-                        </label>
-                        <select
+            <Section>
+                <Card className="bg-slate-900/70 border border-slate-800 rounded-3xl">
+                    <CardHeader>
+                        <CardTitle className="text-white">Filters</CardTitle>
+                    </CardHeader>
+                    <Grid cols={4}>
+                        <Select
+                            label="Platform"
                             value={selectedPlatform}
                             onChange={(e) => setSelectedPlatform(e.target.value)}
-                            style={{
-                                width: '100%',
-                                padding: '0.5rem',
-                                border: '1px solid #d1d5db',
-                                borderRadius: '4px'
-                            }}
-                        >
-                            <option value="all">All Platforms</option>
-                            {Object.keys(PLATFORM_ICONS).map(platform => (
-                                <option key={platform} value={platform}>
-                                    {PLATFORM_ICONS[platform]} {platform}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                            From Date
-                        </label>
-                        <input
+                            options={platformOptions}
+                        />
+                        <Input
+                            label="From Date"
                             type="date"
                             value={dateRange.from}
                             onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
-                            style={{
-                                width: '100%',
-                                padding: '0.5rem',
-                                border: '1px solid #d1d5db',
-                                borderRadius: '4px'
-                            }}
                         />
-                    </div>
-                    
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                            To Date
-                        </label>
-                        <input
+                        <Input
+                            label="To Date"
                             type="date"
                             value={dateRange.to}
                             onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
-                            style={{
-                                width: '100%',
-                                padding: '0.5rem',
-                                border: '1px solid #d1d5db',
-                                borderRadius: '4px'
-                            }}
                         />
-                    </div>
-                    
-                    <Button
-                        onClick={loadAnalytics}
-                        disabled={loading}
-                        style={{ padding: '0.5rem 1rem' }}
-                    >
-                        {loading ? 'Loading...' : 'Refresh'}
-                    </Button>
-                </div>
-            </div>
+                        <div className="flex items-end">
+                            <PrimaryButton onClick={loadAnalytics} disabled={loading} className="w-full bg-gradient-to-r from-[#a855f7] via-[#ec4899] to-[#f97316]">
+                                {loading ? 'Loading...' : 'Apply Filters'}
+                            </PrimaryButton>
+                        </div>
+                    </Grid>
+                </Card>
+            </Section>
 
             {/* Overall Statistics */}
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '1rem',
-                marginBottom: '2rem'
-            }}>
-                <div style={{
-                    background: 'white',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    padding: '1.5rem',
-                    textAlign: 'center'
-                }}>
-                    <h3 style={{ margin: '0 0 0.5rem 0', color: '#6b7280', fontSize: '0.9rem' }}>
-                        Total Posts
-                    </h3>
-                    <p style={{ margin: 0, fontSize: '2rem', fontWeight: 'bold', color: '#1f2937' }}>
-                        {totalPosts}
-                    </p>
-                </div>
-                
-                <div style={{
-                    background: 'white',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    padding: '1.5rem',
-                    textAlign: 'center'
-                }}>
-                    <h3 style={{ margin: '0 0 0.5rem 0', color: '#6b7280', fontSize: '0.9rem' }}>
-                        Successful
-                    </h3>
-                    <p style={{ margin: 0, fontSize: '2rem', fontWeight: 'bold', color: '#059669' }}>
-                        {successfulPosts}
-                    </p>
-                </div>
-                
-                <div style={{
-                    background: 'white',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    padding: '1.5rem',
-                    textAlign: 'center'
-                }}>
-                    <h3 style={{ margin: '0 0 0.5rem 0', color: '#6b7280', fontSize: '0.9rem' }}>
-                        Failed
-                    </h3>
-                    <p style={{ margin: 0, fontSize: '2rem', fontWeight: 'bold', color: '#dc2626' }}>
-                        {failedPosts}
-                    </p>
-                </div>
-                
-                <div style={{
-                    background: 'white',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    padding: '1.5rem',
-                    textAlign: 'center'
-                }}>
-                    <h3 style={{ margin: '0 0 0.5rem 0', color: '#6b7280', fontSize: '0.9rem' }}>
-                        Success Rate
-                    </h3>
-                    <p style={{
-                        margin: 0,
-                        fontSize: '2rem',
-                        fontWeight: 'bold',
-                        color: overallSuccessRate >= 90 ? '#059669' :
-                               overallSuccessRate >= 70 ? '#d97706' : '#dc2626'
-                    }}>
-                        {overallSuccessRate.toFixed(1)}%
-                    </p>
-                </div>
-            </div>
+            <Section>
+                <Grid cols={4}>
+                    <StatCard
+                        label="Total Posts"
+                        value={totalPosts}
+                        icon={<TrendingUp className="h-4 w-4" />}
+                    />
+                    <StatCard
+                        label="Successful"
+                        value={successfulPosts}
+                        trendType="up"
+                        icon={<CheckCircle className="h-4 w-4 text-emerald-500" />}
+                    />
+                    <StatCard
+                        label="Failed"
+                        value={failedPosts}
+                        trendType={failedPosts > 0 ? "down" : "neutral"}
+                        icon={<AlertCircle className="h-4 w-4 text-red-500" />}
+                    />
+                    <StatCard
+                        label="Success Rate"
+                        value={`${overallSuccessRate.toFixed(1)}%`}
+                        trendType={overallSuccessRate >= 90 ? "up" : overallSuccessRate >= 70 ? "neutral" : "down"}
+                        icon={<TrendingUp className="h-4 w-4" />}
+                    />
+                </Grid>
+            </Section>
 
             {/* Platform Summary */}
-            <div style={{
-                background: 'white',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                padding: '1.5rem',
-                marginBottom: '2rem'
-            }}>
-                <h2 style={{ margin: '0 0 1rem 0', color: '#1f2937' }}>Platform Performance</h2>
-                {platformSummary.length === 0 ? (
-                    <p style={{ color: '#6b7280', textAlign: 'center', padding: '2rem' }}>
-                        No data available for the selected filters.
-                    </p>
-                ) : (
-                    <div style={{ overflowX: 'auto' }}>
-                        <table style={{
-                            width: '100%',
-                            borderCollapse: 'collapse',
-                            fontSize: '0.9rem'
-                        }}>
-                            <thead>
-                                <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
-                                    <th style={{ textAlign: 'left', padding: '0.75rem', color: '#374151' }}>Platform</th>
-                                    <th style={{ textAlign: 'center', padding: '0.75rem', color: '#374151' }}>Total Posts</th>
-                                    <th style={{ textAlign: 'center', padding: '0.75rem', color: '#374151' }}>Successful</th>
-                                    <th style={{ textAlign: 'center', padding: '0.75rem', color: '#374151' }}>Failed</th>
-                                    <th style={{ textAlign: 'center', padding: '0.75rem', color: '#374151' }}>Success Rate</th>
-                                    <th style={{ textAlign: 'center', padding: '0.75rem', color: '#374151' }}>Total Engagement</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+            <Section>
+                <Card className="bg-slate-900/70 border border-slate-800 rounded-3xl">
+                    <CardHeader>
+                        <CardTitle className="text-white">Platform Performance</CardTitle>
+                        <CardDescription className="text-slate-400">Breakdown by publishing platform</CardDescription>
+                    </CardHeader>
+
+                    {platformSummary.length === 0 ? (
+                        <Card className="bg-slate-800/50 border-slate-700">
+                            <EmptyState
+                                title="No Data Available"
+                                description="No analytics data available for the selected filters."
+                            />
+                        </Card>
+                    ) : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Platform</TableHead>
+                                    <TableHead className="text-center">Total Posts</TableHead>
+                                    <TableHead className="text-center">Successful</TableHead>
+                                    <TableHead className="text-center">Failed</TableHead>
+                                    <TableHead className="text-center">Success Rate</TableHead>
+                                    <TableHead className="text-center">Total Engagement</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
                                 {platformSummary.map(platform => (
-                                    <tr key={platform.platform} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                                        <td style={{ padding: '0.75rem' }}>
-                                            {PLATFORM_ICONS[platform.platform]} {platform.platform}
-                                        </td>
-                                        <td style={{ textAlign: 'center', padding: '0.75rem' }}>
+                                    <TableRow key={platform.platform}>
+                                        <TableCell>
+                                            <span className="flex items-center gap-2">
+                                                <span className="text-xl">{PLATFORM_ICONS[platform.platform]}</span>
+                                                <span className="capitalize">{platform.platform}</span>
+                                            </span>
+                                        </TableCell>
+                                        <TableCell className="text-center font-semibold">
                                             {platform.total_posts}
-                                        </td>
-                                        <td style={{ textAlign: 'center', padding: '0.75rem', color: '#059669' }}>
-                                            {platform.successful_posts}
-                                        </td>
-                                        <td style={{ textAlign: 'center', padding: '0.75rem', color: '#dc2626' }}>
-                                            {platform.failed_posts}
-                                        </td>
-                                        <td style={{
-                                            textAlign: 'center',
-                                            padding: '0.75rem',
-                                            color: platform.success_rate >= 90 ? '#059669' :
-                                                   platform.success_rate >= 70 ? '#d97706' : '#dc2626'
-                                        }}>
-                                            {platform.success_rate.toFixed(1)}%
-                                        </td>
-                                        <td style={{ textAlign: 'center', padding: '0.75rem' }}>
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <Badge variant="success">{platform.successful_posts}</Badge>
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <Badge variant={platform.failed_posts > 0 ? "danger" : "default"}>
+                                                {platform.failed_posts}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <Badge
+                                                variant={
+                                                    platform.success_rate >= 90 ? "success" :
+                                                        platform.success_rate >= 70 ? "warning" : "danger"
+                                                }
+                                            >
+                                                {platform.success_rate.toFixed(1)}%
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-center font-semibold">
                                             {platform.total_engagement.toLocaleString()}
-                                        </td>
-                                    </tr>
+                                        </TableCell>
+                                    </TableRow>
                                 ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
+                            </TableBody>
+                        </Table>
+                    )}
+                </Card>
+            </Section>
 
             {/* Recent Posts */}
-            <div style={{
-                background: 'white',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                padding: '1.5rem'
-            }}>
-                <h2 style={{ margin: '0 0 1rem 0', color: '#1f2937' }}>Recent Posts</h2>
-                {filteredAnalytics.length === 0 ? (
-                    <p style={{ color: '#6b7280', textAlign: 'center', padding: '2rem' }}>
-                        No posts found for the selected filters.
-                    </p>
-                ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {filteredAnalytics
-                            .sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
-                            .slice(0, 10)
-                            .map((item, index) => (
-                            <div key={index} style={{
-                                border: '1px solid #e5e7eb',
-                                borderRadius: '8px',
-                                padding: '1rem',
-                                background: item.status === 'published' ? '#f0fdf4' : '#fef2f2'
-                            }}>
-                                <div style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    marginBottom: '0.5rem'
-                                }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <span style={{ fontSize: '1.2rem' }}>
-                                            {PLATFORM_ICONS[item.platform]}
-                                        </span>
-                                        <span style={{ fontWeight: 'bold' }}>
-                                            {item.platform}
-                                        </span>
-                                        <span style={{
-                                            padding: '0.25rem 0.5rem',
-                                            borderRadius: '4px',
-                                            fontSize: '0.8rem',
-                                            fontWeight: 'bold',
-                                            background: item.status === 'published' ? '#dcfce7' : '#fef2f2',
-                                            color: item.status === 'published' ? '#166534' : '#dc2626'
-                                        }}>
-                                            {item.status}
-                                        </span>
-                                    </div>
-                                    <span style={{ fontSize: '0.9rem', color: '#6b7280' }}>
-                                        {new Date(item.published_at).toLocaleDateString()}
-                                    </span>
-                                </div>
-                                
-                                {item.external_url && (
-                                    <p style={{ margin: '0.5rem 0', fontSize: '0.9rem' }}>
-                                        <a
-                                            href={item.external_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            style={{ color: '#2563eb', textDecoration: 'none' }}
-                                        >
-                                            View Post →
-                                        </a>
-                                    </p>
-                                )}
-                                
-                                {item.metrics && Object.keys(item.metrics).length > 0 && (
-                                    <div style={{ fontSize: '0.9rem', color: '#6b7280' }}>
-                                        <strong>Metrics:</strong> {JSON.stringify(item.metrics)}
-                                    </div>
-                                )}
-                                
-                                {item.error_message && (
-                                    <div style={{ fontSize: '0.9rem', color: '#dc2626', marginTop: '0.5rem' }}>
-                                        <strong>Error:</strong> {item.error_message}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
+            <Section>
+                <Card className="bg-slate-900/70 border border-slate-800 rounded-3xl">
+                    <CardHeader>
+                        <CardTitle className="text-white">Recent Posts</CardTitle>
+                        <CardDescription className="text-slate-400">Latest publishing activity</CardDescription>
+                    </CardHeader>
+
+                    {filteredAnalytics.length === 0 ? (
+                        <Card className="bg-slate-800/50 border-slate-700">
+                            <EmptyState
+                                title="No Posts Found"
+                                description="No posts found for the selected filters."
+                            />
+                        </Card>
+                    ) : (
+                        <div className="space-y-3">
+                            {filteredAnalytics
+                                .sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
+                                .slice(0, 10)
+                                .map((item, index) => (
+                                    <SubCard
+                                        key={index}
+                                        className={`bg-slate-800/50 border-slate-700 hover:bg-slate-800 ${
+                                            item.status === 'published'
+                                                ? 'border-l-4 border-l-emerald-500'
+                                                : 'border-l-4 border-l-red-500'
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-2xl">{PLATFORM_ICONS[item.platform]}</span>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-semibold capitalize text-slate-50">{item.platform}</span>
+                                                        <Badge variant={item.status === 'published' ? 'success' : 'danger'}>
+                                                            {item.status}
+                                                        </Badge>
+                                                    </div>
+                                                    {item.external_url && (
+                                                        <a
+                                                            href={item.external_url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="mt-1 flex items-center gap-1 text-sm text-indigo-400 hover:text-indigo-300 hover:underline"
+                                                        >
+                                                            View Post <ExternalLink className="h-3 w-3" />
+                                                        </a>
+                                                    )}
+                                                    {item.error_message && (
+                                                        <p className="mt-1 text-sm text-red-400">
+                                                            Error: {item.error_message}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <span className="text-sm text-slate-400">
+                                                {new Date(item.published_at).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                    </SubCard>
+                                ))}
+                        </div>
+                    )}
+                </Card>
+            </Section>
         </div>
     )
 }

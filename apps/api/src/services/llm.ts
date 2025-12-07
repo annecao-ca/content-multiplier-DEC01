@@ -99,15 +99,56 @@ export class MultiProviderLLM implements LLMClient {
                     p.model?.includes('gemini') ? 'gemini' :
                         p.model?.includes('grok') ? 'grok' : undefined
 
-            const provider = inferredProvider || saved?.provider || 'openai'
+            // Default provider priority: saved settings > inferred > fallback to deepseek (has API key) > openai
+            let provider = inferredProvider || saved?.provider;
+            
+            // If model name doesn't match provider, don't use that provider
+            // e.g., if model is 'gpt-4o-mini' but provider is 'gemini', switch provider
+            if (provider === 'gemini' && p.model && !p.model.includes('gemini')) {
+                console.warn(`[LLM] Model ${p.model} doesn't match Gemini provider, switching provider`);
+                provider = undefined; // Will fallback below
+            }
+            
+            // If provider is gemini but no valid API key, fallback to available provider
+            if (provider === 'gemini') {
+                const geminiKey = env.GEMINI_API_KEY || saved?.apiKey || '';
+                if (!geminiKey || geminiKey.trim() === '') {
+                    console.warn('[LLM] Gemini selected but no API key, falling back to available provider');
+                    // Check for available providers
+                    if (env.DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY) {
+                        provider = 'deepseek';
+                    } else if (env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || saved?.apiKey) {
+                        provider = 'openai';
+                    } else {
+                        provider = 'deepseek'; // DeepSeek has default key in env
+                    }
+                }
+            }
+            
+            // Final fallback - if model name suggests a provider, use it
+            if (!provider) {
+                if (p.model?.includes('deepseek')) {
+                    provider = 'deepseek';
+                } else if (p.model?.includes('openai') || p.model?.includes('gpt')) {
+                    provider = 'openai';
+                } else {
+                    provider = env.DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY ? 'deepseek' : 'openai';
+                }
+            }
+            
             const temperature = p.temperature ?? 0.7;
 
             if (provider === 'gemini') {
                 const apiKey = env.GEMINI_API_KEY || saved?.apiKey || '';
-                if (!apiKey) throw new Error('Gemini API key not configured');
+                if (!apiKey || apiKey.trim() === '') {
+                    throw new Error('Gemini API key not configured');
+                }
 
                 const genAI = new GoogleGenerativeAI(apiKey);
-                const modelName = p.model || saved?.model || this.getDefaultModel('gemini', 'json');
+                // Always use Gemini model name, ignore p.model if it's not a Gemini model
+                const modelName = p.model?.includes('gemini') 
+                    ? p.model 
+                    : (saved?.model?.includes('gemini') ? saved.model : this.getDefaultModel('gemini', 'json'));
                 const model = genAI.getGenerativeModel({
                     model: modelName,
                     generationConfig: {
@@ -128,14 +169,17 @@ export class MultiProviderLLM implements LLMClient {
 
             const config = this.getProviderConfig(provider)
 
-            // Determine API Key
+            // Determine API Key - only use saved API key if provider matches
             let apiKey = ''
             if (provider === 'openai') {
-                apiKey = saved?.apiKey || env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || ''
+                // Only use saved API key if saved provider is also OpenAI
+                apiKey = (saved?.provider === 'openai' ? saved?.apiKey : '') || env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || ''
             } else if (provider === 'deepseek') {
-                apiKey = saved?.apiKey || process.env.DEEPSEEK_API_KEY || ''
+                // Only use saved API key if saved provider is also DeepSeek
+                apiKey = (saved?.provider === 'deepseek' ? saved?.apiKey : '') || env.DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY || ''
             } else {
-                apiKey = saved?.apiKey || env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || ''
+                // For other providers, try saved key only if provider matches, otherwise fallback to OpenAI
+                apiKey = (saved?.provider === provider ? saved?.apiKey : '') || env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || ''
             }
 
             if (!apiKey) throw new Error(`API key not configured for provider ${provider}`);
@@ -167,15 +211,56 @@ export class MultiProviderLLM implements LLMClient {
                     p.model?.includes('gemini') ? 'gemini' :
                         p.model?.includes('grok') ? 'grok' : undefined
 
-            const provider = inferredProvider || saved?.provider || 'openai'
+            // Default provider priority: saved settings > inferred > fallback to deepseek (has API key) > openai
+            let provider = inferredProvider || saved?.provider;
+            
+            // If model name doesn't match provider, don't use that provider
+            // e.g., if model is 'gpt-4o-mini' but provider is 'gemini', switch provider
+            if (provider === 'gemini' && p.model && !p.model.includes('gemini')) {
+                console.warn(`[LLM] Model ${p.model} doesn't match Gemini provider, switching provider`);
+                provider = undefined; // Will fallback below
+            }
+            
+            // If provider is gemini but no valid API key, fallback to available provider
+            if (provider === 'gemini') {
+                const geminiKey = env.GEMINI_API_KEY || saved?.apiKey || '';
+                if (!geminiKey || geminiKey.trim() === '') {
+                    console.warn('[LLM] Gemini selected but no API key, falling back to available provider');
+                    // Check for available providers
+                    if (env.DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY) {
+                        provider = 'deepseek';
+                    } else if (env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || saved?.apiKey) {
+                        provider = 'openai';
+                    } else {
+                        provider = 'deepseek'; // DeepSeek has default key in env
+                    }
+                }
+            }
+            
+            // Final fallback - if model name suggests a provider, use it
+            if (!provider) {
+                if (p.model?.includes('deepseek')) {
+                    provider = 'deepseek';
+                } else if (p.model?.includes('openai') || p.model?.includes('gpt')) {
+                    provider = 'openai';
+                } else {
+                    provider = env.DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY ? 'deepseek' : 'openai';
+                }
+            }
+            
             const temperature = p.temperature ?? 0.3; // Lower default for JSON
 
             if (provider === 'gemini') {
                 const apiKey = env.GEMINI_API_KEY || saved?.apiKey || '';
-                if (!apiKey) throw new Error('Gemini API key not configured');
+                if (!apiKey || apiKey.trim() === '') {
+                    throw new Error('Gemini API key not configured');
+                }
 
                 const genAI = new GoogleGenerativeAI(apiKey);
-                const modelName = p.model || saved?.model || this.getDefaultModel('gemini', 'json');
+                // Always use Gemini model name, ignore p.model if it's not a Gemini model
+                const modelName = p.model?.includes('gemini') 
+                    ? p.model 
+                    : (saved?.model?.includes('gemini') ? saved.model : this.getDefaultModel('gemini', 'json'));
                 const model = genAI.getGenerativeModel({
                     model: modelName,
                     generationConfig: {
@@ -197,17 +282,20 @@ export class MultiProviderLLM implements LLMClient {
             }
 
             const config = this.getProviderConfig(provider)
-            // Determine API Key
+            // Determine API Key - only use saved API key if provider matches
             let apiKey = ''
             if (provider === 'openai') {
-                apiKey = saved?.apiKey || env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || ''
+                // Only use saved API key if saved provider is also OpenAI
+                apiKey = (saved?.provider === 'openai' ? saved?.apiKey : '') || env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || ''
             } else if (provider === 'deepseek') {
-                apiKey = saved?.apiKey || process.env.DEEPSEEK_API_KEY || ''
+                // Only use saved API key if saved provider is also DeepSeek
+                apiKey = (saved?.provider === 'deepseek' ? saved?.apiKey : '') || env.DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY || ''
             } else {
-                apiKey = saved?.apiKey || env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || ''
+                // For other providers, try saved key only if provider matches, otherwise fallback to OpenAI
+                apiKey = (saved?.provider === provider ? saved?.apiKey : '') || env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || ''
             }
 
-            const client = config.createClient(apiKey, saved?.baseUrl || undefined)
+            const client = config.createClient(apiKey, (saved?.provider === provider ? saved?.baseUrl : undefined) || undefined)
 
             const systemMsg = p.system
                 ? `${p.system}\n\nYou must respond with valid JSON only.`
@@ -264,13 +352,14 @@ export class MultiProviderLLM implements LLMClient {
         // Generic OpenAI-compatible providers (openai, deepseek, anthropic proxy, grok, etc.)
         const config = this.getProviderConfig(provider)
 
-        // Determine API Key based on provider
+        // Determine API Key based on provider - only use saved API key if provider matches
         let apiKey = ''
         if (provider === 'openai') {
-            apiKey = saved?.apiKey || env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || ''
+            // Only use saved API key if saved provider is also OpenAI
+            apiKey = (saved?.provider === 'openai' ? saved?.apiKey : '') || env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || ''
         } else {
-            // Fallback
-            apiKey = saved?.apiKey || env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || ''
+            // Fallback - only use saved key if provider matches
+            apiKey = (saved?.provider === provider ? saved?.apiKey : '') || env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || ''
         }
 
         if (!apiKey) {

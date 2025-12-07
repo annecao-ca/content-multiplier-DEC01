@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 @layer base {
   :root {
@@ -32,25 +30,32 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    /* Dark Mode Design System Colors */
+    --background: 220 40% 4%; /* #020617 */
+    --foreground: 220 13% 91%; /* #e5e7eb - text-main */
+    --card: 220 40% 4%; /* #020617 */
+    --card-foreground: 220 13% 91%; /* #e5e7eb */
+    --card-elevated: 220 40% 7%; /* #0b1120 */
+    --popover: 220 40% 4%; /* #020617 */
+    --popover-foreground: 220 13% 91%; /* #e5e7eb */
+    --primary: 270 90% 65%; /* #a855f7 */
+    --primary-accent: 330 80% 60%; /* #ec4899 */
+    --primary-foreground: 220 13% 91%; /* #e5e7eb */
+    --secondary: 220 40% 7%; /* #0b1120 */
+    --secondary-foreground: 220 13% 91%; /* #e5e7eb */
+    --muted: 220 40% 4%; /* #020617 */
+    --muted-foreground: 215 16% 47%; /* #9ca3af - text-muted */
+    --accent: 220 40% 7%; /* #0b1120 */
+    --accent-foreground: 220 13% 91%; /* #e5e7eb */
+    --destructive: 0 72% 51%; /* red-500 */
+    --destructive-foreground: 220 13% 91%; /* #e5e7eb */
+    --success: 142 71% 45%; /* #22c55e */
+    --warning: 48 96% 53%; /* #facc15 */
+    --info: 199 89% 48%; /* #38bdf8 */
+    --border: 215 16% 47%; /* rgba(148,163,184,0.18) - border-subtle */
+    --border-subtle: 215 16% 47%; /* rgba(148,163,184,0.18) */
+    --input: 220 40% 7%; /* #0b1120 */
+    --ring: 270 90% 65%; /* #a855f7 */
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-4: 280 65% 60%;
@@ -60,9 +65,10 @@
 
 @layer base {
   * {
-    @apply border-[hsl(var(--border))];
+    border-color: hsl(var(--border));
   }
   body {
-    @apply bg-[hsl(var(--background))] text-[hsl(var(--foreground))];
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
   }
 }
