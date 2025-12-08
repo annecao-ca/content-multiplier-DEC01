@@ -24,7 +24,7 @@ function cn(...classes: Array<string | false | null | undefined>) {
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#f5f5f7] text-slate-900 dark:bg-[#020617] dark:text-[#e5e7eb]">
+    <div className="min-h-screen bg-white text-slate-900 dark:bg-[#020617] dark:text-[#e5e7eb] transition-colors duration-200">
       <AppNavbar />
       <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-10 md:px-8 md:pt-14">
         {children}
@@ -40,6 +40,11 @@ export function AppNavbar() {
   const pathname = usePathname()
   const { theme, toggleTheme } = useTheme()
   const { language, setLanguage } = useLanguage()
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard" },
@@ -48,11 +53,12 @@ export function AppNavbar() {
     { href: "/documents", label: "RAG" },
     { href: "/packs", label: "Content" },
     { href: "/analytics", label: "Analytics" },
+    { href: "/publisher", label: "Publisher" },
     { href: "/settings", label: "Settings" },
   ]
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/80 backdrop-blur-md dark:border-[rgba(148,163,184,0.18)] dark:bg-[#020617]/80">
+    <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/80 backdrop-blur-md transition-colors dark:border-[rgba(148,163,184,0.18)] dark:bg-[#020617]/80">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 md:h-20 md:px-8">
         {/* Left: logo + brand */}
         <div className="flex items-center gap-3">
@@ -97,9 +103,14 @@ export function AppNavbar() {
           {/* Language toggle */}
           <div className="hidden items-center gap-1 rounded-full bg-slate-100 px-1 py-1 text-[11px] font-medium text-slate-600 dark:bg-[#0b1120] dark:text-[#9ca3af] md:flex">
             <button
-              onClick={() => setLanguage("en")}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setLanguage("en")
+              }}
               className={cn(
-                "rounded-full px-2 py-0.5 transition-colors",
+                "rounded-full px-2 py-0.5 transition-colors cursor-pointer",
                 language === "en"
                   ? "bg-white text-slate-900 shadow-sm dark:bg-[#0b1120] dark:text-[#e5e7eb]"
                   : "text-slate-500 hover:text-slate-700 dark:text-[#9ca3af] dark:hover:text-[#e5e7eb]"
@@ -108,10 +119,15 @@ export function AppNavbar() {
               EN
             </button>
             <button
-              onClick={() => setLanguage("vi")}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setLanguage("vn")
+              }}
               className={cn(
-                "rounded-full px-2 py-0.5 transition-colors",
-                language === "vi"
+                "rounded-full px-2 py-0.5 transition-colors cursor-pointer",
+                language === "vn"
                   ? "bg-white text-slate-900 shadow-sm dark:bg-[#0b1120] dark:text-[#e5e7eb]"
                   : "text-slate-500 hover:text-slate-700 dark:text-[#9ca3af] dark:hover:text-[#e5e7eb]"
               )}
@@ -122,10 +138,16 @@ export function AppNavbar() {
 
           {/* Theme toggle */}
           <button
-            onClick={toggleTheme}
-            className="hidden rounded-full border border-slate-200 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50 dark:border-[rgba(148,163,184,0.18)] dark:text-[#9ca3af] dark:hover:bg-[#0b1120] md:inline-flex"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              toggleTheme()
+            }}
+            className="hidden rounded-full border border-slate-200 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50 dark:border-[rgba(148,163,184,0.18)] dark:text-[#9ca3af] dark:hover:bg-[#0b1120] md:inline-flex cursor-pointer items-center justify-center"
+            suppressHydrationWarning
           >
-            {theme === "dark" ? "☀️ Light" : "🌙 Dark"}
+            {mounted ? (theme === "dark" ? "☀️ Light" : "🌙 Dark") : "🌙 Dark"}
           </button>
 
           {/* CTA */}

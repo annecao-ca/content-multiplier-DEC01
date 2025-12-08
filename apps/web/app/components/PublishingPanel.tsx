@@ -45,6 +45,8 @@ const PLATFORMS = [
     { id: 'medium', name: 'Medium', icon: '📖' }
 ]
 
+const API_URL = 'http://localhost:3001'
+
 export default function PublishingPanel({ packId }: { packId: string }) {
     const [credentials, setCredentials] = useState<PublishingCredential[]>([])
     const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
@@ -60,7 +62,7 @@ export default function PublishingPanel({ packId }: { packId: string }) {
 
     async function loadCredentials() {
         try {
-            const res = await fetch('/api/publishing/credentials')
+            const res = await fetch(`${API_URL}/api/publishing/credentials`)
             const data = await res.json()
             if (data.ok) {
                 setCredentials(data.credentials || [])
@@ -72,7 +74,7 @@ export default function PublishingPanel({ packId }: { packId: string }) {
 
     async function loadPublishingStatus() {
         try {
-            const res = await fetch(`/api/publishing/status/${packId}`)
+            const res = await fetch(`${API_URL}/api/publishing/status/${packId}`)
             const data = await res.json()
             if (data.ok) {
                 setPublishingStatus(data.status)
@@ -85,7 +87,7 @@ export default function PublishingPanel({ packId }: { packId: string }) {
     async function authenticatePlatform(platform: string) {
         try {
             setLoading(true)
-            const res = await fetch(`/api/publishing/auth/${platform}`)
+            const res = await fetch(`${API_URL}/api/publishing/auth/${platform}`)
             const data = await res.json()
             
             if (data.auth_url) {
@@ -118,7 +120,7 @@ export default function PublishingPanel({ packId }: { packId: string }) {
             setLoading(true)
             
             // Get pack content for publishing
-            const packRes = await fetch(`/api/packs/${packId}`)
+            const packRes = await fetch(`${API_URL}/api/packs/${packId}`)
             const pack = await packRes.json()
             
             // Use generated content for Twitter if available
@@ -148,7 +150,7 @@ export default function PublishingPanel({ packId }: { packId: string }) {
                 scheduled_at: scheduledAt || undefined
             }
 
-            const res = await fetch('/api/publishing/publish', {
+            const res = await fetch(`${API_URL}/api/publishing/publish`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(publishData)
@@ -173,7 +175,7 @@ export default function PublishingPanel({ packId }: { packId: string }) {
     async function retryFailed() {
         try {
             setLoading(true)
-            const res = await fetch(`/api/publishing/retry/${packId}`, { method: 'POST' })
+            const res = await fetch(`${API_URL}/api/publishing/retry/${packId}`, { method: 'POST' })
             const data = await res.json()
             
             if (data.ok) {
@@ -192,7 +194,7 @@ export default function PublishingPanel({ packId }: { packId: string }) {
 
     async function loadTwitterTemplates() {
         try {
-            const res = await fetch('/api/twitter-bot/templates')
+            const res = await fetch(`${API_URL}/api/twitter-bot/templates`)
             const data = await res.json()
             if (data.success) {
                 setTwitterTemplates(data.data)
@@ -212,10 +214,10 @@ export default function PublishingPanel({ packId }: { packId: string }) {
             setGenerateLoading(true)
             
             // Get pack content for context
-            const packRes = await fetch(`/api/packs/${packId}`)
+            const packRes = await fetch(`${API_URL}/api/packs/${packId}`)
             const pack = await packRes.json()
             
-            const res = await fetch('/api/twitter-bot/test-generate', {
+            const res = await fetch(`${API_URL}/api/twitter-bot/test-generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

@@ -105,7 +105,14 @@ try {
 // Error handler
 app.setErrorHandler(async (err, req, reply) => {
     console.error('❌ Error:', err);
-    reply.status(500).send({ ok: false, error: 'internal_error' });
+    console.error('❌ Error message:', err.message);
+    console.error('❌ Error stack:', err.stack);
+    reply.status(500).send({ 
+        ok: false, 
+        error: 'internal_error',
+        message: err.message,
+        details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
 });
 
 // Start server

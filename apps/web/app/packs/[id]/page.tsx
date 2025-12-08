@@ -8,6 +8,8 @@ import Button from '../../components/Button'
 import PublishingPanel from '../../components/PublishingPanel'
 import { ParsedContentWithCitations } from '../../components/InlineCitation'
 import { Footnotes } from '../../components/Footnotes'
+import { DerivativesDisplay } from '../../components/DerivativesDisplay'
+import { DerivativesExportDropdown } from '../../components/DerivativesExportButton'
 
 // API URL - backend running on port 3001
 const API_URL = 'http://localhost:3001';
@@ -210,10 +212,10 @@ export default function PackDetailPage() {
 
     useEffect(() => { loadPack() }, [])
 
-    if (!pack) return <p>Loading...</p>
+    if (!pack) return <p style={{ color: '#1f2937' }}>Loading...</p>
 
     return (
-        <div>
+        <div style={{ color: '#1f2937' }}>
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -308,168 +310,31 @@ export default function PackDetailPage() {
 
             {pack.derivatives && (
                 <>
-                    <h2>Derivatives</h2>
-                    <Button
-                        style={{ marginBottom: '1rem', padding: '0.25rem 0.5rem', cursor: 'pointer' }}
-                        onClick={() => {
-                            if (confirm('Regenerate derivatives? This will overwrite existing ones.')) {
-                                generateDerivatives()
-                            }
-                        }}
-                        disabled={loading}
-                    >
-                        Regenerate Derivatives
-                    </Button>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                        <h3>Newsletter</h3>
-                        {isEditing && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', marginTop: '2rem', gap: '1rem' }}>
+                        <h2 style={{ margin: 0 }}>Derivatives</h2>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <DerivativesExportDropdown packId={pack.pack_id} />
                             <Button
-                                onClick={() => setActiveEditor('newsletter')}
-                                style={{
-                                    padding: '0.5rem 1rem',
-                                    background: '#007bff',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    fontSize: '14px',
-                                    fontWeight: '500',
-                                    transition: 'all 0.2s ease',
-                                    boxShadow: '0 2px 4px rgba(0,123,255,0.2)'
+                                style={{ padding: '0.5rem 1rem', cursor: 'pointer' }}
+                                onClick={() => {
+                                    if (confirm('Regenerate derivatives? This will overwrite existing ones.')) {
+                                        generateDerivatives()
+                                    }
                                 }}
-                                onMouseOver={(e) => {
-                                    e.currentTarget.style.background = '#0056b3'
-                                    e.currentTarget.style.transform = 'translateY(-1px)'
-                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,123,255,0.3)'
-                                }}
-                                onMouseOut={(e) => {
-                                    e.currentTarget.style.background = '#007bff'
-                                    e.currentTarget.style.transform = 'translateY(0)'
-                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,123,255,0.2)'
-                                }}
+                                disabled={loading}
                             >
-                                ✏️ Edit Newsletter
+                                Regenerate Derivatives
                             </Button>
-                        )}
+                        </div>
                     </div>
-                    <p>{typeof pack.derivatives.newsletter === 'string'
-                        ? pack.derivatives.newsletter.slice(0, 200)
-                        : JSON.stringify(pack.derivatives.newsletter).slice(0, 200)}...</p>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                        <h3>LinkedIn Posts ({pack.derivatives?.linkedin?.length || 0})</h3>
-                        {isEditing && (
-                            <Button
-                                onClick={() => setActiveEditor('linkedin')}
-                                style={{
-                                    padding: '0.5rem 1rem',
-                                    background: '#007bff',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    fontSize: '14px',
-                                    fontWeight: '500',
-                                    transition: 'all 0.2s ease',
-                                    boxShadow: '0 2px 4px rgba(0,123,255,0.2)'
-                                }}
-                                onMouseOver={(e) => {
-                                    e.currentTarget.style.background = '#0056b3'
-                                    e.currentTarget.style.transform = 'translateY(-1px)'
-                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,123,255,0.3)'
-                                }}
-                                onMouseOut={(e) => {
-                                    e.currentTarget.style.background = '#007bff'
-                                    e.currentTarget.style.transform = 'translateY(0)'
-                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,123,255,0.2)'
-                                }}
-                            >
-                                ✏️ Edit LinkedIn Posts
-                            </Button>
-                        )}
-                    </div>
-                    {pack.derivatives?.linkedin?.length > 0 ? (
-                        <ul>{pack.derivatives.linkedin.map((p: any, i: number) => (
-                            <li key={i}>{typeof p === 'string' ? p.slice(0, 100) : JSON.stringify(p).slice(0, 100)}...</li>
-                        ))}</ul>
-                    ) : (
-                        <p>No LinkedIn posts generated. Click "Edit Draft" to add them manually.</p>
-                    )}
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                        <h3>X Posts ({pack.derivatives?.x?.length || 0})</h3>
-                        {isEditing && (
-                            <Button
-                                onClick={() => setActiveEditor('x')}
-                                style={{
-                                    padding: '0.5rem 1rem',
-                                    background: '#007bff',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    fontSize: '14px',
-                                    fontWeight: '500',
-                                    transition: 'all 0.2s ease',
-                                    boxShadow: '0 2px 4px rgba(0,123,255,0.2)'
-                                }}
-                                onMouseOver={(e) => {
-                                    e.currentTarget.style.background = '#0056b3'
-                                    e.currentTarget.style.transform = 'translateY(-1px)'
-                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,123,255,0.3)'
-                                }}
-                                onMouseOut={(e) => {
-                                    e.currentTarget.style.background = '#007bff'
-                                    e.currentTarget.style.transform = 'translateY(0)'
-                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,123,255,0.2)'
-                                }}
-                            >
-                                ✏️ Edit X Posts
-                            </Button>
-                        )}
-                    </div>
-                    {pack.derivatives?.x?.length > 0 ? (
-                        <ul>{pack.derivatives.x.map((p: any, i: number) => (
-                            <li key={i}>{typeof p === 'string' ? p : JSON.stringify(p)}</li>
-                        ))}</ul>
-                    ) : (
-                        <p>No X posts generated. Click "Edit Draft" to add them manually.</p>
-                    )}
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                        <h3>SEO</h3>
-                        {isEditing && (
-                            <Button
-                                onClick={() => setActiveEditor('seo')}
-                                style={{
-                                    padding: '0.5rem 1rem',
-                                    background: '#007bff',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    fontSize: '14px',
-                                    fontWeight: '500',
-                                    transition: 'all 0.2s ease',
-                                    boxShadow: '0 2px 4px rgba(0,123,255,0.2)'
-                                }}
-                                onMouseOver={(e) => {
-                                    e.currentTarget.style.background = '#0056b3'
-                                    e.currentTarget.style.transform = 'translateY(-1px)'
-                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,123,255,0.3)'
-                                }}
-                                onMouseOut={(e) => {
-                                    e.currentTarget.style.background = '#007bff'
-                                    e.currentTarget.style.transform = 'translateY(0)'
-                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,123,255,0.2)'
-                                }}
-                            >
-                                ✏️ Edit SEO
-                            </Button>
-                        )}
-                    </div>
-                    <p><strong>Title:</strong> {pack.seo?.title}</p>
-                    <p><strong>Description:</strong> {pack.seo?.description}</p>
+                    
+                    {/* Use new DerivativesDisplay component */}
+                    <DerivativesDisplay
+                        derivatives={pack.derivatives}
+                        seo={pack.seo}
+                        isEditing={isEditing}
+                        onEdit={(type) => setActiveEditor(type)}
+                    />
 
                     {pack.status !== 'published' && (
                         <Button

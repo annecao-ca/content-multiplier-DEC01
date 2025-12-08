@@ -10,19 +10,27 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-    const [language, setLanguage] = useState<Language>('en')
-
-    useEffect(() => {
-        // Load language from localStorage
-        const saved = localStorage.getItem('content-multiplier-language')
-        if (saved && (saved === 'en' || saved === 'vn')) {
-            setLanguage(saved)
+    // Initialize language from localStorage immediately (prevents hydration mismatch)
+    const [language, setLanguage] = useState<Language>(() => {
+        if (typeof window === 'undefined') return 'en'
+        try {
+            const saved = localStorage.getItem('content-multiplier-language')
+            if (saved && (saved === 'en' || saved === 'vn')) {
+                return saved
+            }
+        } catch {
+            // Ignore localStorage errors
         }
-    }, [])
+        return 'en'
+    })
 
     useEffect(() => {
-        // Save language to localStorage
-        localStorage.setItem('content-multiplier-language', language)
+        // Save language to localStorage whenever it changes
+        try {
+            localStorage.setItem('content-multiplier-language', language)
+        } catch {
+            // Ignore localStorage errors
+        }
     }, [language])
 
     return (

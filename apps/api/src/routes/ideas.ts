@@ -10,20 +10,29 @@ const ideaGenerator = new IdeaGenerator();
 
 const routes: FastifyPluginAsync = async (app) => {
     // List ideas (with optional tag filter)
-    app.get('/', async (req: any) => {
+    app.get('/', async (req: any, reply) => {
         // Nếu database chưa được cấu hình, trả về mảng rỗng thay vì throw error
         if (!pool) {
             app.log.warn('Database not configured. Returning empty ideas list.');
             return [];
         }
 
-        const { tags } = req.query;
-        if (tags) {
-            // Filter by tags - supports comma-separated list
-            const tagArray = Array.isArray(tags) ? tags : tags.split(',');
-            return q('SELECT * FROM ideas WHERE tags && $1 ORDER BY created_at DESC', [tagArray]);
+        try {
+            const { tags } = req.query;
+            if (tags) {
+                // Filter by tags - supports comma-separated list
+                const tagArray = Array.isArray(tags) ? tags : tags.split(',');
+                return await q('SELECT * FROM ideas WHERE tags && $1 ORDER BY created_at DESC', [tagArray]);
+            }
+            return await q('SELECT * FROM ideas ORDER BY created_at DESC');
+        } catch (error: any) {
+            app.log.error('[Ideas] Failed to list ideas:', error);
+            return reply.status(500).send({
+                ok: false,
+                error: 'Failed to list ideas',
+                message: error.message
+            });
         }
-        return q('SELECT * FROM ideas ORDER BY created_at DESC');
     });
 
     // Generate ideas (NEW: using AI Client with retry)

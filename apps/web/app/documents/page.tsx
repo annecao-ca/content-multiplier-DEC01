@@ -49,10 +49,31 @@ export default function DocumentsPage() {
   const loadDocuments = async () => {
     try {
       const response = await fetch(`${API_BASE}/api/rag/documents`)
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
       const data = await response.json()
+      
+      // Ensure data is always an array
+      if (Array.isArray(data)) {
       setDocuments(data)
+      } else if (data && Array.isArray(data.documents)) {
+        // Handle case where API returns { documents: [...] }
+        setDocuments(data.documents)
+      } else if (data && data.error) {
+        // Handle error response
+        console.error('API error:', data.error)
+        setDocuments([])
+      } else {
+        // Fallback: set empty array if data is not in expected format
+        console.warn('Unexpected response format:', data)
+        setDocuments([])
+      }
     } catch (error) {
       console.error('Failed to load documents:', error)
+      setDocuments([]) // Ensure documents is always an array
     } finally {
       setLoading(false)
     }

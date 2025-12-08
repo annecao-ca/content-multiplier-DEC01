@@ -1,6 +1,17 @@
 @import "tailwindcss";
 
 @layer base {
+  /* Prevent flash by defaulting to dark */
+  html {
+    background-color: #020617;
+    color: #e5e7eb;
+  }
+  
+  html:not(.dark) {
+    background-color: #ffffff;
+    color: #0f172a;
+  }
+
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
@@ -70,5 +81,20 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+  }
+}
+
+@layer utilities {
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+  
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
   }
 }

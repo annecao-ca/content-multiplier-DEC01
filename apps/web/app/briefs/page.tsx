@@ -37,16 +37,22 @@ export default function BriefsPage() {
 
     async function loadIdeas() {
         try {
+            console.log('[Briefs] Loading ideas from:', `${API_URL}/api/ideas`)
             const r = await fetch(`${API_URL}/api/ideas`)
             const all = await r.json()
+            console.log('[Briefs] Received ideas:', all)
+            
             if (Array.isArray(all)) {
-                setIdeas(all.filter((i: any) => i.status === 'selected'))
+                const selectedIdeas = all.filter((i: any) => i.status === 'selected')
+                console.log('[Briefs] Selected ideas:', selectedIdeas)
+                console.log('[Briefs] Total ideas:', all.length, 'Selected:', selectedIdeas.length)
+                setIdeas(selectedIdeas)
             } else {
-                console.error('API returned non-array:', all)
+                console.error('[Briefs] API returned non-array:', all)
                 setIdeas([])
             }
         } catch (error) {
-            console.error('Failed to load ideas:', error)
+            console.error('[Briefs] Failed to load ideas:', error)
             setIdeas([])
         } finally {
             setInitialLoading(false)

@@ -252,6 +252,97 @@ const routes: FastifyPluginAsync = async (app) => {
         }
     })
 
+    app.get('/credentials/mailchimp/config', async (req: any, reply) => {
+        const userId = req.user_id || 'default_user'
+
+        try {
+            const [credential] = await q(
+                'SELECT encrypted_credentials FROM publishing_credentials WHERE user_id = $1 AND platform = $2 AND is_active = true',
+                [userId, 'mailchimp']
+            )
+
+            if (credential && credential.encrypted_credentials) {
+                const config = typeof credential.encrypted_credentials === 'string' 
+                    ? JSON.parse(credential.encrypted_credentials) 
+                    : credential.encrypted_credentials
+
+                return { ok: true, config }
+            } else {
+                return { ok: false, message: 'No MailChimp configuration found' }
+            }
+        } catch (error) {
+            console.error('Load MailChimp config error:', error)
+            return reply.status(500).send({
+                ok: false,
+                error: error instanceof Error ? error.message : 'Failed to load configuration'
+            })
+        }
+    })
+
+    app.post('/credentials/mailchimp', async (req: any, reply) => {
+        const { apiKey, serverPrefix, listId, fromName, fromEmail, replyToEmail } = req.body
+        const userId = req.user_id || 'default_user'
+
+        if (!apiKey || !serverPrefix || !listId || !fromName || !fromEmail || !replyToEmail) {
+            return reply.status(400).send({
+                ok: false,
+                error: 'All MailChimp configuration fields are required'
+            })
+        }
+
+        try {
+            // Store encrypted credentials
+            const encryptedCredentials = {
+                apiKey,
+                serverPrefix,
+                listId,
+                fromName,
+                fromEmail,
+                replyToEmail
+            }
+
+            // Check if credentials already exist
+            const [existing] = await q(
+                'SELECT credential_id FROM publishing_credentials WHERE user_id = $1 AND platform = $2',
+                [userId, 'mailchimp']
+            )
+
+            if (existing) {
+                // Update existing
+                await q(`
+                    UPDATE publishing_credentials 
+                    SET encrypted_credentials = $1, is_active = $2, updated_at = NOW()
+                    WHERE user_id = $3 AND platform = $4
+                `, [JSON.stringify(encryptedCredentials), true, userId, 'mailchimp'])
+            } else {
+                // Insert new
+                const { randomUUID } = await import('crypto')
+                const credentialId = randomUUID()
+                await q(`
+                    INSERT INTO publishing_credentials (
+                        credential_id, user_id, platform, credential_type, 
+                        encrypted_credentials, is_active, created_at, updated_at
+                    ) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+                `, [credentialId, userId, 'mailchimp', 'api_key', JSON.stringify(encryptedCredentials), true])
+            }
+
+            await logEvent({
+                event_type: 'publishing.credentials_updated',
+                actor_id: userId,
+                actor_role: 'user',
+                payload: { platform: 'mailchimp' }
+            })
+
+            return { ok: true, message: 'MailChimp credentials saved successfully' }
+        } catch (error) {
+            console.error('Save MailChimp credentials error:', error)
+            return reply.status(500).send({
+                ok: false,
+                error: error instanceof Error ? error.message : 'Failed to save credentials'
+            })
+        }
+    })
+
     app.delete('/credentials/:platform', async (req: any, reply) => {
         const { platform } = req.params
         const userId = req.user_id || 'default_user'

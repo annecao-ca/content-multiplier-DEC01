@@ -154,6 +154,9 @@ export class MailchimpService implements PublishingService {
         const credentials = await this.getCredentials(job.pack_id)
         const content = job.content_data as EmailContent
 
+        console.log('Mailchimp publish - credentials:', JSON.stringify(credentials, null, 2))
+        console.log('Mailchimp publish - content:', JSON.stringify(content, null, 2))
+
         // Mailchimp requires a campaign to be created first
         const campaignData = {
             type: 'regular',
@@ -162,11 +165,13 @@ export class MailchimpService implements PublishingService {
             },
             settings: {
                 subject_line: content.subject,
-                from_name: content.from_name || 'Content Multiplier',
-                reply_to: content.from_email,
+                from_name: credentials.from_name || content.from_name || 'Content Multiplier',
+                reply_to: credentials.reply_to || credentials.from_email || content.from_email,
                 to_name: '*|FNAME|*'
             }
         }
+
+        console.log('Mailchimp campaign data:', JSON.stringify(campaignData, null, 2))
 
         // Create campaign
         const campaignResponse = await fetch(`https://${credentials.dc}.api.mailchimp.com/3.0/campaigns`, {
@@ -283,9 +288,10 @@ export class MailchimpService implements PublishingService {
         console.log('Raw credentials from DB:', typeof cred.encrypted_credentials, cred.encrypted_credentials)
 
         // Handle both encrypted (OAuth) and plain JSON credentials (API key)
+        let credentials: any
         if (typeof cred.encrypted_credentials === 'string') {
             // Plain JSON string
-            return JSON.parse(cred.encrypted_credentials)
+            credentials = JSON.parse(cred.encrypted_credentials)
         } else if (cred.encrypted_credentials && typeof cred.encrypted_credentials === 'object') {
             if (cred.encrypted_credentials.encrypted) {
                 // Encrypted format from OAuth - need to decrypt
@@ -293,10 +299,22 @@ export class MailchimpService implements PublishingService {
                 throw new Error('Encrypted credentials not supported in MailchimpService yet')
             } else {
                 // Direct object format
-                return cred.encrypted_credentials
+                credentials = cred.encrypted_credentials
             }
         } else {
             throw new Error('Invalid credentials format')
+        }
+
+        // Normalize property names to match what the code expects
+        // Frontend saves: apiKey, serverPrefix, listId, fromName, fromEmail, replyToEmail
+        // Backend expects: api_key, dc, list_id
+        return {
+            api_key: credentials.apiKey || credentials.api_key,
+            dc: credentials.serverPrefix || credentials.dc,
+            list_id: credentials.listId || credentials.list_id,
+            from_name: credentials.fromName || credentials.from_name,
+            from_email: credentials.fromEmail || credentials.from_email,
+            reply_to: credentials.replyToEmail || credentials.reply_to
         }
     }
 }

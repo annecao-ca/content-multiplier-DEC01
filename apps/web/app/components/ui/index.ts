@@ -3,7 +3,7 @@ export { ToastProvider, useToast } from './Toast'
 export type { Toast, ToastVariant } from './Toast'
 
 // EmptyState
-export { EmptyState } from './EmptyState'
+export { EmptyState, DerivativesEmptyIllustration } from './EmptyState'
 export type { EmptyStateProps } from './EmptyState'
 
 // SkeletonList

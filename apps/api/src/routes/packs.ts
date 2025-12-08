@@ -7,6 +7,88 @@ import { retrieve, getDocument } from '../services/rag.ts';
 import { logEvent } from '../services/telemetry.ts';
 import { validatePackStatusTransition, getValidNextStatuses } from '../../../../packages/utils/pack-status-validator.ts';
 import { validateCitationsMiddleware } from '../middleware/citation-validator.ts';
+import crypto from 'crypto';
+
+function safeParseValue(val: any) {
+    if (!val) return null;
+    if (typeof val === 'string') {
+        try {
+            return JSON.parse(val);
+        } catch {
+            return null;
+        }
+    }
+    return val;
+}
+
+type DerivativeTemplate = {
+    name: string;
+    prompt: string;
+    output_format?: string;
+    id?: string;
+    created_at?: string;
+};
+
+const DEFAULT_TEMPLATES: DerivativeTemplate[] = [
+    {
+        name: 'summary_bullets',
+        prompt: 'Summarize the article into 5 concise bullets focused on insights and actions.',
+        output_format: 'text',
+    },
+    {
+        name: 'cta_snippet',
+        prompt: 'Create a short CTA paragraph driving readers to learn more or sign up.',
+        output_format: 'text',
+    },
+];
+
+async function fetchUserTemplates(app: any): Promise<DerivativeTemplate[]> {
+    try {
+        const rows = await q('SELECT id, name, prompt, output_format, created_at FROM derivative_templates ORDER BY created_at DESC');
+        return Array.isArray(rows) ? rows : [];
+    } catch (err: any) {
+        app.log?.warn?.('[Templates] Failed to load derivative_templates (ignored):', err?.message || err);
+        return [];
+    }
+}
+
+async function saveUserTemplate(app: any, tpl: DerivativeTemplate) {
+    await q(
+        `INSERT INTO derivative_templates (name, prompt, output_format)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (name) DO UPDATE SET prompt = EXCLUDED.prompt, output_format = EXCLUDED.output_format`,
+        [tpl.name, tpl.prompt, tpl.output_format || 'text']
+    );
+    return { ok: true };
+}
+
+async function generateFromTemplate(template: DerivativeTemplate, draft: string, language: string = 'en') {
+    const system = template.prompt || 'You are a content repurposer.';
+    const outputHint = template.output_format
+        ? `Output format: ${template.output_format}.`
+        : 'Return concise text.';
+    const user = language === 'vn'
+        ? `Nội dung nguồn:\n${draft}\n\nHãy tạo derivative cho template "${template.name}". ${outputHint}\nTrả về kết quả ngắn gọn, giữ định dạng mô tả.`
+        : `Source content:\n${draft}\n\nCreate a derivative for template "${template.name}". ${outputHint}\nKeep it concise and follow the described output format.`;
+
+    const result = await llm.completeText({
+        model: process.env.LLM_MODEL!,
+        system,
+        user,
+        temperature: 0.6,
+    });
+    return result;
+}
+
+async function saveDerivativeVersion(pack_id: string, derivative_type: string, content: any) {
+    const version_id = `ver-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+    await q(
+        `INSERT INTO derivative_versions (version_id, pack_id, derivative_type, content, created_at)
+         VALUES ($1, $2, $3, $4, NOW())`,
+        [version_id, pack_id, derivative_type, JSON.stringify(content)]
+    );
+    return version_id;
+}
 
 const routes: FastifyPluginAsync = async (app) => {
     app.get('/', async (req: any) => {
@@ -53,6 +135,138 @@ const routes: FastifyPluginAsync = async (app) => {
         }
     });
 
+    // GET /:pack_id/derivatives/export - Export derivatives in JSON or Markdown format
+    app.get('/:pack_id/derivatives/export', async (req: any, reply) => {
+        const { pack_id } = req.params
+        const { format = 'json' } = req.query
+
+        // Validate format
+        if (format !== 'json' && format !== 'md') {
+            return reply.status(400).send({ 
+                error: 'Invalid format. Supported formats: json, md' 
+            })
+        }
+
+        // Fetch pack from database
+        const [p] = await q('SELECT * FROM content_packs WHERE pack_id=$1', [pack_id])
+        if (!p) {
+            return reply.status(404).send({ error: 'Pack not found' })
+        }
+
+        const safeParse = (val: any) => {
+            if (!val) return null
+            if (typeof val === 'string') {
+                try {
+                    return JSON.parse(val)
+                } catch {
+                    return val
+                }
+            }
+            return val
+        }
+
+        const derivatives = safeParse(p.derivatives)
+        const seo = safeParse(p.seo)
+
+        if (!derivatives) {
+            return reply.status(404).send({ 
+                error: 'No derivatives found for this pack' 
+            })
+        }
+
+        // Format as JSON
+        if (format === 'json') {
+            reply.header('Content-Type', 'application/json')
+            reply.header('Content-Disposition', `attachment; filename="${pack_id}-derivatives.json"`)
+            return {
+                pack_id: p.pack_id,
+                status: p.status,
+                created_at: p.created_at,
+                derivatives: derivatives,
+                seo: seo,
+                metadata: {
+                    x_count: derivatives.x?.length || 0,
+                    linkedin_count: derivatives.linkedin?.length || 0,
+                    has_newsletter: !!derivatives.newsletter,
+                    has_blog_summary: !!derivatives.blog_summary,
+                }
+            }
+        }
+
+        // Format as Markdown
+        if (format === 'md') {
+            let markdown = `# Content Pack Derivatives\n\n`
+            markdown += `**Pack ID:** ${p.pack_id}\n`
+            markdown += `**Status:** ${p.status}\n`
+            markdown += `**Created:** ${new Date(p.created_at).toLocaleDateString()}\n\n`
+            markdown += `---\n\n`
+
+            // SEO Metadata
+            if (seo && (seo.title || seo.description || seo.slug)) {
+                markdown += `## 🔍 SEO Metadata\n\n`
+                if (seo.title) {
+                    markdown += `**Title:** ${seo.title}\n\n`
+                }
+                if (seo.slug) {
+                    markdown += `**Slug:** ${seo.slug}\n\n`
+                }
+                if (seo.description || seo.meta_desc) {
+                    markdown += `**Description:** ${seo.description || seo.meta_desc}\n\n`
+                }
+                markdown += `---\n\n`
+            }
+
+            // X/Twitter Posts
+            if (derivatives.x && Array.isArray(derivatives.x) && derivatives.x.length > 0) {
+                markdown += `## 🐦 X/Twitter Posts (${derivatives.x.length})\n\n`
+                derivatives.x.forEach((post: string, index: number) => {
+                    markdown += `### Post ${index + 1}\n\n`
+                    markdown += `${post}\n\n`
+                    markdown += `*Character count: ${post.length}/280*\n\n`
+                })
+                markdown += `---\n\n`
+            }
+
+            // LinkedIn Posts
+            if (derivatives.linkedin && Array.isArray(derivatives.linkedin) && derivatives.linkedin.length > 0) {
+                markdown += `## 💼 LinkedIn Posts (${derivatives.linkedin.length})\n\n`
+                derivatives.linkedin.forEach((post: string, index: number) => {
+                    markdown += `### Post ${index + 1}\n\n`
+                    markdown += `> ${post.split('\n').join('\n> ')}\n\n`
+                    markdown += `*Character count: ${post.length}*\n\n`
+                })
+                markdown += `---\n\n`
+            }
+
+            // Newsletter
+            if (derivatives.newsletter) {
+                const newsletterContent = typeof derivatives.newsletter === 'string' 
+                    ? derivatives.newsletter 
+                    : JSON.stringify(derivatives.newsletter)
+                markdown += `## 📧 Newsletter\n\n`
+                markdown += `${newsletterContent}\n\n`
+                markdown += `---\n\n`
+            }
+
+            // Blog Summary
+            if (derivatives.blog_summary) {
+                const blogContent = typeof derivatives.blog_summary === 'string' 
+                    ? derivatives.blog_summary 
+                    : JSON.stringify(derivatives.blog_summary)
+                markdown += `## 📝 Blog Summary\n\n`
+                markdown += `${blogContent}\n\n`
+                markdown += `---\n\n`
+            }
+
+            // Footer
+            markdown += `\n*Generated by Content Multiplier*\n`
+
+            reply.header('Content-Type', 'text/markdown; charset=utf-8')
+            reply.header('Content-Disposition', `attachment; filename="${pack_id}-derivatives.md"`)
+            return markdown
+        }
+    });
+
     app.patch('/:pack_id', async (req: any) => {
         const { pack_id } = req.params
         const { draft_markdown, derivatives, seo } = req.body
@@ -88,7 +302,20 @@ const routes: FastifyPluginAsync = async (app) => {
     // POST /draft with SSE streaming
     app.post('/draft', async (req: any, reply) => {
         const { pack_id, brief_id, audience, language = 'en', topK = 5 } = req.body;
+        
+        // Validate required fields
+        if (!pack_id) {
+            return reply.status(400).send({ error: 'pack_id is required' });
+        }
+        if (!brief_id) {
+            return reply.status(400).send({ error: 'brief_id is required' });
+        }
+        
         const [rawBrief] = await q('SELECT * FROM briefs WHERE brief_id=$1', [brief_id]);
+        
+        if (!rawBrief) {
+            return reply.status(404).send({ error: `Brief with ID '${brief_id}' not found` });
+        }
 
         const safeParse = (val: any) => {
             if (!val) return []
@@ -546,7 +773,10 @@ The path forward requires commitment, resources, and sustained attention, but th
 
     app.post('/derivatives', async (req: any, reply) => {
         try {
-            const { pack_id, language = 'en' } = req.body
+            const { pack_id, language = 'en', templates: requestTemplates = [] } = req.body
+            const lang = ['en', 'vi', 'vn'].includes((language || '').toLowerCase())
+                ? (language || '').toLowerCase() === 'vn' ? 'vi' : (language || '').toLowerCase()
+                : 'en';
             console.log('Generating derivatives for pack:', pack_id)
 
             const [pack] = await q('SELECT * FROM content_packs WHERE pack_id=$1', [pack_id])
@@ -559,6 +789,25 @@ The path forward requires commitment, resources, and sustained attention, but th
 
             console.log('Pack found, draft length:', pack.draft_markdown.length)
 
+            // Load templates (default + DB + request)
+            const dbTemplates = await fetchUserTemplates(app)
+            const incomingTemplates: DerivativeTemplate[] = Array.isArray(requestTemplates)
+                ? requestTemplates.filter((t: any) => t?.name && t?.prompt)
+                : []
+            const combinedTemplates = [...DEFAULT_TEMPLATES, ...dbTemplates, ...incomingTemplates]
+
+            // De-duplicate by name (prefer incoming > DB > default)
+            const templateMap = new Map<string, DerivativeTemplate>()
+            combinedTemplates.forEach((tpl) => {
+                if (!tpl?.name) return
+                templateMap.set(tpl.name, {
+                    name: tpl.name,
+                    prompt: tpl.prompt,
+                    output_format: tpl.output_format || 'text',
+                })
+            })
+            const templates = Array.from(templateMap.values())
+
             const derivativesSchema = {
                 type: 'object',
                 required: ['newsletter', 'linkedin', 'x'],
@@ -570,11 +819,11 @@ The path forward requires commitment, resources, and sustained attention, but th
                 }
             }
 
-            const system = language === 'vn'
+            const system = lang === 'vi'
                 ? 'Bạn là một người tái sử dụng nội dung. Tạo nội dung đa kênh từ bài báo.'
                 : 'You are a content repurposer. Create multi-channel content from the article.';
 
-            const user = language === 'vn'
+            const user = lang === 'vi'
                 ? `Bài báo:\n${pack.draft_markdown}\n\nTạo JSON với:\n- newsletter: phiên bản email (300-500 từ)\n- video_script: kịch bản 60 giây\n- linkedin: mảng chính xác 3 bài đăng LinkedIn (mỗi bài 100-150 từ)\n- x: mảng chính xác 3 bài đăng X/Twitter (mỗi bài <280 ký tự)`
                 : `Article:\n${pack.draft_markdown}\n\nCreate JSON with:\n- newsletter: email version (300-500 words)\n- video_script: 60-second script\n- linkedin: array of exactly 3 LinkedIn posts (each 100-150 words)\n- x: array of exactly 3 X/Twitter posts (each <280 chars)`
 
@@ -683,7 +932,9 @@ Position strategically today.
             }
 
             const seoSystem = 'Generate SEO metadata.'
-            const seoUser = `Article:\n${pack.draft_markdown}\n\nCreate JSON with: {title: string (50-60 chars), description: string (150-160 chars), keywords: array of strings}`
+            const seoUser = lang === 'vi'
+                ? `Bài viết:\n${pack.draft_markdown}\n\nTạo JSON với: {title: string (50-60 chars), description: string (150-160 chars), keywords: array<string>}`
+                : `Article:\n${pack.draft_markdown}\n\nCreate JSON with: {title: string (50-60 chars), description: string (150-160 chars), keywords: array of strings}`
             console.log('Calling LLM for SEO...')
             let seo;
             try {
@@ -722,7 +973,33 @@ Position strategically today.
 
             console.log('Derivatives created:', { linkedin: derivatives.linkedin?.length, x: derivatives.x?.length })
 
-            await q('UPDATE content_packs SET derivatives=$2, seo=$3, status=$4 WHERE pack_id=$1', [pack_id, JSON.stringify(derivatives), JSON.stringify(seo), 'ready_for_review']);
+            // Generate custom template outputs
+            const templateOutputs: Record<string, string> = {}
+            for (const tpl of templates) {
+                try {
+                    const output = await generateFromTemplate(tpl, pack.draft_markdown, lang)
+                    templateOutputs[tpl.name] = output
+                } catch (err: any) {
+                    app.log?.warn?.('[Templates] Failed to generate template output:', tpl.name, err?.message || err)
+                }
+            }
+
+            const derivativesWithTemplates = { ...derivatives, templates: templateOutputs }
+
+            const existingDerivatives = safeParseValue(pack.derivatives) || {}
+            const existingSeo = safeParseValue(pack.seo) || {}
+
+            const updatedDerivatives = { ...existingDerivatives, [lang]: derivativesWithTemplates }
+            const updatedSeo = { ...existingSeo, [lang]: seo }
+
+            // Save new version snapshot (one per language)
+            try {
+                await saveDerivativeVersion(pack_id, `full-${lang}`, { derivatives: updatedDerivatives[lang], seo: updatedSeo[lang] });
+            } catch (e: any) {
+                app.log?.warn?.('[Derivatives] Failed to save version snapshot:', e?.message || e);
+            }
+
+            await q('UPDATE content_packs SET derivatives=$2, seo=$3, status=$4 WHERE pack_id=$1', [pack_id, JSON.stringify(updatedDerivatives), JSON.stringify(updatedSeo), 'review']);
 
             const nLi = Array.isArray(derivatives.linkedin) ? derivatives.linkedin.length : 0;
             const nX = Array.isArray(derivatives.x) ? derivatives.x.length : 0;
@@ -734,13 +1011,13 @@ Position strategically today.
                     pack_id,
                     request_id: (req as any).request_id,
                     timezone: (req as any).timezone,
-                    payload: { linkedin: nLi, x: nX }
+                    payload: { linkedin: nLi, x: nX, templates: Object.keys(templateOutputs).length }
                 });
             } catch (e) {
                 console.warn('Telemetry log failed for pack.derivatives_created:', e)
                 // Non-fatal: continue to return success to the client
             }
-            return { pack_id, derivatives, seo };
+            return { pack_id, language: lang, derivatives: derivativesWithTemplates, seo, templates: Object.keys(templateOutputs) };
         } catch (err: any) {
             console.error('Derivatives generation error:', err)
 
@@ -754,6 +1031,46 @@ Position strategically today.
             }
 
             return reply.status(500).send({ ok: false, error: 'Failed to generate derivatives', details: err.message })
+        }
+    });
+
+    // Create a new derivative template
+    app.post('/templates', async (req: any, reply) => {
+        try {
+            const { name, prompt, output_format = 'text' } = req.body || {}
+
+            if (!name || !prompt) {
+                return reply.status(400).send({ ok: false, error: 'Missing required fields: name, prompt' })
+            }
+
+            await saveUserTemplate(app, { name, prompt, output_format })
+
+            return { ok: true, template: { name, prompt, output_format } }
+        } catch (err: any) {
+            const message = err?.message || 'Failed to save template'
+            return reply.status(500).send({
+                ok: false,
+                error: message,
+                hint: 'Ensure table derivative_templates exists with columns (name text unique, prompt text, output_format text, created_at timestamptz default now())'
+            })
+        }
+    });
+
+    // GET derivative versions history
+    app.get('/:pack_id/derivatives/versions', async (req: any, reply) => {
+        const { pack_id } = req.params;
+        try {
+            const rows = await q(
+                `SELECT version_id, pack_id, derivative_type, content, created_at
+                 FROM derivative_versions
+                 WHERE pack_id=$1
+                 ORDER BY created_at DESC`,
+                [pack_id]
+            );
+            return { ok: true, versions: rows || [] };
+        } catch (err: any) {
+            console.error('Failed to fetch derivative versions:', err);
+            return reply.status(500).send({ ok: false, error: 'Failed to load derivative versions', details: err?.message });
         }
     });
 

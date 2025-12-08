@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Button from '../../components/Button'
+import { MailChimpConfigForm, MailChimpConfig } from '../../components/MailChimpConfigForm'
+import { useToast } from '../../components/ui/Toast'
 
 interface PublishingCredential {
     platform: string
@@ -40,21 +42,26 @@ const WEBHOOK_EVENTS = [
     'publishing.failed'
 ]
 
+const API_URL = 'http://localhost:3001'
+
 export default function PublishingSettingsPage() {
     const [credentials, setCredentials] = useState<PublishingCredential[]>([])
     const [webhooks, setWebhooks] = useState<WebhookConfig[]>([])
     const [loading, setLoading] = useState(false)
     const [showWebhookForm, setShowWebhookForm] = useState(false)
+    const [showMailChimpForm, setShowMailChimpForm] = useState(false)
+    const [mailChimpConfig, setMailChimpConfig] = useState<MailChimpConfig | null>(null)
     const [newWebhook, setNewWebhook] = useState({
         name: '',
         url: '',
         secret: '',
         events: [] as string[]
     })
+    const toast = useToast()
 
     async function loadCredentials() {
         try {
-            const res = await fetch('/api/publishing/credentials')
+            const res = await fetch(`${API_URL}/api/publishing/credentials`)
             const data = await res.json()
             if (data.ok) {
                 setCredentials(data.credentials || [])
@@ -66,7 +73,7 @@ export default function PublishingSettingsPage() {
 
     async function loadWebhooks() {
         try {
-            const res = await fetch('/api/publishing/webhooks')
+            const res = await fetch(`${API_URL}/api/publishing/webhooks`)
             const data = await res.json()
             if (data.ok) {
                 setWebhooks(data.webhooks || [])
@@ -79,7 +86,7 @@ export default function PublishingSettingsPage() {
     async function authenticatePlatform(platform: string) {
         try {
             setLoading(true)
-            const res = await fetch(`/api/publishing/auth/${platform}`)
+            const res = await fetch(`${API_URL}/api/publishing/auth/${platform}`)
             const data = await res.json()
             
             if (data.auth_url) {
@@ -114,7 +121,7 @@ export default function PublishingSettingsPage() {
 
         try {
             setLoading(true)
-            const res = await fetch(`/api/publishing/credentials/${platform}`, {
+            const res = await fetch(`${API_URL}/api/publishing/credentials/${platform}`, {
                 method: 'DELETE'
             })
             const data = await res.json()
@@ -141,7 +148,7 @@ export default function PublishingSettingsPage() {
 
         try {
             setLoading(true)
-            const res = await fetch('/api/publishing/webhooks', {
+            const res = await fetch(`${API_URL}/api/publishing/webhooks`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newWebhook)
@@ -171,7 +178,7 @@ export default function PublishingSettingsPage() {
 
         try {
             setLoading(true)
-            const res = await fetch(`/api/publishing/webhooks/${webhookId}`, {
+            const res = await fetch(`${API_URL}/api/publishing/webhooks/${webhookId}`, {
                 method: 'DELETE'
             })
             const data = await res.json()
@@ -188,6 +195,56 @@ export default function PublishingSettingsPage() {
         } finally {
             setLoading(false)
         }
+    }
+
+    async function openMailChimpConfig() {
+        // Load existing config if available
+        try {
+            const res = await fetch(`${API_URL}/api/publishing/credentials/mailchimp/config`)
+            if (res.ok) {
+                const data = await res.json()
+                if (data.ok && data.config) {
+                    setMailChimpConfig(data.config)
+                } else {
+                    setMailChimpConfig(null)
+                }
+            } else {
+                setMailChimpConfig(null)
+            }
+        } catch (error) {
+            console.error('Failed to load MailChimp config:', error)
+            setMailChimpConfig(null)
+        }
+        setShowMailChimpForm(true)
+    }
+
+    async function saveMailChimpConfig(config: MailChimpConfig) {
+        // Save to backend API
+        const res = await fetch(`${API_URL}/api/publishing/credentials/mailchimp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        })
+        
+        if (!res.ok) {
+            const errorText = await res.text()
+            console.error('API response not ok:', res.status, errorText)
+            throw new Error(`Server returned ${res.status}`)
+        }
+        
+        const data = await res.json()
+        
+        if (!data.ok) {
+            throw new Error(data.error || 'Failed to save configuration')
+        }
+        
+        // Success - update local state
+        setMailChimpConfig(config)
+    }
+
+    async function onMailChimpSaveSuccess() {
+        // Reload credentials to show "Connected" status
+        await loadCredentials()
     }
 
     useEffect(() => {
@@ -287,27 +344,77 @@ export default function PublishingSettingsPage() {
                                     </div>
                                 )}
 
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                    {credential ? (
-                                        <Button
-                                            onClick={() => disconnectPlatform(platform.id)}
-                                            disabled={loading}
-                                            style={{
-                                                background: '#dc2626',
-                                                color: 'white',
-                                                padding: '0.5rem 1rem'
-                                            }}
-                                        >
-                                            Disconnect
-                                        </Button>
-                                    ) : (
-                                        <Button
-                                            onClick={() => authenticatePlatform(platform.id)}
-                                            disabled={loading}
-                                            style={{ padding: '0.5rem 1rem' }}
-                                        >
-                                            Connect
-                                        </Button>
+                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                    {/* For API key platforms (MailChimp, SendGrid), show Configure button */}
+                                    {(platform.type === 'api_key' || platform.type === 'basic_auth') && (
+                                        <>
+                                            {platform.id === 'mailchimp' && (
+                                                <Button
+                                                    onClick={openMailChimpConfig}
+                                                    disabled={loading}
+                                                    style={{
+                                                        background: '#4f46e5',
+                                                        color: 'white',
+                                                        padding: '0.5rem 1rem'
+                                                    }}
+                                                >
+                                                    {credential ? 'Reconfigure' : 'Configure'}
+                                                </Button>
+                                            )}
+                                            {platform.id !== 'mailchimp' && !credential && (
+                                                <Button
+                                                    disabled={true}
+                                                    style={{
+                                                        background: '#9ca3af',
+                                                        color: 'white',
+                                                        padding: '0.5rem 1rem',
+                                                        cursor: 'not-allowed'
+                                                    }}
+                                                >
+                                                    Configure (Coming Soon)
+                                                </Button>
+                                            )}
+                                            {credential && (
+                                                <Button
+                                                    onClick={() => disconnectPlatform(platform.id)}
+                                                    disabled={loading}
+                                                    style={{
+                                                        background: '#dc2626',
+                                                        color: 'white',
+                                                        padding: '0.5rem 1rem'
+                                                    }}
+                                                >
+                                                    Disconnect
+                                                </Button>
+                                            )}
+                                        </>
+                                    )}
+                                    
+                                    {/* For OAuth platforms, show Connect/Disconnect */}
+                                    {platform.type === 'oauth' && (
+                                        <>
+                                            {credential ? (
+                                                <Button
+                                                    onClick={() => disconnectPlatform(platform.id)}
+                                                    disabled={loading}
+                                                    style={{
+                                                        background: '#dc2626',
+                                                        color: 'white',
+                                                        padding: '0.5rem 1rem'
+                                                    }}
+                                                >
+                                                    Disconnect
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    onClick={() => authenticatePlatform(platform.id)}
+                                                    disabled={loading}
+                                                    style={{ padding: '0.5rem 1rem' }}
+                                                >
+                                                    Connect
+                                                </Button>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>
@@ -399,6 +506,15 @@ export default function PublishingSettingsPage() {
                     </div>
                 )}
             </div>
+
+            {/* MailChimp Config Form */}
+            <MailChimpConfigForm
+                isOpen={showMailChimpForm}
+                onClose={() => setShowMailChimpForm(false)}
+                onSave={saveMailChimpConfig}
+                onSuccess={onMailChimpSaveSuccess}
+                initialConfig={mailChimpConfig || undefined}
+            />
 
             {/* Webhook Form Modal */}
             {showWebhookForm && (

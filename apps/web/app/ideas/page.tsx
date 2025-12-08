@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useLanguage } from '../contexts/LanguageContext'
 import { translations } from '../translations'
-import { Loader2, Sparkles, ArrowLeft, Trash2, Edit, Tag, ArrowRight } from 'lucide-react'
+import { Loader2, Sparkles, ArrowLeft, Trash2, Edit, Tag, ArrowRight, CheckCircle } from 'lucide-react'
 import { useToast, ConfirmModal } from '../components/ui'
 import {
     PageHeader,
@@ -175,21 +175,46 @@ export default function IdeasPage() {
 
     async function selectIdea(ideaId: string) {
         if (!ideaId) return
+        console.log('[Ideas] Selecting idea:', ideaId)
+        
+        // Optimistic update
         setIdeas((prev) => prev.map((idea: any) =>
             (idea.idea_id === ideaId || idea.id === ideaId)
                 ? { ...idea, status: 'selected' }
                 : idea
         ))
         setSelectedCount((prev) => prev + 1)
+        
         try {
-            await fetch(`${API_URL}/api/ideas/${ideaId}/select`, {
+            const response = await fetch(`${API_URL}/api/ideas/${ideaId}/select`, {
                 method: 'POST',
-                headers: { 'x-user-id': 'demo-user', 'x-user-role': 'CL' }
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-user-id': 'demo-user', 
+                    'x-user-role': 'CL' 
+                },
+                body: JSON.stringify({})
             })
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}))
+                console.error('[Ideas] Select API failed:', errorData)
+                throw new Error(errorData.error || `API error: ${response.status}`)
+            }
+            
+            const data = await response.json()
+            console.log('[Ideas] Select API response:', data)
             toast.success('Idea selected successfully')
-        } catch (err) {
-            console.warn('Select API failed (ignored):', err)
-            toast.error('Failed to select idea')
+        } catch (err: any) {
+            console.error('[Ideas] Select API error:', err)
+            // Revert optimistic update on error
+            setIdeas((prev) => prev.map((idea: any) =>
+                (idea.idea_id === ideaId || idea.id === ideaId)
+                    ? { ...idea, status: 'proposed' }
+                    : idea
+            ))
+            setSelectedCount((prev) => prev - 1)
+            toast.error('Failed to select idea', err.message || 'Please try again')
         }
     }
 
@@ -428,6 +453,15 @@ export default function IdeasPage() {
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center justify-end gap-1">
+                                                {i.status !== 'selected' && (
+                                                    <button
+                                                        onClick={() => selectIdea(i.idea_id || i.id)}
+                                                        className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-green-900/30 hover:text-green-400"
+                                                        title="Select Idea"
+                                                    >
+                                                        <CheckCircle className="h-4 w-4" />
+                                                    </button>
+                                                )}
                                                 <button
                                                     onClick={() => {
                                                         const newTitle = prompt('Edit title:', i.one_liner)

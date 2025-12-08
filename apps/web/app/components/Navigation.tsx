@@ -34,6 +34,7 @@ export default function Navigation() {
         { href: '/documents', label: 'RAG', description: 'Documents & Search' },
         { href: '/packs', label: 'Content', description: 'Create & manage' },
         { href: '/analytics', label: 'Analytics', description: 'Metrics' },
+        { href: '/publisher', label: 'Publisher', description: 'Multi-platform' },
         { href: '/settings', label: 'Settings', description: 'Configure' }
     ]
 
