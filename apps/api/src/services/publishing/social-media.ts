@@ -253,9 +253,15 @@ export class FacebookService implements PublishingService {
         const credentials = await OAuthService.getCredentials('default_user', 'facebook')
         const content = job.content_data as FacebookContent
 
+        // Use pageAccessToken from credentials (support both naming conventions)
+        const accessToken = credentials.pageAccessToken || credentials.access_token || credentials.page_access_token
+        if (!accessToken) {
+            throw new Error('Facebook page access token not found in credentials')
+        }
+
         const postData = new URLSearchParams({
             message: content.message,
-            access_token: credentials.access_token
+            access_token: accessToken
         })
 
         if (content.link) {

@@ -1,10 +1,8 @@
 import pg from 'pg';
 import { config } from 'dotenv';
-import { resolve } from 'path';
 
-// Đảm bảo luôn load .env từ project root trước khi đọc DATABASE_URL
-const envPath = resolve(process.cwd(), '../../.env');
-config({ path: envPath });
+// Load .env files - dotenv will automatically look in current directory
+config();  // Load from apps/api/.env (when run from apps/api directory)
 
 // Create pool with graceful error handling
 const connectionString = process.env.DATABASE_URL;
@@ -20,8 +18,20 @@ export { pool };
 
 export async function q<T = any>(text: string, params: any[] = []) { 
     if (!pool) {
-        throw new Error('Database not configured');
+        const error = new Error('Database not configured. Please set DATABASE_URL in .env file.');
+        (error as any).code = 'DB_NOT_CONFIGURED';
+        throw error;
     }
-    const r = await pool.query<T>(text, params); 
-    return r.rows; 
+    try {
+        const r = await pool.query<T>(text, params); 
+        return r.rows;
+    } catch (error: any) {
+        // Log database errors for debugging
+        console.error('[DB] Query failed:', {
+            query: text.substring(0, 100),
+            error: error.message,
+            code: error.code
+        });
+        throw error;
+    }
 }

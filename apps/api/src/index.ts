@@ -1,12 +1,11 @@
 // Load environment variables from .env file
 import { config } from 'dotenv';
-import { resolve } from 'path';
 
-// Load .env from project root
-const envPath = resolve(process.cwd(), '../../.env');
-config({ path: envPath });
+// Load .env from current directory (apps/api/.env)
+config();
 
-console.log('🔑 Loading environment from:', envPath);
+console.log('🔑 Environment loaded');
+console.log('🔑 DATABASE_URL:', process.env.DATABASE_URL ? '✅ Loaded' : '❌ Not found');
 console.log('🔑 GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? '✅ Loaded' : '❌ Not found');
 
 import Fastify from 'fastify'

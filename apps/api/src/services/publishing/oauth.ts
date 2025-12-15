@@ -42,7 +42,7 @@ const OAUTH_CONFIGS = {
 const ENCRYPTION_KEY = process.env.PUBLISHING_ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex')
 const ALGORITHM = 'aes-256-gcm'
 
-function encrypt(text: string): string {
+export function encrypt(text: string): string {
     const iv = crypto.randomBytes(16)
     const key = Buffer.from(ENCRYPTION_KEY, 'hex')
     const cipher = crypto.createCipheriv('aes-256-cbc', key, iv)
@@ -53,7 +53,7 @@ function encrypt(text: string): string {
     return iv.toString('hex') + ':' + encrypted
 }
 
-function decrypt(encryptedText: string): string {
+export function decrypt(encryptedText: string): string {
     const [ivHex, encrypted] = encryptedText.split(':')
     const iv = Buffer.from(ivHex, 'hex')
     const key = Buffer.from(ENCRYPTION_KEY, 'hex')

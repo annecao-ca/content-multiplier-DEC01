@@ -4,10 +4,13 @@ import { TwitterService, LinkedInService, FacebookService, InstagramService } fr
 import { SendGridService, MailchimpService } from './email.ts'
 import { WordPressService, MediumService } from './cms.ts'
 import { WebhookManager, WEBHOOK_EVENTS } from './webhooks.ts'
+import { OAuthService } from './oauth.ts'
 
 export class PublishingOrchestrator {
     private services: Map<PublishingPlatform, any> = new Map()
     private webhookManager: WebhookManager
+    private scheduledWorkerTimer?: NodeJS.Timeout
+    private isProcessingScheduled = false
 
     constructor() {
         this.webhookManager = new WebhookManager()
@@ -116,6 +119,19 @@ export class PublishingOrchestrator {
         `, [job.queue_id])
 
         try {
+            // For Facebook, inject page_id from credentials if not provided
+            if (job.platform === 'facebook' && !job.content_data.page_id) {
+                try {
+                    const credentials = await OAuthService.getCredentials('default_user', 'facebook')
+                    if (credentials.pageId || credentials.page_id) {
+                        job.content_data.page_id = credentials.pageId || credentials.page_id
+                        console.log(`Injected Facebook page_id from credentials: ${job.content_data.page_id}`)
+                    }
+                } catch (error) {
+                    console.warn('Failed to load Facebook credentials:', error)
+                }
+            }
+
             // Validate content
             console.log(`Validating content for ${job.platform} job ${job.queue_id}:`, JSON.stringify(job.content_data, null, 2))
             const validation = await service.validateContent(job.content_data)
@@ -331,6 +347,74 @@ export class PublishingOrchestrator {
                 'pending',
                 scheduledAt
             ])
+        }
+    }
+
+    /**
+     * Worker chạy định kỳ để xử lý các job đã tới hạn (pending + scheduled_at <= now).
+     */
+    startScheduledWorker(intervalMs = 60_000) {
+        if (this.scheduledWorkerTimer) return
+
+        const run = async () => {
+            await this.processDueScheduledJobs()
+        }
+
+        // chạy ngay một lần khi khởi động
+        run().catch(err => console.error('Scheduled worker initial run error:', err))
+
+        this.scheduledWorkerTimer = setInterval(() => {
+            run().catch(err => console.error('Scheduled worker error:', err))
+        }, intervalMs)
+
+        console.log(`[Scheduler] Scheduled worker started (every ${intervalMs / 1000}s)`)
+    }
+
+    private async processDueScheduledJobs() {
+        if (this.isProcessingScheduled) return
+        this.isProcessingScheduled = true
+
+        try {
+            const rows = await q(`
+                SELECT * FROM publishing_queue
+                WHERE status = 'pending'
+                  AND scheduled_at IS NOT NULL
+                  AND scheduled_at <= NOW()
+                ORDER BY scheduled_at ASC
+                LIMIT 25
+            `)
+
+            if (!rows.length) return
+
+            console.log(`[Scheduler] Found ${rows.length} due jobs`)
+
+            for (const row of rows) {
+                try {
+                    const contentData = row.content_data
+                        ? typeof row.content_data === 'string'
+                            ? JSON.parse(row.content_data)
+                            : row.content_data
+                        : {}
+
+                    const job: PublishingJob = {
+                        queue_id: row.queue_id,
+                        pack_id: row.pack_id,
+                        platform: row.platform,
+                        content_type: row.content_type,
+                        content_data: contentData,
+                        status: row.status,
+                        scheduled_at: row.scheduled_at,
+                        retry_count: row.retry_count ?? 0,
+                        max_retries: row.max_retries ?? 3
+                    }
+
+                    await this.processPublishingJob(job)
+                } catch (err) {
+                    console.error(`[Scheduler] Failed processing scheduled job ${row.queue_id}:`, err)
+                }
+            }
+        } finally {
+            this.isProcessingScheduled = false
         }
     }
 }

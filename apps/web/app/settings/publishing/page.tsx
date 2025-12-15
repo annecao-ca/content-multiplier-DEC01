@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Button from '../../components/Button'
 import { MailChimpConfigForm, MailChimpConfig } from '../../components/MailChimpConfigForm'
+import { FacebookConfigForm, FacebookConfig } from '../../components/FacebookConfigForm'
 import { useToast } from '../../components/ui/Toast'
 
 interface PublishingCredential {
@@ -51,6 +52,8 @@ export default function PublishingSettingsPage() {
     const [showWebhookForm, setShowWebhookForm] = useState(false)
     const [showMailChimpForm, setShowMailChimpForm] = useState(false)
     const [mailChimpConfig, setMailChimpConfig] = useState<MailChimpConfig | null>(null)
+    const [showFacebookForm, setShowFacebookForm] = useState(false)
+    const [facebookConfig, setFacebookConfig] = useState<FacebookConfig | null>(null)
     const [newWebhook, setNewWebhook] = useState({
         name: '',
         url: '',
@@ -247,6 +250,70 @@ export default function PublishingSettingsPage() {
         await loadCredentials()
     }
 
+    async function openFacebookConfig() {
+        // Load existing config if available
+        try {
+            const res = await fetch(`${API_URL}/api/publishing/credentials/facebook/config`)
+            if (res.ok) {
+                const data = await res.json()
+                if (data.ok && data.config) {
+                    setFacebookConfig(data.config)
+                } else {
+                    setFacebookConfig(null)
+                }
+            } else {
+                setFacebookConfig(null)
+            }
+        } catch (error) {
+            console.error('Failed to load Facebook config:', error)
+            setFacebookConfig(null)
+        }
+        setShowFacebookForm(true)
+    }
+
+    async function saveFacebookConfig(config: FacebookConfig) {
+        // Save to backend API
+        console.log('Sending Facebook config to API:', {
+            ...config,
+            appSecret: '***',
+            pageAccessToken: '***'
+        })
+        
+        const res = await fetch(`${API_URL}/api/publishing/credentials/facebook`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        })
+        
+        const data = await res.json()
+        
+        if (!res.ok || !data.ok) {
+            let errorMessage = data.error || `Server returned ${res.status}`
+            
+            // Add missing fields info if available
+            if (data.missingFields && Array.isArray(data.missingFields)) {
+                errorMessage += ` (Missing: ${data.missingFields.join(', ')})`
+            }
+            
+            console.error('API error:', res.status, errorMessage)
+            console.error('Response data:', data)
+            console.error('Request payload:', {
+                ...config,
+                appSecret: '***',
+                pageAccessToken: '***'
+            })
+            throw new Error(errorMessage)
+        }
+        
+        // Success - update local state
+        setFacebookConfig(config)
+    }
+
+    async function onFacebookSaveSuccess() {
+        // Reload credentials to show updated status
+        await loadCredentials()
+    }
+
     useEffect(() => {
         loadCredentials()
         loadWebhooks()
@@ -393,7 +460,21 @@ export default function PublishingSettingsPage() {
                                     {/* For OAuth platforms, show Connect/Disconnect */}
                                     {platform.type === 'oauth' && (
                                         <>
+                                            {platform.id === 'facebook' && (
+                                                <Button
+                                                    onClick={openFacebookConfig}
+                                                    disabled={loading}
+                                                    style={{
+                                                        background: '#4f46e5',
+                                                        color: 'white',
+                                                        padding: '0.5rem 1rem'
+                                                    }}
+                                                >
+                                                    Config
+                                                </Button>
+                                            )}
                                             {credential ? (
+                                                <>
                                                 <Button
                                                     onClick={() => disconnectPlatform(platform.id)}
                                                     disabled={loading}
@@ -405,6 +486,7 @@ export default function PublishingSettingsPage() {
                                                 >
                                                     Disconnect
                                                 </Button>
+                                                </>
                                             ) : (
                                                 <Button
                                                     onClick={() => authenticatePlatform(platform.id)}
@@ -514,6 +596,15 @@ export default function PublishingSettingsPage() {
                 onSave={saveMailChimpConfig}
                 onSuccess={onMailChimpSaveSuccess}
                 initialConfig={mailChimpConfig || undefined}
+            />
+
+            {/* Facebook Config Form */}
+            <FacebookConfigForm
+                isOpen={showFacebookForm}
+                onClose={() => setShowFacebookForm(false)}
+                onSave={saveFacebookConfig}
+                onSuccess={onFacebookSaveSuccess}
+                initialConfig={facebookConfig || undefined}
             />
 
             {/* Webhook Form Modal */}
