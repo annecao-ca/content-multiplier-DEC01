@@ -2,6 +2,12 @@ import crypto from 'crypto'
 import { q } from '../../db.ts'
 import { PublishingCredentials } from './types.ts'
 
+// Helper to extract error message from unknown error type
+function getErrorMessage(error: unknown): string {
+    if (error instanceof Error) return error.message
+    return String(error)
+}
+
 // OAuth configuration for each platform
 const OAUTH_CONFIGS = {
     twitter: {
@@ -211,9 +217,9 @@ export class OAuthService {
             console.log('Insert operation completed:', insertResult[0])
             console.log('Credentials stored successfully in database')
             
-        } catch (dbError) {
+        } catch (dbError: unknown) {
             console.error('Database operation failed:', dbError)
-            throw new Error(`Failed to store credentials: ${dbError.message}`)
+            throw new Error(`Failed to store credentials: ${getErrorMessage(dbError)}`)
         }
 
         // Clean up state
@@ -238,7 +244,7 @@ export class OAuthService {
             credential_type: 'oauth',
             encrypted_credentials: { encrypted: encryptedCredentials },
             is_active: true,
-            expires_at: expiresAt
+            expires_at: expiresAt ?? undefined
         }
     }
 

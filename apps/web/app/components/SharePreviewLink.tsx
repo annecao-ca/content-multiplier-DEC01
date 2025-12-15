@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Share2, Copy, Check, ExternalLink, Loader2 } from 'lucide-react'
+import { Share2, Copy, ExternalLink, Loader2 } from 'lucide-react'
 import { cn } from '@/app/lib/utils'
 import { useToast } from './ui'
-import { Copy } from 'lucide-react'
+import { Button } from './ui/button'
 
 export interface SharePreviewLinkProps {
   /**

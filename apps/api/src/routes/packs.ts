@@ -467,13 +467,13 @@ const routes: FastifyPluginAsync = async (app) => {
 
 In today's rapidly evolving landscape, understanding ${topicTitle.toLowerCase()} has become crucial for ${audience.toLowerCase()}. This comprehensive analysis examines the current state, emerging trends, and strategic implications that decision-makers need to consider.
 
-${brief.key_points?.slice(1, 3).map(point => `The research reveals that ${point.toLowerCase()}, which has significant implications for organizations and professionals in this field.`).join(' ') || 'The research reveals key insights that have significant implications for organizations and professionals in this field.'}
+${brief.key_points?.slice(1, 3).map((point: string) => `The research reveals that ${point.toLowerCase()}, which has significant implications for organizations and professionals in this field.`).join(' ') || 'The research reveals key insights that have significant implications for organizations and professionals in this field.'}
 
 ## Current Landscape
 
 The current environment presents both opportunities and challenges. Organizations are increasingly recognizing the importance of staying ahead of trends and making informed decisions based on comprehensive analysis.
 
-${brief.outline?.map(section => `### ${section.h2 || section}
+${brief.outline?.map((section: any) => `### ${section.h2 || section}
 
 ${section.bullets?.map((bullet: string) => `**${bullet}**: This represents a significant area of focus for organizations looking to optimize their approach. The implications extend beyond immediate operational concerns to long-term strategic positioning.
 
@@ -980,7 +980,7 @@ Position strategically today.
                     const output = await generateFromTemplate(tpl, pack.draft_markdown, lang)
                     templateOutputs[tpl.name] = output
                 } catch (err: any) {
-                    app.log?.warn?.('[Templates] Failed to generate template output:', tpl.name, err?.message || err)
+                    app.log?.warn?.(`[Templates] Failed to generate template output: ${tpl.name} - ${err?.message || err}`)
                 }
             }
 

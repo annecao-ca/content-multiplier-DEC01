@@ -7,6 +7,7 @@ import { ParsedContentWithCitations } from './InlineCitation'
 import { Footnotes } from './Footnotes'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
+import { API_URL as API_BASE } from '../lib/api-config'
 
 interface Document {
   id: string
@@ -71,9 +72,6 @@ Trong phát triển web hiện đại, React Hooks đã trở thành công cụ 
 cho các developer [2]. Khi xây dựng API, việc tuân thủ các best practices là 
 rất quan trọng [3].
   `.trim()
-
-  // Backend API base (for ingest)
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
   const handleUpload = async (file: File) => {
     // Đọc nội dung file (demo: giả sử là text)

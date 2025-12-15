@@ -200,7 +200,7 @@ export default function AnalyticsPage() {
     ]
 
     return (
-        <div className="min-h-screen bg-slate-950">
+        <div className="min-h-screen bg-white dark:bg-slate-950">
             <DashboardHero
                 title="Publishing Analytics"
                 description="Track performance and engagement across all your publishing platforms"

@@ -43,7 +43,7 @@ const WEBHOOK_EVENTS = [
     'publishing.failed'
 ]
 
-const API_URL = 'http://localhost:3001'
+import { API_URL } from '../../lib/api-config'
 
 export default function PublishingSettingsPage() {
     const [credentials, setCredentials] = useState<PublishingCredential[]>([])

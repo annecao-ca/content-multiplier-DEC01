@@ -21,6 +21,11 @@ function cn(...classes: Array<string | false | null | undefined>) {
 /**
  * AppShell – khung chung cho app (navbar + main content)
  * Dùng bao quanh toàn bộ page.
+ * 
+ * Theme support:
+ * - bg-white: nền trắng cho light mode
+ * - dark:bg-[#020617]: nền tối cho dark mode (khi có class 'dark' trên <html>)
+ * - transition-colors: smooth transition khi đổi theme
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -40,11 +45,6 @@ export function AppNavbar() {
   const pathname = usePathname()
   const { theme, toggleTheme } = useTheme()
   const { language, setLanguage } = useLanguage()
-  const [mounted, setMounted] = React.useState(false)
-
-  React.useEffect(() => {
-    setMounted(true)
-  }, [])
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard" },
@@ -136,7 +136,16 @@ export function AppNavbar() {
             </button>
           </div>
 
-          {/* Theme toggle */}
+          {/* 
+            Theme Toggle Button
+            - Sử dụng useTheme() từ ThemeProvider để lấy theme hiện tại và toggle function
+            - Khi click: toggleTheme() sẽ:
+              1. Đổi theme trong state (light ↔ dark)
+              2. Cập nhật class 'dark' trên <html> element
+              3. Lưu vào localStorage để giữ theme khi refresh
+            - Tailwind CSS tự động áp dụng dark: styles khi có class 'dark' trên <html>
+            - suppressHydrationWarning: cho phép nội dung thay đổi sau khi mount mà không gây lỗi
+          */}
           <button
             type="button"
             onClick={(e) => {
@@ -144,10 +153,11 @@ export function AppNavbar() {
               e.stopPropagation()
               toggleTheme()
             }}
-            className="hidden rounded-full border border-slate-200 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50 dark:border-[rgba(148,163,184,0.18)] dark:text-[#9ca3af] dark:hover:bg-[#0b1120] md:inline-flex cursor-pointer items-center justify-center"
-            suppressHydrationWarning
+            className="hidden rounded-full border border-slate-200 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50 dark:border-[rgba(148,163,184,0.18)] dark:text-[#9ca3af] dark:hover:bg-[#0b1120] md:inline-flex cursor-pointer items-center justify-center gap-1.5"
+            aria-label="Toggle theme"
           >
-            {mounted ? (theme === "dark" ? "☀️ Light" : "🌙 Dark") : "🌙 Dark"}
+            <span>{theme === "dark" ? "☀️" : "🌙"}</span>
+            <span className="hidden sm:inline">{theme === "dark" ? "Light" : "Dark"}</span>
           </button>
 
           {/* CTA */}

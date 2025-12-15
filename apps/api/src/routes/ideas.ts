@@ -133,7 +133,7 @@ const routes: FastifyPluginAsync = async (app) => {
                         }
                     });
                 } catch (e) {
-                    app.log.warn('[Ideas] Telemetry failed but will be ignored:', e);
+                    app.log.warn(`[Ideas] Telemetry failed but will be ignored: ${e}`);
                 }
             } else {
                 app.log.warn('[Ideas] Telemetry skipped because database is not configured');
@@ -187,7 +187,7 @@ const routes: FastifyPluginAsync = async (app) => {
                     payload: { tags }
                 });
             } catch (e) {
-                app.log.warn('[Ideas] Telemetry (tags_updated) failed but ignored:', e);
+                app.log.warn(`[Ideas] Telemetry (tags_updated) failed but ignored: ${e}`);
             }
 
             return { ok: true, tags };
@@ -216,7 +216,7 @@ const routes: FastifyPluginAsync = async (app) => {
                     timezone: (req as any).timezone
                 });
             } catch (e) {
-                app.log.warn('[Ideas] Telemetry (selected) failed but ignored:', e);
+                app.log.warn(`[Ideas] Telemetry (selected) failed but ignored: ${e}`);
             }
 
             return { ok: true };
@@ -248,7 +248,7 @@ const routes: FastifyPluginAsync = async (app) => {
                     timezone: (req as any).timezone
                 });
             } catch (e) {
-                app.log.warn('[Ideas] Telemetry (deleted) failed but ignored:', e);
+                app.log.warn(`[Ideas] Telemetry (deleted) failed but ignored: ${e}`);
             }
 
             return { ok: true };

@@ -229,7 +229,7 @@ export class PublishingOrchestrator {
         }
     }
 
-    private getContentType(platform: PublishingPlatform): string {
+    private getContentType(platform: PublishingPlatform): 'post' | 'article' | 'newsletter' | 'video_script' {
         switch (platform) {
             case 'twitter':
             case 'linkedin':
@@ -243,7 +243,7 @@ export class PublishingOrchestrator {
             case 'medium':
                 return 'article'
             default:
-                return 'content'
+                return 'post'
         }
     }
 

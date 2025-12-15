@@ -4,6 +4,12 @@ import { PublishingOrchestrator } from './orchestrator.ts'
 import { loadLLMSettings } from '../settingsStore.ts'
 import { q } from '../../db.ts'
 
+// Helper to extract error message from unknown error type
+function getErrorMessage(error: unknown): string {
+    if (error instanceof Error) return error.message
+    return String(error)
+}
+
 export interface TwitterBotConfig {
     enabled: boolean
     interval_hours: number
@@ -107,7 +113,7 @@ export class TwitterBotService {
                 await this.generateAndPost(config)
             } catch (error) {
                 console.error('Error in scheduled Twitter post:', error)
-                await this.logBotEvent('post_failed', { error: error.message })
+                await this.logBotEvent('post_failed', { error: getErrorMessage(error) })
             }
 
             // Schedule the next post
@@ -202,7 +208,7 @@ export class TwitterBotService {
         return response
     }
 
-    private buildPrompt(template: TwitterContentTemplate, config: TwitterBotConfig): string {
+    private buildPrompt(template: TwitterContentTemplate, config: Pick<TwitterBotConfig, 'content_topics'>): string {
         const randomTopic = config.content_topics[Math.floor(Math.random() * config.content_topics.length)]
         
         return template.prompt

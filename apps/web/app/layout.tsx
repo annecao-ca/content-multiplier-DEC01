@@ -12,8 +12,16 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
-        <html lang="en" suppressHydrationWarning className="dark">
-            <body className="font-sans antialiased bg-[#020617] text-[#e5e7eb]">
+        <html lang="en" suppressHydrationWarning>
+            <body className="font-sans antialiased">
+                {/* 
+                    Script này chạy TRƯỚC khi React render để:
+                    1. Đọc theme từ localStorage hoặc system preference
+                    2. Set class 'dark' trên <html> ngay lập tức
+                    3. Tránh flash of wrong theme (FOUC - Flash of Unstyled Content)
+                    
+                    ThemeProvider sẽ đọc lại và quản lý theme sau khi mount.
+                */}
                 <Script
                     id="theme-init"
                     strategy="beforeInteractive"
@@ -23,18 +31,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                                 try {
                                     const theme = localStorage.getItem('theme');
                                     const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                                    const initialTheme = theme || systemTheme;
+                                    const initialTheme = theme === 'light' || theme === 'dark' ? theme : systemTheme;
                                     const html = document.documentElement;
+                                    
+                                    // Chỉ set class 'dark' - Tailwind sẽ tự động áp dụng styles
                                     if (initialTheme === 'dark') {
                                         html.classList.add('dark');
-                                        html.style.backgroundColor = '#020617';
-                                        html.style.color = '#e5e7eb';
                                     } else {
                                         html.classList.remove('dark');
-                                        html.style.backgroundColor = '#ffffff';
-                                        html.style.color = '#0f172a';
                                     }
-                                } catch (e) {}
+                                } catch (e) {
+                                    // Fallback: default dark nếu có lỗi
+                                    document.documentElement.classList.add('dark');
+                                }
                             })();
                         `,
                     }}

@@ -77,6 +77,10 @@ export class WebhookManager implements WebhookService {
             }
 
             // Send webhook
+            // Use AbortController for timeout
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+
             const response = await fetch(webhook.url, {
                 method: 'POST',
                 headers,
@@ -86,8 +90,10 @@ export class WebhookManager implements WebhookService {
                     timestamp: new Date().toISOString(),
                     delivery_id: delivery.delivery_id
                 }),
-                timeout: 30000 // 30 second timeout
+                signal: controller.signal
             })
+
+            clearTimeout(timeoutId)
 
             // Update delivery status
             await this.updateDeliveryStatus(delivery.delivery_id, {

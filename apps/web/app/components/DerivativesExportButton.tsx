@@ -4,13 +4,12 @@ import React, { useState } from 'react'
 import { Download, FileJson, FileText } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useToast } from './ui/Toast'
+import { API_URL } from '../lib/api-config'
 
 export interface DerivativesExportButtonProps {
   packId: string
   className?: string
 }
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
 export function DerivativesExportButton({
   packId,

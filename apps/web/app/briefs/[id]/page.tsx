@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useToast, SkeletonList, ConfirmModal } from '../../components/ui'
 
 // API URL - backend running on port 3001
-const API_URL = 'http://localhost:3001';
+import { API_URL } from '../../lib/api-config';
 
 export default function BriefDetailPage() {
     const params = useParams()

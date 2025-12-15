@@ -12,7 +12,7 @@ import { DerivativesDisplay } from '../../components/DerivativesDisplay'
 import { DerivativesExportDropdown } from '../../components/DerivativesExportButton'
 
 // API URL - backend running on port 3001
-const API_URL = 'http://localhost:3001';
+import { API_URL } from '../../lib/api-config';
 
 const EditorModal = ({ title, content, onSave, onClose }: {
     title: string

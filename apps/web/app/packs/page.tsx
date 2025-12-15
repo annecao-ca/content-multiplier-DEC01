@@ -21,8 +21,8 @@ import {
 } from '../components/webflow-ui'
 import { DashboardHero } from '../components/dashboard-ui'
 
-// API URL - backend running on port 3001
-const API_URL = 'http://localhost:3001'
+// API URL - uses environment variable or falls back to localhost:3001
+import { API_URL } from '../lib/api-config'
 
 interface ContentPack {
     pack_id: string
@@ -103,7 +103,7 @@ function PacksContent() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-950">
+        <div className="min-h-screen bg-white dark:bg-slate-950">
             <DashboardHero
                 title="Content Packs"
                 description="Manage your content drafts and published packs"

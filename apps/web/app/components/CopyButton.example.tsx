@@ -20,19 +20,10 @@ export function CopyButtonExample() {
       <div className="space-y-2">
         <h3 className="text-lg font-semibold">Basic Usage</h3>
         <div className="flex items-center gap-4">
-          <CopyButton text={sampleText} />
+          <CopyButton textToCopy={sampleText} />
           <span className="text-sm text-gray-600 dark:text-gray-400">
             Icon only button
           </span>
-        </div>
-      </div>
-
-      {/* With Label */}
-      <div className="space-y-2">
-        <h3 className="text-lg font-semibold">With Label</h3>
-        <div className="flex items-center gap-4">
-          <CopyButton text={sampleText} showLabel />
-          <CopyButton text={sampleText} showLabel label="Copy text" />
         </div>
       </div>
 
@@ -40,9 +31,9 @@ export function CopyButtonExample() {
       <div className="space-y-2">
         <h3 className="text-lg font-semibold">Different Sizes</h3>
         <div className="flex items-center gap-4">
-          <CopyButton text={sampleText} size="sm" showLabel />
-          <CopyButton text={sampleText} size="md" showLabel />
-          <CopyButton text={sampleText} size="lg" showLabel />
+          <CopyButton textToCopy={sampleText} size="sm" />
+          <CopyButton textToCopy={sampleText} size="md" />
+          <CopyButton textToCopy={sampleText} size="lg" />
         </div>
       </div>
 
@@ -50,21 +41,8 @@ export function CopyButtonExample() {
       <div className="space-y-2">
         <h3 className="text-lg font-semibold">Different Variants</h3>
         <div className="flex items-center gap-4 flex-wrap">
-          <CopyButton text={sampleText} variant="default" showLabel />
-          <CopyButton text={sampleText} variant="ghost" showLabel />
-          <CopyButton text={sampleText} variant="outline" showLabel />
-        </div>
-      </div>
-
-      {/* Custom Success Message */}
-      <div className="space-y-2">
-        <h3 className="text-lg font-semibold">Custom Success Message</h3>
-        <div className="flex items-center gap-4">
-          <CopyButton 
-            text={sampleText} 
-            showLabel 
-            successMessage="Text copied successfully! ✅"
-          />
+          <CopyButton textToCopy={sampleText} variant="default" />
+          <CopyButton textToCopy={sampleText} variant="ghost" />
         </div>
       </div>
 
@@ -77,7 +55,7 @@ export function CopyButtonExample() {
           </pre>
           <div className="absolute top-2 right-2">
             <CopyButton 
-              text={sampleText} 
+              textToCopy={sampleText} 
               variant="ghost"
               className="bg-gray-800/80 hover:bg-gray-700/80 text-white"
             />
@@ -92,7 +70,7 @@ export function CopyButtonExample() {
           <span className="flex-1 text-sm text-gray-600 dark:text-gray-400 truncate">
             {sampleText}
           </span>
-          <CopyButton text={sampleText} size="sm" />
+          <CopyButton textToCopy={sampleText} size="sm" />
         </div>
       </div>
 
@@ -107,7 +85,7 @@ export function CopyButtonExample() {
                 {sampleText.substring(0, 50)}...
               </p>
             </div>
-            <CopyButton text={sampleText} />
+            <CopyButton textToCopy={sampleText} />
           </div>
           <div className="flex items-center justify-between p-3 border border-gray-300 dark:border-gray-700 rounded-lg">
             <div>
@@ -116,7 +94,7 @@ export function CopyButtonExample() {
                 {sampleText.substring(0, 50)}...
               </p>
             </div>
-            <CopyButton text={sampleText} />
+            <CopyButton textToCopy={sampleText} />
           </div>
         </div>
       </div>

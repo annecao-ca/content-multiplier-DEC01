@@ -10,22 +10,23 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-    // Initialize language from localStorage immediately (prevents hydration mismatch)
-    const [language, setLanguage] = useState<Language>(() => {
-        if (typeof window === 'undefined') return 'en'
+    // Khởi tạo cố định để SSR/CSR đồng nhất
+    const [language, setLanguage] = useState<Language>('en')
+
+    // Sau khi mount: đọc localStorage, cập nhật state
+    useEffect(() => {
         try {
             const saved = localStorage.getItem('content-multiplier-language')
-            if (saved && (saved === 'en' || saved === 'vn')) {
-                return saved
+            if (saved === 'en' || saved === 'vn') {
+                setLanguage(saved as Language)
             }
         } catch {
             // Ignore localStorage errors
         }
-        return 'en'
-    })
+    }, [])
 
+    // Mỗi khi language đổi: lưu lại localStorage
     useEffect(() => {
-        // Save language to localStorage whenever it changes
         try {
             localStorage.setItem('content-multiplier-language', language)
         } catch {

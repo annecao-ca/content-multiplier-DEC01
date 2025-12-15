@@ -1,6 +1,8 @@
 export const env = {
     DATABASE_URL: process.env.DATABASE_URL || '',
     OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
+    OPENAI_MODEL: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+    OPENAI_EMBEDDING_MODEL: process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small',
     // DeepSeek API key (OpenAI-compatible endpoint at https://api.deepseek.com)
     DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY || 'sk-669989e31dd14e56bdcca4b9232a5481',
     EMBEDDING_MODEL: process.env.EMBEDDING_MODEL || 'text-embedding-3-small',

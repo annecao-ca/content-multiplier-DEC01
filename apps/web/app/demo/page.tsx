@@ -8,7 +8,7 @@ import EmptyState from '../../components/simple/EmptyState';
 import Toast from '../../components/simple/Toast';
 import { Sparkles } from 'lucide-react';
 
-const API_URL = 'http://localhost:3001';
+import { API_URL } from '../lib/api-config';
 
 export default function DemoPage() {
     // State for form inputs

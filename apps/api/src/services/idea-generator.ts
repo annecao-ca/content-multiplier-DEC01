@@ -5,6 +5,9 @@ import Ajv from 'ajv';
 
 const ajv = new Ajv();
 
+// LLM Provider type - matches the providers in MultiProviderLLM
+type LLMProvider = 'openai' | 'deepseek' | 'anthropic' | 'gemini' | 'grok';
+
 const ideaSchema = {
     type: 'array',
     items: {
@@ -21,8 +24,8 @@ const ideaSchema = {
 const validate = ajv.compile(ideaSchema);
 
 // Get available providers based on API keys
-function getAvailableProviders(): string[] {
-    const providers: string[] = [];
+function getAvailableProviders(): LLMProvider[] {
+    const providers: LLMProvider[] = [];
     
     // Check which providers have API keys configured
     if (env.OPENAI_API_KEY || process.env.OPENAI_API_KEY) {
@@ -52,7 +55,7 @@ function getAvailableProviders(): string[] {
 }
 
 // Fallback providers in order of preference (will be filtered by available providers)
-const PREFERRED_PROVIDERS = ['deepseek', 'openai', 'gemini', 'anthropic', 'grok'];
+const PREFERRED_PROVIDERS: LLMProvider[] = ['deepseek', 'openai', 'gemini', 'anthropic', 'grok'];
 
 export class IdeaGenerator {
     private llm: MultiProviderLLM;
@@ -100,7 +103,7 @@ export class IdeaGenerator {
         const availableProviders = getAvailableProviders();
         
         // Determine starting provider
-        let currentProvider = saved?.provider || 'deepseek'; // Default to DeepSeek (has API key)
+        let currentProvider: LLMProvider = (saved?.provider as LLMProvider) || 'deepseek'; // Default to DeepSeek (has API key)
         
         // If saved provider is not available, use first available provider
         if (!availableProviders.includes(currentProvider)) {

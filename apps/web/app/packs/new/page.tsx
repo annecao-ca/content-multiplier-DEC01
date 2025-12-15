@@ -6,8 +6,8 @@ import { useLanguage } from '../../contexts/LanguageContext'
 import Button from '../../components/Button'
 import { DashboardHero } from '../../components/dashboard-ui'
 
-// API URL - backend running on port 3001
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// API URL - uses environment variable or falls back to localhost:3001
+import { API_URL } from '../../lib/api-config';
 
 function NewPackContent() {
     const searchParams = useSearchParams()
@@ -97,7 +97,7 @@ function NewPackContent() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-950">
+        <div className="min-h-screen bg-white dark:bg-slate-950">
             <div className="mx-auto w-full max-w-6xl px-4 md:px-6 py-8 md:py-10 space-y-6">
                 <DashboardHero
                     title="Create Content Pack"

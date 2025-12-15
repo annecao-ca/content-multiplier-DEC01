@@ -203,7 +203,7 @@ export default function PublisherPage() {
     }))
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-white dark:bg-slate-950">
       <div className="mx-auto w-full max-w-6xl px-4 md:px-6 py-8 md:py-10 space-y-6">
         {/* Hero Header */}
         <DashboardHero

@@ -16,7 +16,7 @@ if (connectionString) {
 
 export { pool };
 
-export async function q<T = any>(text: string, params: any[] = []) { 
+export async function q<T extends pg.QueryResultRow = any>(text: string, params: any[] = []): Promise<T[]> { 
     if (!pool) {
         const error = new Error('Database not configured. Please set DATABASE_URL in .env file.');
         (error as any).code = 'DB_NOT_CONFIGURED';

@@ -45,7 +45,7 @@ const PLATFORMS = [
     { id: 'medium', name: 'Medium', icon: '📖' }
 ]
 
-const API_URL = 'http://localhost:3001'
+import { API_URL } from '../lib/api-config'
 
 export default function PublishingPanel({ packId }: { packId: string }) {
     const [credentials, setCredentials] = useState<PublishingCredential[]>([])

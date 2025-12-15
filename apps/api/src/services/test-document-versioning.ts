@@ -276,7 +276,7 @@ async function runAllTests() {
     for (const test of tests) {
         try {
             const passed = await test.fn();
-            results.push({ name: test.name, passed: passed || false });
+            results.push({ name: test.name, passed: !!passed });
         } catch (error: any) {
             console.error(`\n❌ ${test.name} failed: ${error.message}`);
             results.push({ name: test.name, passed: false });
@@ -311,6 +311,12 @@ async function runAllTests() {
 if (import.meta.url === `file://${process.argv[1]}`) {
     runAllTests().catch(console.error);
 }
+
+
+
+
+
+
 
 
 

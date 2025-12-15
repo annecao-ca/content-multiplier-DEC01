@@ -210,7 +210,7 @@ export default function SettingsPage() {
     }))
 
     return (
-        <div className="min-h-screen bg-slate-950">
+        <div className="min-h-screen bg-white dark:bg-slate-950">
             <DashboardHero
                 title="Settings"
                 description="Configure AI providers, publishing platforms, and automation settings"

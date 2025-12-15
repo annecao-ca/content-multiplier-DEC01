@@ -16,66 +16,45 @@ export function useTheme() {
     return useContext(ThemeContext)
 }
 
+/**
+ * ThemeProvider - Quản lý theme light/dark cho toàn bộ app
+ * 
+ * Cách hoạt động:
+ * 1. Script trong layout.tsx chạy TRƯỚC khi React render → set class 'dark' trên <html> ngay lập tức (tránh flash)
+ * 2. ThemeProvider đọc theme từ localStorage hoặc system preference
+ * 3. Khi toggle: cập nhật localStorage + thêm/xóa class 'dark' trên <html>
+ * 4. Tailwind CSS tự động áp dụng styles dựa trên class 'dark' trên <html>
+ */
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
-    // Initialize theme from script in head (prevents flash)
-    const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-        if (typeof window === 'undefined') return 'dark' // Default to dark to match initial HTML class
-        try {
-            const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
-            if (savedTheme) return savedTheme
-            const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-            return systemTheme
-        } catch {
-            return 'dark'
-        }
-    })
-    const [mounted, setMounted] = useState(false)
+    // Luôn khởi tạo bằng giá trị cố định để SSR/CSR đồng nhất
+    const [theme, setTheme] = useState<'light' | 'dark'>('dark')
 
+    // Effect 1: sau khi mount, đọc localStorage và đồng bộ class 'dark'
     useEffect(() => {
-        setMounted(true)
-        // Sync with document class (already set by script)
-        const html = document.documentElement
-        const currentTheme = html.classList.contains('dark') ? 'dark' : 'light'
-        if (currentTheme !== theme) {
-            setTheme(currentTheme)
+        try {
+            const saved = localStorage.getItem('theme') as 'light' | 'dark' | null
+            const next = saved === 'light' || saved === 'dark' ? saved : 'dark'
+            setTheme(next)
+            document.documentElement.classList.toggle('dark', next === 'dark')
+        } catch (e) {
+            console.warn('Failed to load theme from localStorage:', e)
+            document.documentElement.classList.add('dark')
         }
-        
-        // Ensure body background matches theme
-        if (currentTheme === 'dark') {
-            document.body.style.backgroundColor = '#020617'
-            document.body.style.color = '#e5e7eb'
-        } else {
-            document.body.style.backgroundColor = '#ffffff'
-            document.body.style.color = '#0f172a'
+    }, [])
+
+    // Effect 2: mỗi khi theme đổi, sync class + localStorage
+    useEffect(() => {
+        document.documentElement.classList.toggle('dark', theme === 'dark')
+        try {
+            localStorage.setItem('theme', theme)
+        } catch (e) {
+            console.warn('Failed to save theme to localStorage:', e)
         }
     }, [theme])
 
+    // Toggle theme: light ↔ dark
     const toggleTheme = () => {
-        setTheme((prevTheme) => {
-            const newTheme = prevTheme === 'light' ? 'dark' : 'light'
-            localStorage.setItem('theme', newTheme)
-            // Update document class immediately
-            if (typeof document !== 'undefined') {
-                if (newTheme === 'dark') {
-                    document.documentElement.classList.add('dark')
-                } else {
-                    document.documentElement.classList.remove('dark')
-                }
-            }
-            return newTheme
-        })
-    }
-
-    // Prevent hydration mismatch - use theme from script
-    if (!mounted) {
-        const initialTheme = typeof window !== 'undefined' 
-            ? (document.documentElement.classList.contains('dark') ? 'dark' : 'light')
-            : 'dark'
-        return (
-            <ThemeContext.Provider value={{ theme: initialTheme, toggleTheme: () => {} }}>
-                {children}
-            </ThemeContext.Provider>
-        )
+        setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'))
     }
 
     return (

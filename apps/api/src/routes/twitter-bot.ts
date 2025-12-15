@@ -4,6 +4,12 @@ import { q } from '../db.ts'
 
 const twitterBot = new TwitterBotService()
 
+// Helper to extract error message from unknown error type
+function getErrorMessage(error: unknown): string {
+    if (error instanceof Error) return error.message
+    return String(error)
+}
+
 export default async function twitterBotRoutes(fastify: FastifyInstance) {
     // Start the Twitter bot
     fastify.post('/api/twitter-bot/start', async (request, reply) => {
@@ -12,7 +18,7 @@ export default async function twitterBotRoutes(fastify: FastifyInstance) {
             return { success: true, message: 'Twitter bot started successfully' }
         } catch (error) {
             reply.status(500)
-            return { success: false, error: error.message }
+            return { success: false, error: getErrorMessage(error) }
         }
     })
 
@@ -23,7 +29,7 @@ export default async function twitterBotRoutes(fastify: FastifyInstance) {
             return { success: true, message: 'Twitter bot stopped successfully' }
         } catch (error) {
             reply.status(500)
-            return { success: false, error: error.message }
+            return { success: false, error: getErrorMessage(error) }
         }
     })
 
@@ -34,7 +40,7 @@ export default async function twitterBotRoutes(fastify: FastifyInstance) {
             return { success: true, data: status }
         } catch (error) {
             reply.status(500)
-            return { success: false, error: error.message }
+            return { success: false, error: getErrorMessage(error) }
         }
     })
 
@@ -55,7 +61,7 @@ export default async function twitterBotRoutes(fastify: FastifyInstance) {
             return { success: true, data: result[0].configuration }
         } catch (error) {
             reply.status(500)
-            return { success: false, error: error.message }
+            return { success: false, error: getErrorMessage(error) }
         }
     })
 
@@ -106,7 +112,7 @@ export default async function twitterBotRoutes(fastify: FastifyInstance) {
             return { success: true, message: 'Twitter bot configuration updated' }
         } catch (error) {
             reply.status(500)
-            return { success: false, error: error.message }
+            return { success: false, error: getErrorMessage(error) }
         }
     })
 
@@ -122,7 +128,7 @@ export default async function twitterBotRoutes(fastify: FastifyInstance) {
             return { success: true, data: templates }
         } catch (error) {
             reply.status(500)
-            return { success: false, error: error.message }
+            return { success: false, error: getErrorMessage(error) }
         }
     })
 
@@ -179,7 +185,7 @@ export default async function twitterBotRoutes(fastify: FastifyInstance) {
             return { success: true, data: { template_id: templateId } }
         } catch (error) {
             reply.status(500)
-            return { success: false, error: error.message }
+            return { success: false, error: getErrorMessage(error) }
         }
     })
 
@@ -208,7 +214,7 @@ export default async function twitterBotRoutes(fastify: FastifyInstance) {
             return { success: true, message: 'Template updated successfully' }
         } catch (error) {
             reply.status(500)
-            return { success: false, error: error.message }
+            return { success: false, error: getErrorMessage(error) }
         }
     })
 
@@ -226,7 +232,7 @@ export default async function twitterBotRoutes(fastify: FastifyInstance) {
             return { success: true, message: 'Template deleted successfully' }
         } catch (error) {
             reply.status(500)
-            return { success: false, error: error.message }
+            return { success: false, error: getErrorMessage(error) }
         }
     })
 
@@ -257,7 +263,7 @@ export default async function twitterBotRoutes(fastify: FastifyInstance) {
             return { success: true, data: history }
         } catch (error) {
             reply.status(500)
-            return { success: false, error: error.message }
+            return { success: false, error: getErrorMessage(error) }
         }
     })
 
@@ -309,7 +315,7 @@ export default async function twitterBotRoutes(fastify: FastifyInstance) {
                     data: content
                 }
             } catch (llmError) {
-                console.log('LLM generation failed, returning mock content for testing:', llmError.message)
+                console.log('LLM generation failed, returning mock content for testing:', getErrorMessage(llmError))
                 
                 // Return mock content for testing when LLM fails
                 const mockContent = {
@@ -328,7 +334,7 @@ export default async function twitterBotRoutes(fastify: FastifyInstance) {
             }
         } catch (error) {
             reply.status(500)
-            return { success: false, error: error.message }
+            return { success: false, error: getErrorMessage(error) }
         }
     })
 }

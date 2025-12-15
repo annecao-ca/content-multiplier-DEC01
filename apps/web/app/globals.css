@@ -1,15 +1,26 @@
 @import "tailwindcss";
 
 @layer base {
-  /* Prevent flash by defaulting to dark */
-  html {
-    background-color: #020617;
-    color: #e5e7eb;
-  }
+  /* 
+    Theme switching: Tailwind sử dụng class 'dark' trên <html> để toggle theme
+    - Khi có class 'dark': áp dụng dark mode styles
+    - Khi không có: áp dụng light mode styles
+    
+    Background và text color được set qua CSS variables trong :root và .dark
+    để đảm bảo transition mượt mà khi toggle theme.
+  */
   
-  html:not(.dark) {
+  /* Light mode default (khi không có class 'dark') */
+  html {
     background-color: #ffffff;
     color: #0f172a;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  
+  /* Dark mode (khi có class 'dark') */
+  html.dark {
+    background-color: #020617;
+    color: #e5e7eb;
   }
 
   :root {

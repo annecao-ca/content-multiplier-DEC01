@@ -34,7 +34,7 @@ export interface FacebookConfigFormProps {
   initialConfig?: Partial<FacebookConfig>
 }
 
-const API_URL = 'http://localhost:3001'
+import { API_URL } from '../lib/api-config'
 
 // Common timezones list
 const TIMEZONES = [
@@ -197,12 +197,43 @@ export function FacebookConfigForm({
           setConfig((prev) => ({ ...prev, pageName: data.name }))
         }
       } else {
-        const errorData = await response.json().catch(() => ({ error: { message: 'Unknown error' } }))
-        toast.error('Kết nối thất bại', errorData.error?.message || 'Không thể kết nối với Facebook API')
+        const errorData = await response.json().catch(() => ({ error: { message: 'Unknown error', type: 'unknown' } }))
+        const errorMessage = errorData.error?.message || 'Không thể kết nối với Facebook API'
+        const errorType = errorData.error?.type || ''
+        const errorCode = errorData.error?.code
+
+        // Handle specific error types
+        let userFriendlyMessage = errorMessage
+        
+        if (errorMessage.includes('Session has expired') || errorMessage.includes('expired') || errorCode === 190) {
+          userFriendlyMessage = 'Access Token đã hết hạn. Vui lòng tạo token mới từ Facebook Developer Portal và cập nhật lại.'
+        } else if (errorMessage.includes('Invalid OAuth') || errorCode === 190) {
+          userFriendlyMessage = 'Access Token không hợp lệ. Vui lòng kiểm tra lại token hoặc tạo token mới.'
+        } else if (errorMessage.includes('Invalid page') || errorCode === 100) {
+          userFriendlyMessage = 'Page ID không hợp lệ. Vui lòng kiểm tra lại Page ID.'
+        } else if (errorMessage.includes('permission') || errorCode === 200) {
+          userFriendlyMessage = 'Token không có quyền truy cập. Vui lòng đảm bảo token có quyền pages_manage_posts.'
+        }
+
+        console.error('Facebook API error:', {
+          message: errorMessage,
+          type: errorType,
+          code: errorCode,
+          fullError: errorData
+        })
+
+        toast.error('Kết nối thất bại', userFriendlyMessage)
       }
     } catch (error) {
       console.error('Connection check error:', error)
-      toast.error('Lỗi kết nối', error instanceof Error ? error.message : 'Không thể kiểm tra kết nối')
+      const errorMessage = error instanceof Error ? error.message : 'Không thể kiểm tra kết nối'
+      
+      // Handle network errors
+      if (errorMessage.includes('fetch') || errorMessage.includes('network')) {
+        toast.error('Lỗi kết nối', 'Không thể kết nối đến Facebook API. Vui lòng kiểm tra kết nối internet.')
+      } else {
+        toast.error('Lỗi kết nối', errorMessage)
+      }
     } finally {
       setCheckingConnection(false)
     }
@@ -410,8 +441,13 @@ export function FacebookConfigForm({
                   <div className="flex-1">
                     <h3 className="text-sm font-semibold text-white mb-1">Thông tin xác thực</h3>
                     <p className="text-xs text-slate-400 mb-2">
-                      Facebook Graph API Authentication. Create a Facebook App and generate an Access Token with pages_manage_posts permission.
+                      Facebook Graph API Authentication. Create a Facebook App and generate an Access Token with <strong>pages_manage_posts</strong> permission.
                     </p>
+                    <div className="space-y-1 mb-2">
+                      <p className="text-xs text-yellow-400">
+                        ⚠️ Lưu ý: Access Token có thể hết hạn. Nếu gặp lỗi "Session has expired", vui lòng tạo token mới.
+                      </p>
+                    </div>
                     <a
                       href="https://developers.facebook.com/"
                       target="_blank"

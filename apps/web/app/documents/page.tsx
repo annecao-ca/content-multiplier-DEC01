@@ -8,6 +8,7 @@ import { DocumentSearch, SearchResult, SearchFilters } from '../components/Docum
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { FileText, Search, BarChart3 } from 'lucide-react'
 import { DashboardHero } from '../components/dashboard-ui'
+import { API_URL as API_BASE } from '../lib/api-config'
 
 interface Document {
   doc_id: string
@@ -35,8 +36,6 @@ export default function DocumentsPage() {
   const [availableTags, setAvailableTags] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('list')
-
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
   // Load documents on mount
   useEffect(() => {
@@ -266,7 +265,7 @@ export default function DocumentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-white dark:bg-slate-950">
       <div className="mx-auto w-full max-w-6xl px-4 md:px-6 py-8 md:py-10 space-y-6">
         {/* Hero Header */}
         <DashboardHero

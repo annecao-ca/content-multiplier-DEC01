@@ -136,8 +136,9 @@ export function ActivitySection({
 export { StatCard as DashboardStatCard } from "./webflow-ui"
 
 /**
- * PageHeaderDark - PageHeader với dark background
- * Pattern: Text sáng trên nền dark (không gradient)
+ * PageHeaderDark - PageHeader với theme-aware background
+ * Pattern: Text sáng trên nền dark, text tối trên nền light
+ * Hỗ trợ cả light và dark mode
  */
 export function PageHeaderDark({
   title,
@@ -151,19 +152,19 @@ export function PageHeaderDark({
   actions?: React.ReactNode
 }) {
   return (
-    <div className="mb-8 rounded-3xl bg-[#020617] px-8 py-8 ring-1 ring-[rgba(148,163,184,0.12)] md:px-10 md:py-9">
+    <div className="mb-8 rounded-3xl bg-white px-8 py-8 ring-1 ring-slate-200/70 dark:bg-[#020617] dark:ring-[rgba(148,163,184,0.12)] md:px-10 md:py-9">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           {eyebrow && (
-            <div className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-[#9ca3af]">
+            <div className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-500 dark:text-[#9ca3af]">
               {eyebrow}
             </div>
           )}
-          <h1 className="text-3xl font-semibold tracking-tight text-[#e5e7eb] md:text-4xl">
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-[#e5e7eb] md:text-4xl">
             {title}
           </h1>
           {description && (
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#9ca3af]">
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-[#9ca3af]">
               {description}
             </p>
           )}

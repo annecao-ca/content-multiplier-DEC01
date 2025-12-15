@@ -136,9 +136,8 @@ async function callOpenAI(request: AIRequest): Promise<AIResponse> {
         params.response_format = { type: 'json_object' };
     }
     
-    if (request.stream) {
-        params.stream = true;
-    }
+    // Note: Streaming is not fully implemented in this function
+    // If streaming is needed, a separate streaming function should be used
     
     const response = await client.chat.completions.create(params);
     
