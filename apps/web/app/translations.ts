@@ -136,8 +136,77 @@ export const translations = {
             published: 'Đã xuất bản',
             pending: 'Đang chờ'
         }
+    },
+    fr: {
+        home: {
+            title: 'Bienvenue sur Content Multiplier',
+            subtitle: 'Idéation, recherche et distribution de contenu alimentées par l\'IA',
+            quickStart: 'Démarrage rapide',
+            quickStartDesc: 'Commencez votre parcours de création de contenu en générant des idées alimentées par l\'IA adaptées à votre audience et vos objectifs.',
+            analytics: 'Analytique',
+            analyticsDesc: 'Suivez les performances de votre contenu et optimisez votre stratégie avec des informations détaillées et des métriques.',
+            configuration: 'Configuration',
+            configurationDesc: 'Configurez vos modèles d\'IA préférés et vos clés API pour personnaliser votre expérience de génération de contenu.',
+            workflow: 'Flux de création de contenu',
+            generateIdeas: 'Générer des idées',
+            generateIdeasDesc: 'Idées de contenu par IA',
+            createBriefs: 'Créer des briefs',
+            createBriefsDesc: 'Recherche et structure',
+            contentPacks: 'Packs de contenu',
+            contentPacksDesc: 'Rédiger et gérer le contenu',
+            generateDerivatives: 'Générer des dérivés',
+            generateDerivativesDesc: 'Contenu multi-canal',
+            publishDistribute: 'Publier et distribuer',
+            publishDistributeDesc: 'Lancez votre contenu'
+        },
+        navigation: {
+            home: 'Tableau de bord',
+            ideas: 'Générer et sélectionner des idées',
+            briefs: 'Rechercher et créer des briefs',
+            packs: 'Rédiger et gérer le contenu',
+            settings: 'Configurer LLM et clés API'
+        },
+        ideas: {
+            title: 'Idées de contenu',
+            subtitle: 'Générez et gérez votre stratégie de contenu',
+            generateNew: 'Générer de nouvelles idées',
+            targetAudience: 'Public cible (Persona)',
+            industryNiche: 'Industrie / Niche',
+            topicHints: 'Suggestions de sujets / Mots-clés (Optionnel)',
+            quantity: 'Quantité',
+            creativity: 'Créativité',
+            conservative: 'Conservateur',
+            balanced: 'Équilibré',
+            creative: 'Créatif',
+            generateButton: 'Générer des idées',
+            generating: 'Génération...',
+            results: 'Résultats générés',
+            noIdeas: 'Pas encore d\'idées',
+            noIdeasDesc: 'Générez vos premières idées de contenu en remplissant le formulaire ci-dessus. Les idées vous aideront à créer du contenu engageant pour votre audience.',
+            total: 'Total',
+            selected: 'Sélectionné',
+            title_col: 'Titre',
+            description: 'Description',
+            status: 'Statut',
+            scores: 'Scores',
+            tags: 'Tags',
+            actions: 'Actions'
+        },
+        packs: {
+            title: 'Packs de contenu',
+            subtitle: 'Gérez vos brouillons et packs de contenu publiés',
+            createNew: 'Créer un nouveau pack',
+            noPacks: 'Pas encore de packs de contenu',
+            noPacksDesc: 'Commencez par créer votre premier pack de contenu à partir d\'un brief approuvé.',
+            goToBriefs: 'Aller aux Briefs →',
+            hasDerivatives: 'A des dérivés',
+            noDerivatives: 'Pas de dérivés',
+            viewDetails: 'Voir les détails →',
+            published: 'Publié',
+            pending: 'En attente'
+        }
     }
 }
 
-export type Language = 'en' | 'vn'
+export type Language = 'en' | 'vn' | 'fr'
 export type TranslationKey = keyof typeof translations.en

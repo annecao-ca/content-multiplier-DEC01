@@ -1,7 +1,8 @@
 import { FastifyPluginAsync } from 'fastify';
 import { randomUUID } from 'crypto';
 import { q, pool } from '../db.ts';
-import { IdeaGenerator } from '../services/idea-generator.ts';
+import { IdeaGenerator, ContentLanguage, LANGUAGE_NAMES } from '../services/idea-generator.ts';
+import { translationService, LANGUAGE_CODES, SupportedLanguage } from '../services/translation.ts';
 import { logEvent } from '../services/telemetry.ts';
 import { logger } from '../utils/logger.ts';
 import { cache } from '../utils/cache.ts';
@@ -105,11 +106,16 @@ const routes: FastifyPluginAsync = async (app) => {
                 return { ...cached, fromCache: true };
             }
 
-            // Generate ideas using AI Client
+            // Validate language parameter
+            const validLanguage: ContentLanguage = 
+                ['en', 'vi', 'fr'].includes(language) ? language : 'en';
+
+            // Generate ideas using AI Client with language support
             const ideas = await ideaGenerator.generateIdeas(
                 persona,
                 industry,
-                count
+                count,
+                validLanguage
             );
 
             // Format result to match expected structure
@@ -120,11 +126,14 @@ const routes: FastifyPluginAsync = async (app) => {
                     idea_id: randomUUID(),
                     one_liner: i.title,
                     status: 'proposed',
+                    language: validLanguage,
                     created_at: new Date().toISOString()
                 })),
                 metadata: {
                     provider: 'multi-provider',
                     model: 'auto',
+                    language: validLanguage,
+                    languageName: LANGUAGE_NAMES[validLanguage],
                     tokensUsed: { total: 0 },
                     durationMs: 0
                 }
@@ -140,8 +149,8 @@ const routes: FastifyPluginAsync = async (app) => {
                     try {
                         if (!idea.one_liner) throw new Error('Invalid idea: missing one_liner');
                         await q(
-                            `INSERT INTO ideas(idea_id, one_liner, angle, personas, why_now, evidence, scores, status, tags) 
-                             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) 
+                            `INSERT INTO ideas(idea_id, one_liner, angle, personas, why_now, evidence, scores, status, tags, language, media) 
+                             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) 
                              ON CONFLICT (idea_id) DO NOTHING`,
                             [
                                 idea.idea_id,
@@ -156,7 +165,9 @@ const routes: FastifyPluginAsync = async (app) => {
                                     impact: 3
                                 }),
                                 'proposed',
-                                idea.tags || []
+                                idea.tags || [],
+                                validLanguage,
+                                JSON.stringify([]) // Empty media array initially
                             ]
                         );
                         savedCount++;
@@ -400,6 +411,98 @@ const routes: FastifyPluginAsync = async (app) => {
                 message: error.message
             });
         }
+    });
+
+    // Translate an idea to another language
+    app.post('/:idea_id/translate', async (req: any, reply) => {
+        if (!pool) {
+            return reply.status(503).send({
+                ok: false,
+                error: 'database_unavailable',
+                message: 'Database not configured'
+            });
+        }
+
+        const { idea_id } = req.params;
+        const { target_language } = req.body as { target_language: string };
+
+        // Validate target language
+        if (!target_language || !LANGUAGE_CODES.includes(target_language as SupportedLanguage)) {
+            return reply.status(400).send({
+                ok: false,
+                error: 'validation_error',
+                message: `Invalid target_language. Must be one of: ${LANGUAGE_CODES.join(', ')}`
+            });
+        }
+
+        try {
+            const translation = await translationService.translateIdea(
+                idea_id,
+                target_language as SupportedLanguage
+            );
+
+            logger.info('Idea translated', { 
+                ideaId: idea_id, 
+                targetLanguage: target_language 
+            });
+
+            return { ok: true, translation };
+        } catch (error: any) {
+            logger.error('Failed to translate idea', { 
+                ideaId: idea_id, 
+                error: error.message 
+            });
+            return reply.status(500).send({
+                ok: false,
+                error: 'translation_failed',
+                message: error.message
+            });
+        }
+    });
+
+    // Get all translations for an idea
+    app.get('/:idea_id/translations', async (req: any, reply) => {
+        if (!pool) {
+            return reply.status(503).send({
+                ok: false,
+                error: 'database_unavailable',
+                message: 'Database not configured'
+            });
+        }
+
+        const { idea_id } = req.params;
+
+        try {
+            const translations = await translationService.getAllTranslations(idea_id, 'idea');
+
+            return { 
+                ok: true, 
+                idea_id,
+                translations,
+                availableLanguages: LANGUAGE_CODES
+            };
+        } catch (error: any) {
+            logger.error('Failed to get translations', { 
+                ideaId: idea_id, 
+                error: error.message 
+            });
+            return reply.status(500).send({
+                ok: false,
+                error: 'fetch_translations_failed',
+                message: error.message
+            });
+        }
+    });
+
+    // Get supported languages
+    app.get('/languages', async (req, reply) => {
+        return {
+            ok: true,
+            languages: LANGUAGE_CODES.map(code => ({
+                code,
+                name: LANGUAGE_NAMES[code as ContentLanguage] || code
+            }))
+        };
     });
 };
 

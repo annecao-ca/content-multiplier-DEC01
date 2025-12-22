@@ -27,6 +27,7 @@ import settings from './routes/settings.ts'
 import publishing from './routes/publishing.ts'
 import twitterBot from './routes/twitter-bot.ts'
 import auth from './routes/auth.ts'
+import images from './routes/images.ts'
 
 logger.info('Starting Content Multiplier API', {
     environment: process.env.NODE_ENV || 'development',
@@ -150,6 +151,7 @@ try {
     app.register(events, { prefix: '/api/events' });
     app.register(settings, { prefix: '/api/settings' });
     app.register(publishing, { prefix: '/api/publishing' });
+    app.register(images, { prefix: '/api/images' });
     app.register(twitterBot);
     logger.info('All routes registered');
 } catch (error) {

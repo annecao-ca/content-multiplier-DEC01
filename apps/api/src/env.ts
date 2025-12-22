@@ -16,4 +16,11 @@ export const env = {
     HUGGINGFACE_API_KEY: process.env.HUGGINGFACE_API_KEY || '',
     HUGGINGFACE_EMBEDDING_MODEL: process.env.HUGGINGFACE_EMBEDDING_MODEL || 'sentence-transformers/all-MiniLM-L6-v2',
     GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
+    
+    // Stock Image APIs (Unsplash and Pexels)
+    // Get free API keys from:
+    // - Unsplash: https://unsplash.com/developers
+    // - Pexels: https://www.pexels.com/api/
+    UNSPLASH_ACCESS_KEY: process.env.UNSPLASH_ACCESS_KEY || '',
+    PEXELS_API_KEY: process.env.PEXELS_API_KEY || '',
 };

@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useLanguage } from '../contexts/LanguageContext'
 import { translations } from '../translations'
-import { Loader2, Sparkles, ArrowLeft, Trash2, Edit, Tag, ArrowRight, CheckCircle } from 'lucide-react'
+import { Loader2, Sparkles, ArrowLeft, Trash2, Edit, Tag, ArrowRight, CheckCircle, Globe, Image as ImageIcon } from 'lucide-react'
 import { useToast, ConfirmModal } from '../components/ui'
+import { LanguageSelector, CONTENT_LANGUAGES } from '../components/LanguageSelector'
 import {
     PageHeader,
     Section,
@@ -49,6 +50,7 @@ export default function IdeasPage() {
     const [corpusHints, setCorpusHints] = useState('')
     const [count, setCount] = useState(10)
     const [temperature, setTemperature] = useState(0.8)
+    const [contentLanguage, setContentLanguage] = useState('en') // Content generation language
 
     const [selectedCount, setSelectedCount] = useState(0)
     const { language } = useLanguage()
@@ -111,7 +113,7 @@ export default function IdeasPage() {
                 body: JSON.stringify({
                     persona: persona.trim(),
                     industry: industry.trim(),
-                    language: currentLanguage,
+                    language: contentLanguage, // Use content language for AI generation
                     corpus_hints: corpusHints.trim(),
                     count: count,
                     temperature: temperature
@@ -283,7 +285,7 @@ export default function IdeasPage() {
                         <Alert type="error" message={error} onClose={() => setError(null)} />
                     )}
 
-                    <Grid cols={2} className="mb-6">
+                    <Grid cols={3} className="mb-6">
                         <Input
                             label={`${t.targetAudience} *`}
                             value={persona}
@@ -296,6 +298,13 @@ export default function IdeasPage() {
                             value={industry}
                             onChange={(e) => setIndustry(e.target.value)}
                             placeholder="e.g., SaaS, Fintech, Healthcare"
+                            disabled={loading}
+                        />
+                        <LanguageSelector
+                            label="Content Language"
+                            value={contentLanguage}
+                            onChange={setContentLanguage}
+                            languages={CONTENT_LANGUAGES}
                             disabled={loading}
                         />
                     </Grid>

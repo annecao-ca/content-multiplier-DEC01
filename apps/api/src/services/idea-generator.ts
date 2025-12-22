@@ -3,6 +3,21 @@ import { loadLLMSettings } from './settingsStore.ts';
 import { env } from '../env.ts';
 import Ajv from 'ajv';
 
+// Supported content languages
+export type ContentLanguage = 'en' | 'vi' | 'fr';
+
+export const LANGUAGE_INSTRUCTIONS: Record<ContentLanguage, string> = {
+    en: 'Generate all content in English.',
+    vi: 'Generate all content in Vietnamese (Tiếng Việt). All titles, descriptions, and rationales must be in Vietnamese.',
+    fr: 'Generate all content in French (Français). All titles, descriptions, and rationales must be in French.'
+};
+
+export const LANGUAGE_NAMES: Record<ContentLanguage, string> = {
+    en: 'English',
+    vi: 'Tiếng Việt',
+    fr: 'Français'
+};
+
 const ajv = new Ajv();
 
 // LLM Provider type - matches the providers in MultiProviderLLM
@@ -76,14 +91,27 @@ export class IdeaGenerator {
         );
     }
 
-    async generateIdeas(persona: string, industry: string, count: number = 10) {
+    async generateIdeas(
+        persona: string, 
+        industry: string, 
+        count: number = 10,
+        language: ContentLanguage = 'en'
+    ) {
+        const languageInstruction = LANGUAGE_INSTRUCTIONS[language] || LANGUAGE_INSTRUCTIONS.en;
+        const languageName = LANGUAGE_NAMES[language] || 'English';
+        
         const prompt = `
+            ${languageInstruction}
+            
             Generate ${count} content ideas for a ${persona} in the ${industry} industry.
+            
+            IMPORTANT: All output must be in ${languageName}.
+            
             Format the output as a JSON object with an "ideas" array.
             Each idea object must have these fields:
-            - title: A catchy headline (required)
-            - description: A brief summary of the content (required)
-            - rationale: Why this idea works for this audience (required)
+            - title: A catchy headline in ${languageName} (required)
+            - description: A brief summary of the content in ${languageName} (required)
+            - rationale: Why this idea works for this audience in ${languageName} (required)
 
             Example format:
             {
