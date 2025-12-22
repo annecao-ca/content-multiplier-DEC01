@@ -3,30 +3,72 @@ import { randomUUID } from 'crypto';
 import { q, pool } from '../db.ts';
 import { IdeaGenerator } from '../services/idea-generator.ts';
 import { logEvent } from '../services/telemetry.ts';
+import { logger } from '../utils/logger.ts';
+import { cache } from '../utils/cache.ts';
+import { parsePaginationParams, createPaginatedResponse, generatePaginationSQL } from '../utils/pagination.ts';
+import { aiGenerationRateLimit } from '../middleware/rate-limit.ts';
+import { requireRole } from '../middleware/auth.ts';
 
 const ideaGenerator = new IdeaGenerator();
-// import ideaSchema from '../../../../packages/schemas/idea.schema.json' assert { type: 'json' };
-// import { ensureValid } from '../../../../packages/utils/validate.ts';
 
 const routes: FastifyPluginAsync = async (app) => {
-    // List ideas (with optional tag filter)
+    // List ideas with pagination
     app.get('/', async (req: any, reply) => {
-        // Nếu database chưa được cấu hình, trả về mảng rỗng thay vì throw error
+        // If database not configured, return empty array
         if (!pool) {
-            app.log.warn('Database not configured. Returning empty ideas list.');
-            return [];
+            logger.warn('Database not configured. Returning empty ideas list.');
+            return { ok: true, data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0, hasNextPage: false, hasPrevPage: false } };
         }
 
         try {
-            const { tags } = req.query;
+            const paginationParams = parsePaginationParams(req, {
+                allowedSortFields: ['created_at', 'updated_at', 'one_liner', 'status']
+            });
+            const { tags, status } = req.query;
+            
+            // Build query conditions
+            const conditions: string[] = [];
+            const params: any[] = [];
+            let paramIndex = 1;
+
             if (tags) {
-                // Filter by tags - supports comma-separated list
                 const tagArray = Array.isArray(tags) ? tags : tags.split(',');
-                return await q('SELECT * FROM ideas WHERE tags && $1 ORDER BY created_at DESC', [tagArray]);
+                conditions.push(`tags && $${paramIndex}`);
+                params.push(tagArray);
+                paramIndex++;
             }
-            return await q('SELECT * FROM ideas ORDER BY created_at DESC');
+
+            if (status) {
+                conditions.push(`status = $${paramIndex}`);
+                params.push(status);
+                paramIndex++;
+            }
+
+            const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+            
+            // Get total count
+            const [countResult] = await q(
+                `SELECT COUNT(*) as total FROM ideas ${whereClause}`,
+                params
+            );
+            const total = parseInt(countResult.total, 10);
+
+            // Get paginated data
+            const paginationSQL = generatePaginationSQL(paginationParams);
+            const ideas = await q(
+                `SELECT * FROM ideas ${whereClause} ${paginationSQL}`,
+                params
+            );
+
+            logger.debug('Ideas listed', { 
+                count: ideas.length, 
+                total, 
+                page: paginationParams.page 
+            });
+
+            return createPaginatedResponse(ideas, total, paginationParams);
         } catch (error: any) {
-            app.log.error('[Ideas] Failed to list ideas:', error);
+            logger.error('Failed to list ideas', { error: error.message });
             return reply.status(500).send({
                 ok: false,
                 error: 'Failed to list ideas',
@@ -35,22 +77,35 @@ const routes: FastifyPluginAsync = async (app) => {
         }
     });
 
-    // Generate ideas (NEW: using AI Client with retry)
-    app.post('/generate', async (req: any, reply) => {
+    // Generate ideas (with rate limiting and caching)
+    app.post('/generate', {
+        preHandler: [aiGenerationRateLimit]
+    }, async (req: any, reply) => {
         const { persona, industry, corpus_hints, language = 'en', count = 10, temperature } = req.body;
 
         // Validate input
         if (!persona || !industry) {
             return reply.status(400).send({
                 ok: false,
-                error: 'Missing required fields: persona and industry'
+                error: 'validation_error',
+                message: 'Missing required fields: persona and industry'
             });
         }
 
+        // Create cache key based on input
+        const cacheKey = `ideas:${persona}:${industry}:${count}:${language}`;
+        
         try {
-            console.log('[Ideas] Generating ideas:', { persona, industry, count, temperature });
+            logger.info('Generating ideas', { persona, industry, count, temperature });
 
-            // Generate ideas using new AI Client
+            // Check cache first (for identical requests within short timeframe)
+            const cached = await cache.get<any>(cacheKey);
+            if (cached && !req.query.force) {
+                logger.debug('Returning cached ideas', { cacheKey });
+                return { ...cached, fromCache: true };
+            }
+
+            // Generate ideas using AI Client
             const ideas = await ideaGenerator.generateIdeas(
                 persona,
                 industry,
@@ -59,30 +114,30 @@ const routes: FastifyPluginAsync = async (app) => {
 
             // Format result to match expected structure
             const result = {
+                ok: true,
                 ideas: ideas.map((i: any) => ({
                     ...i,
                     idea_id: randomUUID(),
-                    one_liner: i.title, // Map title to one_liner
+                    one_liner: i.title,
                     status: 'proposed',
                     created_at: new Date().toISOString()
                 })),
                 metadata: {
-                    provider: 'unknown',
-                    model: 'unknown',
+                    provider: 'multi-provider',
+                    model: 'auto',
                     tokensUsed: { total: 0 },
                     durationMs: 0
                 }
             };
 
-            // Save ideas to database (optional in dev)
+            // Save ideas to database
             let savedCount = 0;
 
             if (!pool) {
-                app.log.warn('[Ideas] Database not configured. Ideas will NOT be persisted, but still returned to client.');
+                logger.warn('Database not configured. Ideas will NOT be persisted.');
             } else {
                 for (const idea of result.ideas) {
                     try {
-                        // ensureValid(ideaSchema, idea); // Skipped to avoid import issues
                         if (!idea.one_liner) throw new Error('Invalid idea: missing one_liner');
                         await q(
                             `INSERT INTO ideas(idea_id, one_liner, angle, personas, why_now, evidence, scores, status, tags) 
@@ -91,171 +146,261 @@ const routes: FastifyPluginAsync = async (app) => {
                             [
                                 idea.idea_id,
                                 idea.one_liner,
-                                // Lưu description vào angle để tái sử dụng cột sẵn có
                                 idea.description || null,
                                 idea.personas || ['General Audience'],
                                 idea.why_now || [],
                                 JSON.stringify(idea.evidence || []),
                                 JSON.stringify(idea.scores || {
                                     novelty: 3,
-                                    demand: 3,
-                                    fit: 3,
-                                    white_space: 3
+                                    feasibility: 3,
+                                    impact: 3
                                 }),
-                                idea.status || 'proposed',
+                                'proposed',
                                 idea.tags || []
                             ]
                         );
-                        savedCount += 1;
-                    } catch (e) {
-                        console.error('[Ideas] Failed to save idea:', e);
+                        savedCount++;
+                    } catch (dbError: any) {
+                        logger.warn('Failed to save idea', { 
+                            ideaId: idea.idea_id, 
+                            error: dbError.message 
+                        });
                     }
                 }
             }
 
-            console.log(`[Ideas] Saved ${savedCount}/${result.ideas.length} ideas`);
-
-            // Log telemetry (best-effort, KHÔNG để lỗi DB làm fail toàn bộ request)
-            if (pool) {
-                try {
-                    await logEvent({
-                        event_type: 'idea.generated',
-                        actor_id: (req as any).actor_id,
-                        actor_role: (req as any).actor_role,
-                        request_id: (req as any).request_id,
-                        timezone: (req as any).timezone,
-                        payload: {
-                            count: savedCount,
-                            provider: result.metadata.provider,
-                            model: result.metadata.model,
-                            tokensUsed: result.metadata.tokensUsed?.total,
-                            durationMs: result.metadata.durationMs
-                        }
-                    });
-                } catch (e) {
-                    app.log.warn(`[Ideas] Telemetry failed but will be ignored: ${e}`);
-                }
-            } else {
-                app.log.warn('[Ideas] Telemetry skipped because database is not configured');
-            }
-
-            // Return ideas with metadata
-            return {
-                ok: true,
-                ideas: result.ideas,
-                metadata: {
-                    generated: result.ideas.length,
+            // Log telemetry event
+            await logEvent({
+                event_type: 'ideas.generated',
+                actor_id: (req as any).user?.sub || 'anonymous',
+                actor_role: (req as any).user?.role || 'viewer',
+                request_id: req.id,
+                payload: { 
+                    count: ideas.length, 
                     saved: savedCount,
-                    provider: result.metadata.provider,
-                    model: result.metadata.model,
-                    tokensUsed: result.metadata.tokensUsed,
-                    durationMs: result.metadata.durationMs
+                    persona, 
+                    industry 
                 }
-            };
+            });
 
+            // Cache the result for 5 minutes
+            await cache.set(cacheKey, result, 300);
+
+            logger.info('Ideas generated successfully', { 
+                count: ideas.length, 
+                saved: savedCount 
+            });
+
+            return result;
         } catch (error: any) {
-            console.error('[Ideas] Generation failed:', error);
+            logger.error('Failed to generate ideas', { 
+                error: error.message,
+                persona,
+                industry
+            });
+            
             return reply.status(500).send({
                 ok: false,
-                error: error.message || 'Failed to generate ideas'
+                error: 'generation_failed',
+                message: `Failed to generate ideas: ${error.message}`
             });
         }
     });
-    // Update tags for an idea
-    app.patch('/:idea_id/tags', async (req: any, reply) => {
+
+    // Get single idea
+    app.get('/:idea_id', async (req: any, reply) => {
         if (!pool) {
-            return reply.status(500).send({ ok: false, error: 'Database not configured' });
+            return reply.status(503).send({
+                ok: false,
+                error: 'database_unavailable',
+                message: 'Database not configured'
+            });
         }
+
+        const { idea_id } = req.params;
+
         try {
-            const { idea_id } = req.params;
-            const { tags } = req.body;
-
-            if (!Array.isArray(tags)) {
-                return reply.status(400).send({ ok: false, error: 'Tags must be an array' });
+            // Try cache first
+            const cached = await cache.get<any>(`idea:${idea_id}`);
+            if (cached) {
+                return { ok: true, idea: cached };
             }
 
-            await q('UPDATE ideas SET tags=$2 WHERE idea_id=$1', [idea_id, tags]);
-
-            try {
-                await logEvent({
-                    event_type: 'idea.tags_updated',
-                    actor_id: (req as any).actor_id,
-                    actor_role: (req as any).actor_role,
-                    idea_id,
-                    request_id: (req as any).request_id,
-                    timezone: (req as any).timezone,
-                    payload: { tags }
+            const [idea] = await q('SELECT * FROM ideas WHERE idea_id = $1', [idea_id]);
+            
+            if (!idea) {
+                return reply.status(404).send({
+                    ok: false,
+                    error: 'not_found',
+                    message: 'Idea not found'
                 });
-            } catch (e) {
-                app.log.warn(`[Ideas] Telemetry (tags_updated) failed but ignored: ${e}`);
             }
 
-            return { ok: true, tags };
+            // Cache for 10 minutes
+            await cache.set(`idea:${idea_id}`, idea, 600);
+
+            return { ok: true, idea };
         } catch (error: any) {
-            app.log.error('[Ideas] Failed to update tags:', error);
-            return reply.status(500).send({ ok: false, error: 'Failed to update tags' });
+            logger.error('Failed to get idea', { ideaId: idea_id, error: error.message });
+            return reply.status(500).send({
+                ok: false,
+                error: 'fetch_failed',
+                message: error.message
+            });
         }
     });
 
-    // Select an idea
+    // Select idea
     app.post('/:idea_id/select', async (req: any, reply) => {
         if (!pool) {
-            return reply.status(500).send({ ok: false, error: 'Database not configured' });
+            logger.warn('Database not configured. Cannot select idea.');
+            return reply.status(200).send({
+                ok: true,
+                message: 'Idea marked as selected (not persisted - database not configured)',
+                idea_id: req.params.idea_id
+            });
         }
-        try {
-            const { idea_id } = req.params;
-            await q('UPDATE ideas SET status=$2 WHERE idea_id=$1', [idea_id, 'selected']);
 
-            try {
-                await logEvent({
-                    event_type: 'idea.selected',
-                    actor_id: (req as any).actor_id,
-                    actor_role: (req as any).actor_role,
-                    idea_id,
-                    request_id: (req as any).request_id,
-                    timezone: (req as any).timezone
+        const { idea_id } = req.params;
+
+        try {
+            // Update status in database (updated_at is auto-updated by trigger)
+            const result = await q(
+                `UPDATE ideas SET status = 'selected'
+                 WHERE idea_id = $1 RETURNING *`,
+                [idea_id]
+            );
+
+            if (result.length === 0) {
+                return reply.status(404).send({
+                    ok: false,
+                    error: 'not_found',
+                    message: `Idea ${idea_id} not found`
                 });
-            } catch (e) {
-                app.log.warn(`[Ideas] Telemetry (selected) failed but ignored: ${e}`);
             }
 
-            return { ok: true };
+            // Invalidate cache
+            await cache.delete(`idea:${idea_id}`);
+
+            // Log telemetry
+            await logEvent({
+                event_type: 'idea.selected',
+                actor_id: (req as any).user?.sub || 'anonymous',
+                actor_role: (req as any).user?.role || 'viewer',
+                request_id: req.id,
+                payload: { idea_id }
+            });
+
+            logger.info('Idea selected', { ideaId: idea_id });
+
+            return { ok: true, idea: result[0] };
         } catch (error: any) {
-            app.log.error('[Ideas] Failed to select idea:', error);
-            return reply.status(500).send({ ok: false, error: 'Failed to select idea' });
+            logger.error('Failed to select idea', { ideaId: idea_id, error: error.message });
+            return reply.status(500).send({
+                ok: false,
+                error: 'select_failed',
+                message: error.message
+            });
         }
     });
 
-    // Delete an idea
+    // Delete idea
     app.delete('/:idea_id', async (req: any, reply) => {
         if (!pool) {
-            return reply.status(500).send({ ok: false, error: 'Database not configured' });
+            return reply.status(503).send({
+                ok: false,
+                error: 'database_unavailable',
+                message: 'Database not configured'
+            });
         }
+
+        const { idea_id } = req.params;
+
         try {
-            const { idea_id } = req.params;
-            const res: any = await q('DELETE FROM ideas WHERE idea_id=$1 RETURNING idea_id', [idea_id]);
-            if (!res || res.rowCount === 0) {
-                return reply.status(404).send({ ok: false, error: 'Idea not found' });
-            }
-
-            try {
-                await logEvent({
-                    event_type: 'idea.deleted',
-                    actor_id: (req as any).actor_id,
-                    actor_role: (req as any).actor_role,
-                    idea_id,
-                    request_id: (req as any).request_id,
-                    timezone: (req as any).timezone
+            const result = await q('DELETE FROM ideas WHERE idea_id = $1 RETURNING idea_id', [idea_id]);
+            
+            if (result.length === 0) {
+                return reply.status(404).send({
+                    ok: false,
+                    error: 'not_found',
+                    message: 'Idea not found'
                 });
-            } catch (e) {
-                app.log.warn(`[Ideas] Telemetry (deleted) failed but ignored: ${e}`);
             }
 
-            return { ok: true };
+            // Invalidate cache
+            await cache.delete(`idea:${idea_id}`);
+
+            logger.info('Idea deleted', { ideaId: idea_id });
+
+            return { ok: true, deleted: idea_id };
         } catch (error: any) {
-            app.log.error('[Ideas] Failed to delete idea:', error);
-            return reply.status(500).send({ ok: false, error: 'Failed to delete idea' });
+            logger.error('Failed to delete idea', { ideaId: idea_id, error: error.message });
+            return reply.status(500).send({
+                ok: false,
+                error: 'delete_failed',
+                message: error.message
+            });
+        }
+    });
+
+    // Bulk update ideas status
+    app.post('/bulk-update', async (req: any, reply) => {
+        if (!pool) {
+            return reply.status(503).send({
+                ok: false,
+                error: 'database_unavailable',
+                message: 'Database not configured'
+            });
+        }
+
+        const { idea_ids, status } = req.body as { idea_ids: string[]; status: string };
+
+        if (!idea_ids || !Array.isArray(idea_ids) || idea_ids.length === 0) {
+            return reply.status(400).send({
+                ok: false,
+                error: 'validation_error',
+                message: 'idea_ids must be a non-empty array'
+            });
+        }
+
+        if (!['proposed', 'selected', 'archived'].includes(status)) {
+            return reply.status(400).send({
+                ok: false,
+                error: 'validation_error',
+                message: 'status must be one of: proposed, selected, archived'
+            });
+        }
+
+        try {
+            const result = await q(
+                `UPDATE ideas SET status = $1 
+                 WHERE idea_id = ANY($2) RETURNING idea_id`,
+                [status, idea_ids]
+            );
+
+            // Invalidate cache for all updated ideas
+            await Promise.all(idea_ids.map(id => cache.delete(`idea:${id}`)));
+
+            logger.info('Bulk update completed', { 
+                count: result.length, 
+                status,
+                requestedCount: idea_ids.length
+            });
+
+            return { 
+                ok: true, 
+                updated: result.length,
+                idea_ids: result.map(r => r.idea_id)
+            };
+        } catch (error: any) {
+            logger.error('Bulk update failed', { error: error.message });
+            return reply.status(500).send({
+                ok: false,
+                error: 'bulk_update_failed',
+                message: error.message
+            });
         }
     });
 };
+
 export default routes;
