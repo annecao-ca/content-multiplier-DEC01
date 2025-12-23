@@ -97,6 +97,99 @@ app.get('/api/health', async (request, reply) => {
     }
 })
 
+// Migration endpoint - run publishing tables migration
+app.get('/api/migrate/publishing', async (request, reply) => {
+    logger.info('Running publishing migration...')
+    try {
+        const { q } = await import('./db.ts')
+        
+        // Create publishing_credentials table
+        await q(`CREATE TABLE IF NOT EXISTS publishing_credentials (
+            credential_id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL DEFAULT 'default',
+            platform TEXT NOT NULL,
+            credential_type TEXT NOT NULL,
+            encrypted_credentials JSONB NOT NULL,
+            metadata JSONB,
+            is_active BOOLEAN DEFAULT true,
+            expires_at TIMESTAMPTZ,
+            created_at TIMESTAMPTZ DEFAULT now(),
+            updated_at TIMESTAMPTZ DEFAULT now()
+        )`)
+        
+        // Create oauth_states table
+        await q(`CREATE TABLE IF NOT EXISTS oauth_states (
+            state TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            platform TEXT NOT NULL,
+            code_verifier TEXT,
+            redirect_uri TEXT,
+            expires_at TIMESTAMPTZ NOT NULL,
+            created_at TIMESTAMPTZ DEFAULT now()
+        )`)
+        
+        // Create publishing_queue table
+        await q(`CREATE TABLE IF NOT EXISTS publishing_queue (
+            queue_id BIGSERIAL PRIMARY KEY,
+            pack_id TEXT NOT NULL,
+            platform TEXT NOT NULL,
+            content_type TEXT NOT NULL,
+            content_data JSONB NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            scheduled_at TIMESTAMPTZ DEFAULT now(),
+            published_at TIMESTAMPTZ,
+            error_message TEXT,
+            retry_count INTEGER DEFAULT 0,
+            max_retries INTEGER DEFAULT 3,
+            created_at TIMESTAMPTZ DEFAULT now(),
+            updated_at TIMESTAMPTZ DEFAULT now()
+        )`)
+        
+        // Create publishing_results table
+        await q(`CREATE TABLE IF NOT EXISTS publishing_results (
+            result_id BIGSERIAL PRIMARY KEY,
+            queue_id BIGINT,
+            platform TEXT NOT NULL,
+            external_id TEXT,
+            external_url TEXT,
+            metrics JSONB,
+            published_at TIMESTAMPTZ DEFAULT now(),
+            created_at TIMESTAMPTZ DEFAULT now()
+        )`)
+        
+        // Add columns to content_packs if not exist
+        try {
+            await q(`ALTER TABLE content_packs ADD COLUMN IF NOT EXISTS publishing_status TEXT DEFAULT 'not_published'`)
+        } catch (e) { /* column might already exist */ }
+        
+        try {
+            await q(`ALTER TABLE content_packs ADD COLUMN IF NOT EXISTS last_published_at TIMESTAMPTZ`)
+        } catch (e) { /* column might already exist */ }
+        
+        try {
+            await q(`ALTER TABLE content_packs ADD COLUMN IF NOT EXISTS publishing_errors JSONB`)
+        } catch (e) { /* column might already exist */ }
+        
+        // Create indexes
+        await q(`CREATE INDEX IF NOT EXISTS idx_pub_creds_platform ON publishing_credentials(platform, is_active)`)
+        await q(`CREATE INDEX IF NOT EXISTS idx_pub_queue_status ON publishing_queue(status, scheduled_at)`)
+        await q(`CREATE INDEX IF NOT EXISTS idx_oauth_states_expires ON oauth_states(expires_at)`)
+        
+        logger.info('Publishing migration completed successfully!')
+        return { 
+            ok: true, 
+            message: 'Publishing tables created successfully!',
+            tables: ['publishing_credentials', 'oauth_states', 'publishing_queue', 'publishing_results']
+        }
+    } catch (error: any) {
+        logger.error('Migration failed', { error: error.message })
+        return reply.status(500).send({ 
+            ok: false, 
+            error: error.message 
+        })
+    }
+})
+
 // Root endpoint - just return API info
 app.get('/', async (request, reply) => {
     return { 
