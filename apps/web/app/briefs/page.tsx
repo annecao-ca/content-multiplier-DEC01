@@ -37,18 +37,20 @@ export default function BriefsPage() {
 
     async function loadIdeas() {
         try {
-            console.log('[Briefs] Loading ideas from:', `${API_URL}/api/ideas`)
-            const r = await fetch(`${API_URL}/api/ideas`)
-            const all = await r.json()
-            console.log('[Briefs] Received ideas:', all)
+            console.log('[Briefs] Loading ideas from:', `${API_URL}/api/ideas?status=selected`)
+            // Fetch only selected ideas directly from API
+            const r = await fetch(`${API_URL}/api/ideas?status=selected`)
+            const response = await r.json()
+            console.log('[Briefs] Received response:', response)
             
-            if (Array.isArray(all)) {
-                const selectedIdeas = all.filter((i: any) => i.status === 'selected')
-                console.log('[Briefs] Selected ideas:', selectedIdeas)
-                console.log('[Briefs] Total ideas:', all.length, 'Selected:', selectedIdeas.length)
-                setIdeas(selectedIdeas)
+            // API returns { data: [...], pagination: {...} } format
+            const ideasArray = response.data || response
+            
+            if (Array.isArray(ideasArray)) {
+                console.log('[Briefs] Selected ideas:', ideasArray.length)
+                setIdeas(ideasArray)
             } else {
-                console.error('[Briefs] API returned non-array:', all)
+                console.error('[Briefs] API returned unexpected format:', response)
                 setIdeas([])
             }
         } catch (error) {
