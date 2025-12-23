@@ -212,10 +212,10 @@ export default function PackDetailPage() {
 
     useEffect(() => { loadPack() }, [])
 
-    if (!pack) return <p style={{ color: '#1f2937' }}>Loading...</p>
+    if (!pack) return <p className="text-slate-300">Loading...</p>
 
     return (
-        <div style={{ color: '#1f2937' }}>
+        <div className="text-slate-100">
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -225,30 +225,29 @@ export default function PackDetailPage() {
                 gap: '1rem'
             }}>
                 <div>
-                    <h1 style={{ margin: 0, fontSize: '2rem', color: '#1f2937' }}>Content Pack</h1>
-                    <p style={{ margin: '0.5rem 0 0 0', color: '#6b7280' }}>
+                    <h1 className="text-slate-50" style={{ margin: 0, fontSize: '2rem' }}>Content Pack</h1>
+                    <p className="text-slate-400" style={{ margin: '0.5rem 0 0 0' }}>
                         Pack ID: {pack.pack_id}
                     </p>
                 </div>
                 <Link
                     href="/packs"
+                    className="bg-slate-800 text-slate-200 hover:bg-slate-700 border-slate-600"
                     style={{
-                        background: '#f3f4f6',
-                        color: '#374151',
                         padding: '0.5rem 1rem',
                         borderRadius: '8px',
                         textDecoration: 'none',
                         fontWeight: 'bold',
-                        border: '1px solid #d1d5db'
+                        border: '1px solid'
                     }}
                 >
                     ← Back to Packs
                 </Link>
             </div>
 
-            <p>Status: <b>{pack.status}</b></p>
+            <p className="text-slate-300">Status: <b className="text-slate-100">{pack.status}</b></p>
 
-            <h2>Draft</h2>
+            <h2 className="text-slate-100">Draft</h2>
             {isEditing ? (
                 <RichTextEditor
                     value={editedDraft}
@@ -258,12 +257,12 @@ export default function PackDetailPage() {
                 />
             ) : (
                 <div
+                    className="bg-slate-800/70 border-slate-700 text-slate-200"
                     style={{
                         whiteSpace: 'pre-wrap',
-                        background: '#f5f5f5',
                         padding: '1.25rem',
                         borderRadius: '8px',
-                        border: '1px solid #e5e7eb',
+                        border: '1px solid',
                         lineHeight: 1.7,
                     }}
                 >
@@ -311,7 +310,7 @@ export default function PackDetailPage() {
             {pack.derivatives && (
                 <>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', marginTop: '2rem', gap: '1rem' }}>
-                        <h2 style={{ margin: 0 }}>Derivatives</h2>
+                        <h2 className="text-slate-100" style={{ margin: 0 }}>Derivatives</h2>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                             <DerivativesExportDropdown packId={pack.pack_id} />
                             <Button

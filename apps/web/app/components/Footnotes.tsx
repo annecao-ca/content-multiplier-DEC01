@@ -41,8 +41,8 @@ export function Footnotes({ sources, className = '' }: FootnotesProps) {
 
   return (
     <div className={`mt-8 ${className}`} id="footnotes-section">
-      <div className="border-t pt-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+      <div className="border-t border-slate-700 pt-6">
+        <h3 className="text-lg font-semibold text-slate-100 mb-4">
           📚 Nguồn tham khảo
         </h3>
         
@@ -52,19 +52,19 @@ export function Footnotes({ sources, className = '' }: FootnotesProps) {
               key={source.id}
               value={`source-${source.id}`}
               id={`footnote-${source.id}`}
-              className="transition-colors data-[state=open]:bg-indigo-50/50"
+              className="transition-colors border-slate-700 data-[state=open]:bg-slate-800/50"
             >
               <AccordionTrigger className="hover:no-underline">
                 <div className="flex items-start text-left space-x-3">
-                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-sm font-semibold flex-shrink-0">
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 text-sm font-semibold flex-shrink-0 ring-1 ring-indigo-500/30">
                     {source.id}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-slate-100">
                       {source.title}
                     </p>
                     {source.url && (
-                      <p className="text-sm text-indigo-600 truncate mt-1">
+                      <p className="text-sm text-indigo-400 truncate mt-1">
                         {source.url}
                       </p>
                     )}
@@ -75,8 +75,8 @@ export function Footnotes({ sources, className = '' }: FootnotesProps) {
               <AccordionContent>
                 <div className="pl-9 space-y-3">
                   {/* Retrieved snippet */}
-                  <div className="bg-white border rounded-lg p-4">
-                    <p className="text-sm text-gray-700 italic">
+                  <div className="bg-slate-800/70 border border-slate-700 rounded-lg p-4">
+                    <p className="text-sm text-slate-300 italic">
                       "{source.snippet}"
                     </p>
                   </div>
@@ -89,11 +89,11 @@ export function Footnotes({ sources, className = '' }: FootnotesProps) {
                           variant="outline"
                           size="sm"
                           onClick={() => handleCopyUrl(source.url!, source.id)}
-                          className="text-xs"
+                          className="text-xs border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-slate-100"
                         >
                           {copiedId === source.id ? (
                             <>
-                              <Check className="mr-1 h-3 w-3" />
+                              <Check className="mr-1 h-3 w-3 text-green-400" />
                               Đã copy
                             </>
                           ) : (
@@ -112,7 +112,7 @@ export function Footnotes({ sources, className = '' }: FootnotesProps) {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-xs"
+                            className="text-xs border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-slate-100"
                           >
                             <ExternalLink className="mr-1 h-3 w-3" />
                             Mở link
@@ -139,7 +139,7 @@ export function Footnotes({ sources, className = '' }: FootnotesProps) {
             background-color: transparent;
           }
           50% {
-            background-color: rgb(238, 242, 255);
+            background-color: rgba(99, 102, 241, 0.2);
           }
         }
       `}</style>
