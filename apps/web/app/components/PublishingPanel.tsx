@@ -274,17 +274,17 @@ export default function PublishingPanel({ packId }: { packId: string }) {
 
     return (
         <div style={{
-            background: 'white',
-            border: '1px solid #e5e7eb',
-            borderRadius: '8px',
+            background: 'rgb(15, 23, 42)',
+            border: '1px solid rgb(51, 65, 85)',
+            borderRadius: '12px',
             padding: '1.5rem',
             marginTop: '2rem'
         }}>
-            <h2 style={{ margin: '0 0 1rem 0', color: '#1f2937' }}>Publishing</h2>
+            <h2 style={{ margin: '0 0 1rem 0', color: '#f1f5f9' }}>Publishing</h2>
 
             {/* Platform Authentication */}
             <div style={{ marginBottom: '2rem' }}>
-                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#374151' }}>
+                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#e2e8f0' }}>
                     Connect Platforms
                 </h3>
                 <div style={{
@@ -300,15 +300,15 @@ export default function PublishingPanel({ packId }: { packId: string }) {
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
                                 padding: '0.5rem',
-                                border: '1px solid #d1d5db',
-                                borderRadius: '4px',
-                                background: isAuthenticated ? '#f0fdf4' : '#f9fafb'
+                                border: '1px solid rgb(51, 65, 85)',
+                                borderRadius: '8px',
+                                background: isAuthenticated ? 'rgba(16, 185, 129, 0.1)' : 'rgb(30, 41, 59)'
                             }}>
-                                <span style={{ fontSize: '0.9rem' }}>
+                                <span style={{ fontSize: '0.9rem', color: '#e2e8f0' }}>
                                     {platform.icon} {platform.name}
                                 </span>
                                 {isAuthenticated ? (
-                                    <span style={{ color: '#059669', fontSize: '0.8rem' }}>✓</span>
+                                    <span style={{ color: '#10b981', fontSize: '0.8rem' }}>✓</span>
                                 ) : (
                                     <Button
                                         onClick={() => authenticatePlatform(platform.id)}
@@ -331,7 +331,7 @@ export default function PublishingPanel({ packId }: { packId: string }) {
             {/* Platform Selection */}
             {availablePlatforms.length > 0 && (
                 <div style={{ marginBottom: '2rem' }}>
-                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#374151' }}>
+                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#e2e8f0' }}>
                         Select Platforms to Publish
                     </h3>
                     <div style={{
@@ -344,10 +344,11 @@ export default function PublishingPanel({ packId }: { packId: string }) {
                                 display: 'flex',
                                 alignItems: 'center',
                                 padding: '0.5rem',
-                                border: '1px solid #d1d5db',
-                                borderRadius: '4px',
+                                border: '1px solid rgb(51, 65, 85)',
+                                borderRadius: '8px',
                                 cursor: 'pointer',
-                                background: selectedPlatforms.includes(platform.id) ? '#dbeafe' : 'white'
+                                background: selectedPlatforms.includes(platform.id) ? 'rgba(99, 102, 241, 0.2)' : 'rgb(30, 41, 59)',
+                                color: '#e2e8f0'
                             }}>
                                 <input
                                     type="checkbox"
@@ -383,20 +384,20 @@ export default function PublishingPanel({ packId }: { packId: string }) {
             {showTwitterBot && selectedPlatforms.includes('twitter') && (
                 <div style={{ 
                     marginBottom: '2rem',
-                    background: '#f0f9ff',
-                    border: '1px solid #0ea5e9',
-                    borderRadius: '8px',
+                    background: 'rgba(14, 165, 233, 0.1)',
+                    border: '1px solid rgba(14, 165, 233, 0.3)',
+                    borderRadius: '12px',
                     padding: '1.5rem'
                 }}>
-                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#0c4a6e' }}>
+                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#7dd3fc' }}>
                         🤖 AI-Generated Twitter Content
                     </h3>
-                    <p style={{ margin: '0 0 1rem 0', fontSize: '0.9rem', color: '#075985' }}>
+                    <p style={{ margin: '0 0 1rem 0', fontSize: '0.9rem', color: '#94a3b8' }}>
                         Use the Twitter bot's AI templates to generate optimized content for your post.
                     </p>
 
                     <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: '#0c4a6e' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: '#7dd3fc' }}>
                             Content Template
                         </label>
                         <select
@@ -405,9 +406,11 @@ export default function PublishingPanel({ packId }: { packId: string }) {
                             style={{
                                 width: '100%',
                                 padding: '0.5rem',
-                                border: '1px solid #0ea5e9',
-                                borderRadius: '4px',
-                                fontSize: '0.9rem'
+                                border: '1px solid rgba(14, 165, 233, 0.3)',
+                                borderRadius: '8px',
+                                fontSize: '0.9rem',
+                                background: 'rgb(30, 41, 59)',
+                                color: '#e2e8f0'
                             }}
                         >
                             <option value="">Select a template...</option>
@@ -435,35 +438,37 @@ export default function PublishingPanel({ packId }: { packId: string }) {
 
                     {generatedContent && (
                         <div style={{
-                            background: 'white',
-                            border: '1px solid #0ea5e9',
-                            borderRadius: '4px',
+                            background: 'rgb(30, 41, 59)',
+                            border: '1px solid rgba(14, 165, 233, 0.3)',
+                            borderRadius: '8px',
                             padding: '1rem',
                             marginTop: '1rem'
                         }}>
-                            <h4 style={{ margin: '0 0 0.5rem 0', color: '#0c4a6e' }}>Generated Tweet:</h4>
+                            <h4 style={{ margin: '0 0 0.5rem 0', color: '#7dd3fc' }}>Generated Tweet:</h4>
                             <p style={{ 
                                 margin: '0 0 1rem 0', 
                                 padding: '0.5rem',
-                                background: '#f8fafc',
-                                border: '1px solid #e2e8f0',
-                                borderRadius: '4px',
-                                fontStyle: 'italic'
+                                background: 'rgb(15, 23, 42)',
+                                border: '1px solid rgb(51, 65, 85)',
+                                borderRadius: '6px',
+                                fontStyle: 'italic',
+                                color: '#e2e8f0'
                             }}>
                                 "{generatedContent.text}"
                             </p>
                             
                             {generatedContent.thread && generatedContent.thread.length > 0 && (
                                 <div>
-                                    <h5 style={{ margin: '0 0 0.5rem 0', color: '#0c4a6e' }}>Thread:</h5>
+                                    <h5 style={{ margin: '0 0 0.5rem 0', color: '#7dd3fc' }}>Thread:</h5>
                                     {generatedContent.thread.map((tweet: string, index: number) => (
                                         <p key={index} style={{
                                             margin: '0 0 0.5rem 0',
                                             padding: '0.5rem',
-                                            background: '#f8fafc',
-                                            border: '1px solid #e2e8f0',
-                                            borderRadius: '4px',
-                                            fontSize: '0.9rem'
+                                            background: 'rgb(15, 23, 42)',
+                                            border: '1px solid rgb(51, 65, 85)',
+                                            borderRadius: '6px',
+                                            fontSize: '0.9rem',
+                                            color: '#e2e8f0'
                                         }}>
                                             {index + 2}. "{tweet}"
                                         </p>
@@ -472,12 +477,12 @@ export default function PublishingPanel({ packId }: { packId: string }) {
                             )}
 
                             {generatedContent.hashtags && generatedContent.hashtags.length > 0 && (
-                                <div style={{ marginTop: '0.5rem' }}>
-                                    <strong style={{ color: '#0c4a6e' }}>Suggested hashtags:</strong> {generatedContent.hashtags.join(' ')}
+                                <div style={{ marginTop: '0.5rem', color: '#94a3b8' }}>
+                                    <strong style={{ color: '#7dd3fc' }}>Suggested hashtags:</strong> {generatedContent.hashtags.join(' ')}
                                 </div>
                             )}
 
-                            <div style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#64748b' }}>
+                            <div style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#10b981' }}>
                                 ✅ This content will be used when publishing to Twitter
                             </div>
                         </div>
@@ -487,7 +492,7 @@ export default function PublishingPanel({ packId }: { packId: string }) {
 
             {/* Scheduling */}
             <div style={{ marginBottom: '2rem' }}>
-                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#374151' }}>
+                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#e2e8f0' }}>
                     Schedule Publishing (Optional)
                 </h3>
                 <input
@@ -496,9 +501,11 @@ export default function PublishingPanel({ packId }: { packId: string }) {
                     onChange={(e) => setScheduledAt(e.target.value)}
                     style={{
                         padding: '0.5rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '4px',
-                        fontSize: '0.9rem'
+                        border: '1px solid rgb(51, 65, 85)',
+                        borderRadius: '8px',
+                        fontSize: '0.9rem',
+                        background: 'rgb(30, 41, 59)',
+                        color: '#e2e8f0'
                     }}
                 />
             </div>
@@ -532,27 +539,27 @@ export default function PublishingPanel({ packId }: { packId: string }) {
             {/* Publishing Status */}
             {publishingStatus && (
                 <div>
-                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#374151' }}>
+                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#e2e8f0' }}>
                         Publishing Status
                     </h3>
                     <div style={{
-                        background: '#f9fafb',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '4px',
+                        background: 'rgb(30, 41, 59)',
+                        border: '1px solid rgb(51, 65, 85)',
+                        borderRadius: '8px',
                         padding: '1rem'
                     }}>
-                        <p style={{ margin: '0 0 0.5rem 0' }}>
+                        <p style={{ margin: '0 0 0.5rem 0', color: '#e2e8f0' }}>
                             <strong>Overall Status:</strong> {publishingStatus.pack_status?.publishing_status || 'Not published'}
                         </p>
                         {publishingStatus.pack_status?.last_published_at && (
-                            <p style={{ margin: '0 0 1rem 0' }}>
-                                <strong>Last Published:</strong> {new Date(publishingStatus.pack_status.last_published_at).toLocaleString()}
+                            <p style={{ margin: '0 0 1rem 0', color: '#94a3b8' }}>
+                                <strong style={{ color: '#e2e8f0' }}>Last Published:</strong> {new Date(publishingStatus.pack_status.last_published_at).toLocaleString()}
                             </p>
                         )}
                         
                         {publishingStatus.jobs.length > 0 && (
                             <div>
-                                <strong>Platform Status:</strong>
+                                <strong style={{ color: '#e2e8f0' }}>Platform Status:</strong>
                                 <div style={{ marginTop: '0.5rem' }}>
                                     {publishingStatus.jobs.map((job, index) => (
                                         <div key={index} style={{
@@ -560,19 +567,19 @@ export default function PublishingPanel({ packId }: { packId: string }) {
                                             justifyContent: 'space-between',
                                             alignItems: 'center',
                                             padding: '0.5rem',
-                                            border: '1px solid #d1d5db',
-                                            borderRadius: '4px',
+                                            border: '1px solid rgb(51, 65, 85)',
+                                            borderRadius: '6px',
                                             marginBottom: '0.5rem',
-                                            background: job.status === 'published' ? '#f0fdf4' : 
-                                                      job.status === 'failed' ? '#fef2f2' : '#fffbeb'
+                                            background: job.status === 'published' ? 'rgba(16, 185, 129, 0.1)' : 
+                                                      job.status === 'failed' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)'
                                         }}>
-                                            <span>
+                                            <span style={{ color: '#e2e8f0' }}>
                                                 {PLATFORMS.find(p => p.id === job.platform)?.icon} {job.platform}
                                             </span>
                                             <div style={{ textAlign: 'right' }}>
                                                 <div style={{
-                                                    color: job.status === 'published' ? '#059669' :
-                                                          job.status === 'failed' ? '#dc2626' : '#d97706',
+                                                    color: job.status === 'published' ? '#10b981' :
+                                                          job.status === 'failed' ? '#ef4444' : '#f59e0b',
                                                     fontWeight: 'bold',
                                                     fontSize: '0.9rem'
                                                 }}>
@@ -584,7 +591,7 @@ export default function PublishingPanel({ packId }: { packId: string }) {
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         style={{
-                                                            color: '#2563eb',
+                                                            color: '#818cf8',
                                                             fontSize: '0.8rem',
                                                             textDecoration: 'none'
                                                         }}
@@ -594,7 +601,7 @@ export default function PublishingPanel({ packId }: { packId: string }) {
                                                 )}
                                                 {job.error_message && (
                                                     <div style={{
-                                                        color: '#dc2626',
+                                                        color: '#ef4444',
                                                         fontSize: '0.8rem',
                                                         marginTop: '0.25rem'
                                                     }}>
@@ -619,21 +626,22 @@ export default function PublishingPanel({ packId }: { packId: string }) {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    background: 'rgba(0,0,0,0.5)',
+                    background: 'rgba(0,0,0,0.7)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     zIndex: 1000
                 }}>
                     <div style={{
-                        background: 'white',
-                        borderRadius: '8px',
+                        background: 'rgb(30, 41, 59)',
+                        borderRadius: '12px',
                         padding: '2rem',
                         maxWidth: '400px',
-                        textAlign: 'center'
+                        textAlign: 'center',
+                        border: '1px solid rgb(51, 65, 85)'
                     }}>
-                        <h3 style={{ margin: '0 0 1rem 0' }}>Connecting to {showOAuthModal}</h3>
-                        <p style={{ margin: '0 0 1.5rem 0', color: '#6b7280' }}>
+                        <h3 style={{ margin: '0 0 1rem 0', color: '#f1f5f9' }}>Connecting to {showOAuthModal}</h3>
+                        <p style={{ margin: '0 0 1.5rem 0', color: '#94a3b8' }}>
                             Please complete the authentication in the popup window.
                         </p>
                         <Button
