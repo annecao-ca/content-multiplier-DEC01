@@ -357,36 +357,22 @@ export default function PublishingPanel({ packId }: { packId: string }) {
 
             {/* Twitter Bot Content Generation */}
             {showTwitterBot && selectedPlatforms.includes('twitter') && (
-                <div style={{ 
-                    marginBottom: '2rem',
-                    background: 'rgba(14, 165, 233, 0.1)',
-                    border: '1px solid rgba(14, 165, 233, 0.3)',
-                    borderRadius: '12px',
-                    padding: '1.5rem'
-                }}>
-                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#7dd3fc' }}>
+                <div className="mb-8 bg-blue-500/10 border border-blue-500/30 rounded-2xl p-6 ring-1 ring-blue-500/20">
+                    <h3 className="m-0 mb-4 text-lg font-medium text-blue-400">
                         🤖 AI-Generated Twitter Content
                     </h3>
-                    <p style={{ margin: '0 0 1rem 0', fontSize: '0.9rem', color: '#94a3b8' }}>
+                    <p className="m-0 mb-4 text-sm text-[hsl(var(--muted-foreground))]">
                         Use the Twitter bot's AI templates to generate optimized content for your post.
                     </p>
 
-                    <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: '#7dd3fc' }}>
+                    <div className="mb-4">
+                        <label className="block mb-2 text-sm font-semibold text-blue-400">
                             Content Template
                         </label>
                         <select
                             value={selectedTemplate}
                             onChange={(e) => setSelectedTemplate(e.target.value)}
-                            style={{
-                                width: '100%',
-                                padding: '0.5rem',
-                                border: '1px solid rgba(14, 165, 233, 0.3)',
-                                borderRadius: '8px',
-                                fontSize: '0.9rem',
-                                background: 'rgb(30, 41, 59)',
-                                color: '#e2e8f0'
-                            }}
+                            className="w-full p-2 border border-blue-500/30 rounded-lg text-sm bg-[hsl(var(--input))] text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
                         >
                             <option value="">Select a template...</option>
                             {twitterTemplates.map(template => (
@@ -397,54 +383,28 @@ export default function PublishingPanel({ packId }: { packId: string }) {
                         </select>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                    <div className="flex gap-4 mb-4">
                         <Button
                             onClick={generateTwitterContent}
                             disabled={generateLoading || !selectedTemplate}
-                            style={{
-                                background: '#0ea5e9',
-                                color: 'white',
-                                padding: '0.5rem 1rem'
-                            }}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200 disabled:opacity-50"
                         >
                             {generateLoading ? '🔄 Generating...' : '✨ Generate Content'}
                         </Button>
                     </div>
 
                     {generatedContent && (
-                        <div style={{
-                            background: 'rgb(30, 41, 59)',
-                            border: '1px solid rgba(14, 165, 233, 0.3)',
-                            borderRadius: '8px',
-                            padding: '1rem',
-                            marginTop: '1rem'
-                        }}>
-                            <h4 style={{ margin: '0 0 0.5rem 0', color: '#7dd3fc' }}>Generated Tweet:</h4>
-                            <p style={{ 
-                                margin: '0 0 1rem 0', 
-                                padding: '0.5rem',
-                                background: 'rgb(15, 23, 42)',
-                                border: '1px solid rgb(51, 65, 85)',
-                                borderRadius: '6px',
-                                fontStyle: 'italic',
-                                color: '#e2e8f0'
-                            }}>
+                        <div className="bg-[hsl(var(--muted))] border border-blue-500/30 rounded-lg p-4 mt-4">
+                            <h4 className="m-0 mb-2 text-base font-semibold text-blue-400">Generated Tweet:</h4>
+                            <p className="m-0 mb-4 p-2 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg italic text-[hsl(var(--foreground))]">
                                 "{generatedContent.text}"
                             </p>
                             
                             {generatedContent.thread && generatedContent.thread.length > 0 && (
                                 <div>
-                                    <h5 style={{ margin: '0 0 0.5rem 0', color: '#7dd3fc' }}>Thread:</h5>
+                                    <h5 className="m-0 mb-2 text-sm font-semibold text-blue-400">Thread:</h5>
                                     {generatedContent.thread.map((tweet: string, index: number) => (
-                                        <p key={index} style={{
-                                            margin: '0 0 0.5rem 0',
-                                            padding: '0.5rem',
-                                            background: 'rgb(15, 23, 42)',
-                                            border: '1px solid rgb(51, 65, 85)',
-                                            borderRadius: '6px',
-                                            fontSize: '0.9rem',
-                                            color: '#e2e8f0'
-                                        }}>
+                                        <p key={index} className="m-0 mb-2 p-2 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))]">
                                             {index + 2}. "{tweet}"
                                         </p>
                                     ))}
@@ -452,12 +412,12 @@ export default function PublishingPanel({ packId }: { packId: string }) {
                             )}
 
                             {generatedContent.hashtags && generatedContent.hashtags.length > 0 && (
-                                <div style={{ marginTop: '0.5rem', color: '#94a3b8' }}>
-                                    <strong style={{ color: '#7dd3fc' }}>Suggested hashtags:</strong> {generatedContent.hashtags.join(' ')}
+                                <div className="mt-2 text-[hsl(var(--muted-foreground))]">
+                                    <strong className="text-blue-400">Suggested hashtags:</strong> {generatedContent.hashtags.join(' ')}
                                 </div>
                             )}
 
-                            <div style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#10b981' }}>
+                            <div className="mt-4 text-xs text-emerald-500">
                                 ✅ This content will be used when publishing to Twitter
                             </div>
                         </div>
@@ -479,15 +439,11 @@ export default function PublishingPanel({ packId }: { packId: string }) {
             </div>
 
             {/* Publish Button */}
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+            <div className="flex gap-4 mb-8">
                 <Button
                     onClick={publishContent}
                     disabled={loading || selectedPlatforms.length === 0}
-                    style={{
-                        background: '#059669',
-                        color: 'white',
-                        padding: '0.75rem 1.5rem'
-                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-200 disabled:opacity-50"
                 >
                     {loading ? 'Publishing...' : (scheduledAt ? 'Schedule Publish' : 'Publish Now')}
                 </Button>
