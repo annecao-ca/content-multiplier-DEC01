@@ -29,7 +29,7 @@ function cn(...classes: Array<string | false | null | undefined>) {
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-white text-slate-900 dark:bg-[#020617] dark:text-[#e5e7eb] transition-colors duration-200">
+    <div className="min-h-screen bg-white text-slate-900 dark:bg-[hsl(var(--background))] dark:text-[hsl(var(--foreground))] transition-colors duration-300">
       <AppNavbar />
       <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-10 md:px-8 md:pt-14">
         {children}
@@ -58,7 +58,7 @@ export function AppNavbar() {
   ]
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/80 backdrop-blur-md transition-colors dark:border-[rgba(148,163,184,0.18)] dark:bg-[#020617]/80">
+    <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/95 backdrop-blur-lg transition-all duration-300 dark:border-[hsl(var(--border))] dark:bg-[hsl(var(--background))]/95 shadow-sm dark:shadow-slate-900/20">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 md:h-20 md:px-8">
         {/* Left: logo + brand */}
         <div className="flex items-center gap-3">
@@ -67,10 +67,10 @@ export function AppNavbar() {
               <span className="text-sm font-bold">CM</span>
             </div>
             <div className="hidden flex-col sm:flex">
-              <span className="text-[15px] font-semibold tracking-tight dark:text-[#e5e7eb]">
+              <span className="text-[15px] font-semibold tracking-tight text-[hsl(var(--foreground))]">
                 Content Multiplier
               </span>
-              <span className="text-xs text-slate-500 dark:text-[#9ca3af]">
+              <span className="text-xs text-[hsl(var(--muted-foreground))]">
                 AI-powered content studio
               </span>
             </div>
@@ -86,10 +86,10 @@ export function AppNavbar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
+                  "rounded-full px-3 py-1.5 text-sm font-medium transition-all duration-200",
                   isActive
-                    ? "bg-slate-900 text-white dark:bg-white dark:text-[#020617]"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-[#9ca3af] dark:hover:bg-[#0b1120] dark:hover:text-[#e5e7eb]"
+                    ? "bg-[hsl(var(--primary))] text-white shadow-md shadow-[hsl(var(--primary))]/25"
+                    : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))]"
                 )}
               >
                 {item.label}
@@ -101,7 +101,7 @@ export function AppNavbar() {
         {/* Right: actions */}
         <div className="flex items-center gap-2 text-xs">
           {/* Language toggle */}
-          <div className="hidden items-center gap-1 rounded-full bg-slate-100 px-1 py-1 text-[11px] font-medium text-slate-600 dark:bg-[#0b1120] dark:text-[#9ca3af] md:flex">
+          <div className="hidden items-center gap-1 rounded-full bg-[hsl(var(--muted))] px-1 py-1 text-[11px] font-medium md:flex">
             <button
               type="button"
               onClick={(e) => {
@@ -110,10 +110,10 @@ export function AppNavbar() {
                 setLanguage("en")
               }}
               className={cn(
-                "rounded-full px-2 py-0.5 transition-colors cursor-pointer",
+                "rounded-full px-2 py-0.5 transition-all duration-200 cursor-pointer",
                 language === "en"
-                  ? "bg-white text-slate-900 shadow-sm dark:bg-[#0b1120] dark:text-[#e5e7eb]"
-                  : "text-slate-500 hover:text-slate-700 dark:text-[#9ca3af] dark:hover:text-[#e5e7eb]"
+                  ? "bg-[hsl(var(--card))] text-[hsl(var(--foreground))] shadow-sm"
+                  : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
               )}
             >
               EN
@@ -126,10 +126,10 @@ export function AppNavbar() {
                 setLanguage("vn")
               }}
               className={cn(
-                "rounded-full px-2 py-0.5 transition-colors cursor-pointer",
+                "rounded-full px-2 py-0.5 transition-all duration-200 cursor-pointer",
                 language === "vn"
-                  ? "bg-white text-slate-900 shadow-sm dark:bg-[#0b1120] dark:text-[#e5e7eb]"
-                  : "text-slate-500 hover:text-slate-700 dark:text-[#9ca3af] dark:hover:text-[#e5e7eb]"
+                  ? "bg-[hsl(var(--card))] text-[hsl(var(--foreground))] shadow-sm"
+                  : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
               )}
             >
               VN
@@ -153,7 +153,7 @@ export function AppNavbar() {
               e.stopPropagation()
               toggleTheme()
             }}
-            className="hidden rounded-full border border-slate-200 px-3 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50 dark:border-[rgba(148,163,184,0.18)] dark:text-[#9ca3af] dark:hover:bg-[#0b1120] md:inline-flex cursor-pointer items-center justify-center gap-1.5"
+            className="hidden rounded-full border border-[hsl(var(--border))] px-3 py-1.5 text-[11px] font-medium text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-all duration-200 md:inline-flex cursor-pointer items-center justify-center gap-1.5"
             aria-label="Toggle theme"
           >
             <span>{theme === "dark" ? "☀️" : "🌙"}</span>
@@ -207,15 +207,15 @@ export function PageHeader({
     <div className="mb-8 flex flex-col gap-4 md:mb-10 md:flex-row md:items-end md:justify-between">
       <div>
         {eyebrow && (
-          <div className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-500 dark:text-[#9ca3af]">
+          <div className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-[hsl(var(--muted-foreground))]">
             {eyebrow}
           </div>
         )}
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-[#e5e7eb] md:text-4xl">
+        <h1 className="text-3xl font-semibold tracking-tight text-[hsl(var(--foreground))] md:text-4xl">
           {title}
         </h1>
         {description && (
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-[#9ca3af]">
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">
             {description}
           </p>
         )}
@@ -249,13 +249,13 @@ export function PrimaryButton({
 
   const variants: Record<ButtonVariant, string> = {
     primary:
-      "bg-gradient-to-r from-[#a855f7] to-[#ec4899] text-white hover:from-[#9333ea] hover:to-[#db2777] shadow-lg shadow-[#a855f7]/25 hover:shadow-[#a855f7]/40",
+      "bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--primary-accent))] text-white hover:shadow-lg hover:shadow-[hsl(var(--primary))]/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]",
     secondary:
-      "bg-white text-slate-900 border border-slate-300 hover:bg-slate-50 dark:bg-[#0b1120] dark:text-[#e5e7eb] dark:border-[rgba(148,163,184,0.18)] dark:hover:bg-[#020617]",
+      "bg-[hsl(var(--card))] text-[hsl(var(--foreground))] border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))] hover:border-[hsl(var(--primary))]/30 transition-all duration-200",
     ghost:
-      "bg-transparent text-slate-700 hover:bg-slate-100 border border-transparent dark:text-[#9ca3af] dark:hover:bg-[#0b1120]",
+      "bg-transparent text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] border border-transparent transition-all duration-200",
     danger:
-      "bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-500/25",
+      "bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-500/25 transition-all duration-200 hover:shadow-red-500/40",
   }
 
   const sizes: Record<ButtonSize, string> = {
@@ -291,8 +291,8 @@ export function Card({ children, className, onClick }: CardProps) {
     <div
       onClick={onClick}
       className={cn(
-        "rounded-3xl bg-white p-6 shadow-[0_12px_40px_rgba(15,23,42,0.06)] ring-1 ring-slate-200/70 dark:bg-[#020617] dark:ring-[rgba(148,163,184,0.12)]",
-        onClick && "cursor-pointer transition-transform hover:scale-[1.01]",
+        "rounded-3xl bg-[hsl(var(--card))] p-6 shadow-[0_12px_40px_rgba(15,23,42,0.08)] ring-1 ring-[hsl(var(--border))] transition-all duration-300 dark:shadow-[0_12px_40px_rgba(0,0,0,0.3)]",
+        onClick && "cursor-pointer transition-all hover:scale-[1.01] hover:shadow-[0_16px_48px_rgba(15,23,42,0.12)] dark:hover:shadow-[0_16px_48px_rgba(0,0,0,0.4)]",
         className
       )}
     >
@@ -309,8 +309,8 @@ export function SubCard({ children, className, onClick }: CardProps) {
     <div
       onClick={onClick}
       className={cn(
-        "rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/70 dark:bg-[#020617] dark:ring-[rgba(148,163,184,0.12)]",
-        onClick && "cursor-pointer transition-all hover:shadow-md",
+        "rounded-2xl bg-[hsl(var(--card))] p-5 shadow-sm ring-1 ring-[hsl(var(--border))] transition-all duration-300",
+        onClick && "cursor-pointer transition-all hover:shadow-md hover:ring-[hsl(var(--primary))]/20",
         className
       )}
     >
@@ -340,7 +340,7 @@ export function CardTitle({
   return (
     <h2
       className={cn(
-        "text-base font-semibold tracking-tight text-slate-900 dark:text-[#e5e7eb] md:text-lg",
+        "text-base font-semibold tracking-tight text-[hsl(var(--card-foreground))] md:text-lg",
         className
       )}
     >
@@ -356,7 +356,7 @@ export function CardDescription({
   return (
     <p
       className={cn(
-        "text-xs leading-relaxed text-slate-500 dark:text-[#9ca3af] md:text-sm",
+        "text-xs leading-relaxed text-[hsl(var(--muted-foreground))] md:text-sm",
         className
       )}
     >
@@ -375,7 +375,7 @@ export function MutedText({
   return (
     <p
       className={cn(
-        "text-xs leading-relaxed text-slate-500 dark:text-[#9ca3af] md:text-sm",
+        "text-xs leading-relaxed text-[hsl(var(--muted-foreground))] md:text-sm",
         className
       )}
     >
@@ -396,11 +396,11 @@ export function Badge({
   variant = "default",
 }: BadgeProps) {
   const variants = {
-    default: "bg-slate-100 text-slate-700 dark:bg-[#0b1120] dark:text-[#9ca3af]",
-    success: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-[#22c55e]",
-    warning: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-[#facc15]",
-    danger: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-    info: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-[#38bdf8]",
+    default: "bg-[hsl(var(--muted))] text-[hsl(var(--foreground))]",
+    success: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 ring-1 ring-emerald-500/20",
+    warning: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 ring-1 ring-amber-500/20",
+    danger: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 ring-1 ring-red-500/20",
+    info: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 ring-1 ring-blue-500/20",
   }
 
   return (
@@ -444,22 +444,22 @@ export function StatCard({
       : "text-slate-500 dark:text-[#9ca3af]"
 
   return (
-    <SubCard className="flex flex-col gap-2 transition-transform hover:-translate-y-[1px] hover:bg-slate-50 hover:shadow-md dark:hover:bg-[#0b1120]/90">
+    <SubCard className="flex flex-col gap-2 transition-all duration-200 hover:-translate-y-[1px] hover:shadow-md">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500 dark:text-[#9ca3af]">
+        <span className="text-xs font-medium uppercase tracking-[0.16em] text-[hsl(var(--muted-foreground))]">
           {label}
         </span>
         {icon && (
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-[#0b1120] dark:text-[#9ca3af]">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]">
             {icon}
           </div>
         )}
       </div>
-      <span className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-[#e5e7eb]">
+      <span className="text-2xl font-semibold tracking-tight text-[hsl(var(--foreground))]">
         {value}
       </span>
       {hint && (
-        <span className="text-xs text-slate-500 dark:text-[#9ca3af]">
+        <span className="text-xs text-[hsl(var(--muted-foreground))]">
           {hint}
         </span>
       )}
@@ -489,14 +489,14 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <SubCard className="flex flex-col items-center gap-4 py-12 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700">
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[hsl(var(--muted))] to-[hsl(var(--secondary))]">
         {icon || <span className="text-2xl">✨</span>}
       </div>
       <div>
-        <h3 className="text-base font-semibold text-slate-900 dark:text-[#e5e7eb] md:text-lg">
+        <h3 className="text-base font-semibold text-[hsl(var(--foreground))] md:text-lg">
           {title}
         </h3>
-        <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500 dark:text-[#9ca3af]">
+        <p className="mt-2 max-w-md text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">
           {description}
         </p>
       </div>
@@ -532,18 +532,18 @@ export function Hero({
   secondaryAction,
 }: HeroProps) {
   return (
-    <Card className="mb-10 bg-gradient-to-br from-white via-indigo-50/50 to-violet-50 dark:from-[#020617] dark:via-[#0b1120] dark:to-[#0b1120]">
+    <Card className="mb-10 bg-gradient-to-br from-[hsl(var(--card))] via-[hsl(var(--accent))]/30 to-[hsl(var(--accent))]/20">
       <div className="mx-auto max-w-3xl py-8 text-center">
         {kicker && (
-          <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-indigo-600 dark:text-[#a855f7]">
+          <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-[hsl(var(--primary))]">
             {kicker}
           </p>
         )}
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white md:text-4xl lg:text-5xl">
+        <h1 className="text-3xl font-semibold tracking-tight text-[hsl(var(--foreground))] md:text-4xl lg:text-5xl">
           {heading}
         </h1>
         {subheading && (
-          <p className="mt-4 text-sm leading-relaxed text-slate-600 dark:text-[#9ca3af]">
+          <p className="mt-4 text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">
             {subheading}
           </p>
         )}
@@ -570,13 +570,13 @@ export function Input({ label, error, className, ...props }: InputProps) {
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label className="text-xs font-medium text-slate-700 dark:text-[#e5e7eb]">
+        <label className="text-xs font-medium text-[hsl(var(--foreground))]">
           {label}
         </label>
       )}
       <input
         className={cn(
-          "rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-[rgba(148,163,184,0.18)] dark:bg-[#0b1120] dark:text-[#e5e7eb] dark:placeholder:text-[#9ca3af] dark:focus:border-[#a855f7]",
+          "rounded-xl border border-[hsl(var(--input-border))] bg-[hsl(var(--input))] px-4 py-2.5 text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] transition-all duration-200 focus:border-[hsl(var(--primary))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]/20",
           error && "border-red-500 focus:border-red-500 focus:ring-red-500/20",
           className
         )}
@@ -598,13 +598,13 @@ export function Textarea({ label, error, className, ...props }: TextareaProps) {
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label className="text-xs font-medium text-slate-700 dark:text-[#e5e7eb]">
+        <label className="text-xs font-medium text-[hsl(var(--foreground))]">
           {label}
         </label>
       )}
       <textarea
         className={cn(
-          "rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-[rgba(148,163,184,0.18)] dark:bg-[#0b1120] dark:text-[#e5e7eb] dark:placeholder:text-[#9ca3af] dark:focus:border-[#a855f7]",
+          "rounded-xl border border-[hsl(var(--input-border))] bg-[hsl(var(--input))] px-4 py-2.5 text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] transition-all duration-200 focus:border-[hsl(var(--primary))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]/20",
           error && "border-red-500 focus:border-red-500 focus:ring-red-500/20",
           className
         )}
@@ -627,13 +627,13 @@ export function Select({ label, error, options, className, ...props }: SelectPro
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label className="text-xs font-medium text-slate-700 dark:text-[#e5e7eb]">
+        <label className="text-xs font-medium text-[hsl(var(--foreground))]">
           {label}
         </label>
       )}
       <select
         className={cn(
-          "rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-[rgba(148,163,184,0.18)] dark:bg-[#0b1120] dark:text-[#e5e7eb] dark:focus:border-[#a855f7]",
+          "rounded-xl border border-[hsl(var(--input-border))] bg-[hsl(var(--input))] px-4 py-2.5 text-sm text-[hsl(var(--foreground))] transition-all duration-200 focus:border-[hsl(var(--primary))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]/20",
           error && "border-red-500 focus:border-red-500 focus:ring-red-500/20",
           className
         )}
@@ -662,7 +662,7 @@ interface TableProps {
 
 export function Table({ children, className }: TableProps) {
   return (
-    <div className="overflow-x-auto rounded-2xl ring-1 ring-slate-200/70 dark:ring-slate-700">
+    <div className="overflow-x-auto rounded-2xl ring-1 ring-[hsl(var(--border))]">
       <table className={cn("w-full", className)}>
         {children}
       </table>
@@ -672,7 +672,7 @@ export function Table({ children, className }: TableProps) {
 
 export function TableHeader({ children, className }: TableProps) {
   return (
-    <thead className={cn("bg-slate-50 dark:bg-[#0b1120]/50", className)}>
+    <thead className={cn("bg-[hsl(var(--muted))] dark:bg-[hsl(var(--secondary))]", className)}>
       {children}
     </thead>
   )
@@ -680,7 +680,7 @@ export function TableHeader({ children, className }: TableProps) {
 
 export function TableBody({ children, className }: TableProps) {
   return (
-    <tbody className={cn("divide-y divide-slate-200 dark:divide-slate-700", className)}>
+    <tbody className={cn("divide-y divide-[hsl(var(--border))]", className)}>
       {children}
     </tbody>
   )
@@ -688,7 +688,7 @@ export function TableBody({ children, className }: TableProps) {
 
 export function TableRow({ children, className }: TableProps) {
   return (
-    <tr className={cn("bg-white dark:bg-[#020617]", className)}>
+    <tr className={cn("bg-[hsl(var(--card))] hover:bg-[hsl(var(--muted))] transition-colors duration-150", className)}>
       {children}
     </tr>
   )
@@ -696,7 +696,7 @@ export function TableRow({ children, className }: TableProps) {
 
 export function TableHead({ children, className }: TableProps) {
   return (
-    <th className={cn("px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-[#9ca3af]", className)}>
+    <th className={cn("px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]", className)}>
       {children}
     </th>
   )
@@ -704,7 +704,7 @@ export function TableHead({ children, className }: TableProps) {
 
 export function TableCell({ children, className }: TableProps) {
   return (
-    <td className={cn("px-4 py-3 text-sm text-slate-700 dark:text-[#e5e7eb]", className)}>
+    <td className={cn("px-4 py-3 text-sm text-[hsl(var(--foreground))]", className)}>
       {children}
     </td>
   )
@@ -722,16 +722,16 @@ interface TabsProps {
 
 export function Tabs({ tabs, activeTab, onTabChange, className }: TabsProps) {
   return (
-    <div className={cn("flex gap-1 rounded-full bg-slate-100 p-1 dark:bg-[#0b1120]", className)}>
+    <div className={cn("flex gap-1 rounded-full bg-[hsl(var(--muted))] p-1", className)}>
       {tabs.map((tab) => (
         <button
           key={tab.id}
           onClick={() => onTabChange(tab.id)}
           className={cn(
-            "flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors",
+            "flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200",
             activeTab === tab.id
-              ? "bg-white text-slate-900 shadow-sm dark:bg-[#020617] dark:text-[#e5e7eb]"
-              : "text-slate-600 hover:text-slate-900 dark:text-[#9ca3af] dark:hover:text-[#e5e7eb]"
+              ? "bg-[hsl(var(--card))] text-[hsl(var(--foreground))] shadow-sm ring-1 ring-[hsl(var(--border))]"
+              : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--card))]"
           )}
         >
           {tab.label}
