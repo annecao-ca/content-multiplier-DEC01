@@ -171,9 +171,112 @@ export function MailChimpConfigForm({
             </TabsList>
 
             {/* Basic Tab */}
-            <TabsContent value="basic" className="mt-6 space-y-4">
-              <div className="text-center py-12">
-                <p className="text-slate-400">Nội dung cơ bản sẽ được thêm sau</p>
+            <TabsContent value="basic" className="mt-6 space-y-6">
+              <div className="space-y-6">
+                {/* Basic Info Section */}
+                <div className="flex items-start gap-3 p-4 bg-slate-800/30 border border-slate-700 rounded-lg">
+                  <svg className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <h3 className="text-sm font-semibold text-white mb-1">Thông tin cơ bản</h3>
+                    <p className="text-xs text-slate-400">
+                      Cấu hình thông tin gửi email và đối tượng nhận
+                    </p>
+                  </div>
+                </div>
+
+                {/* List ID */}
+                <div className="space-y-2">
+                  <Label className="text-white">
+                    List ID (Audience ID) <span className="text-red-500">*</span>
+                  </Label>
+                  <input
+                    type="text"
+                    value={config.listId}
+                    onChange={(e) => handleChange('listId', e.target.value)}
+                    placeholder="bf4770006e"
+                    className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 ${
+                      errors.listId ? 'border-red-500' : ''
+                    }`}
+                  />
+                  {errors.listId && <p className="text-xs text-red-500">{errors.listId}</p>}
+                  <p className="text-xs text-slate-400">
+                    Tìm trong MailChimp: Audience → Settings → Audience ID
+                  </p>
+                </div>
+
+                {/* From Name */}
+                <div className="space-y-2">
+                  <Label className="text-white">
+                    Tên người gửi (From Name) <span className="text-red-500">*</span>
+                  </Label>
+                  <input
+                    type="text"
+                    value={config.fromName}
+                    onChange={(e) => handleChange('fromName', e.target.value)}
+                    placeholder="Hoang Dung AI"
+                    className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 ${
+                      errors.fromName ? 'border-red-500' : ''
+                    }`}
+                  />
+                  {errors.fromName && <p className="text-xs text-red-500">{errors.fromName}</p>}
+                  <p className="text-xs text-slate-400">
+                    Tên hiển thị khi người nhận xem email
+                  </p>
+                </div>
+
+                {/* From Email */}
+                <div className="space-y-2">
+                  <Label className="text-white">
+                    Email gửi đi (From Email) <span className="text-red-500">*</span>
+                  </Label>
+                  <input
+                    type="email"
+                    value={config.fromEmail}
+                    onChange={(e) => handleChange('fromEmail', e.target.value)}
+                    placeholder="your-email@domain.com"
+                    className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 ${
+                      errors.fromEmail ? 'border-red-500' : ''
+                    }`}
+                  />
+                  {errors.fromEmail && <p className="text-xs text-red-500">{errors.fromEmail}</p>}
+                  <p className="text-xs text-slate-400">
+                    Email này phải được xác minh trong MailChimp
+                  </p>
+                </div>
+
+                {/* Reply To Email */}
+                <div className="space-y-2">
+                  <Label className="text-white">
+                    Email phản hồi (Reply To) <span className="text-red-500">*</span>
+                  </Label>
+                  <input
+                    type="email"
+                    value={config.replyToEmail}
+                    onChange={(e) => handleChange('replyToEmail', e.target.value)}
+                    placeholder="reply@domain.com"
+                    className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 ${
+                      errors.replyToEmail ? 'border-red-500' : ''
+                    }`}
+                  />
+                  {errors.replyToEmail && <p className="text-xs text-red-500">{errors.replyToEmail}</p>}
+                  <p className="text-xs text-slate-400">
+                    Email nhận phản hồi từ người đọc
+                  </p>
+                </div>
+
+                {/* Help Section */}
+                <div className="mt-6 p-4 bg-blue-900/20 border border-blue-800/50 rounded-lg">
+                  <h4 className="text-sm font-semibold text-blue-400 mb-2">💡 Hướng dẫn lấy List ID</h4>
+                  <ol className="text-xs text-slate-400 space-y-1 list-decimal list-inside">
+                    <li>Đăng nhập vào MailChimp</li>
+                    <li>Vào mục <strong className="text-white">Audience</strong></li>
+                    <li>Click <strong className="text-white">All contacts</strong></li>
+                    <li>Click <strong className="text-white">Settings</strong> → <strong className="text-white">Audience name and defaults</strong></li>
+                    <li>Scroll xuống tìm <strong className="text-white">Audience ID</strong></li>
+                  </ol>
+                </div>
               </div>
             </TabsContent>
 
