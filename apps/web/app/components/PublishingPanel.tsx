@@ -273,42 +273,26 @@ export default function PublishingPanel({ packId }: { packId: string }) {
     const availablePlatforms = PLATFORMS.filter(p => authenticatedPlatforms.includes(p.id))
 
     return (
-        <div style={{
-            background: 'rgb(15, 23, 42)',
-            border: '1px solid rgb(51, 65, 85)',
-            borderRadius: '12px',
-            padding: '1.5rem',
-            marginTop: '2rem'
-        }}>
-            <h2 style={{ margin: '0 0 1rem 0', color: '#f1f5f9' }}>Publishing</h2>
+        <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-2xl p-6 mt-8 shadow-sm">
+            <h2 className="m-0 mb-4 text-xl font-semibold text-[hsl(var(--foreground))]">Publishing</h2>
 
             {/* Platform Authentication */}
-            <div style={{ marginBottom: '2rem' }}>
-                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#e2e8f0' }}>
+            <div className="mb-8">
+                <h3 className="m-0 mb-4 text-lg font-medium text-[hsl(var(--foreground))]">
                     Connect Platforms
                 </h3>
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                    gap: '0.5rem'
-                }}>
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
                     {PLATFORMS.map(platform => {
                         const isAuthenticated = authenticatedPlatforms.includes(platform.id)
                         return (
-                            <div key={platform.id} style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                padding: '0.5rem',
-                                border: '1px solid rgb(51, 65, 85)',
-                                borderRadius: '8px',
-                                background: isAuthenticated ? 'rgba(16, 185, 129, 0.1)' : 'rgb(30, 41, 59)'
-                            }}>
-                                <span style={{ fontSize: '0.9rem', color: '#e2e8f0' }}>
+                            <div key={platform.id} className={`flex items-center justify-between p-2 border border-[hsl(var(--border))] rounded-lg transition-all duration-200 ${
+                                isAuthenticated ? 'bg-emerald-500/10 ring-1 ring-emerald-500/20' : 'bg-[hsl(var(--muted))] hover:bg-[hsl(var(--secondary))]'
+                            }`}>
+                                <span className="text-sm text-[hsl(var(--foreground))]">
                                     {platform.icon} {platform.name}
                                 </span>
                                 {isAuthenticated ? (
-                                    <span style={{ color: '#10b981', fontSize: '0.8rem' }}>✓</span>
+                                    <span className="text-emerald-500 text-xs">✓</span>
                                 ) : (
                                     <Button
                                         onClick={() => authenticatePlatform(platform.id)}
@@ -330,26 +314,17 @@ export default function PublishingPanel({ packId }: { packId: string }) {
 
             {/* Platform Selection */}
             {availablePlatforms.length > 0 && (
-                <div style={{ marginBottom: '2rem' }}>
-                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#e2e8f0' }}>
+                <div className="mb-8">
+                    <h3 className="m-0 mb-4 text-lg font-medium text-[hsl(var(--foreground))]">
                         Select Platforms to Publish
                     </h3>
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-                        gap: '0.5rem'
-                    }}>
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
                         {availablePlatforms.map(platform => (
-                            <label key={platform.id} style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                padding: '0.5rem',
-                                border: '1px solid rgb(51, 65, 85)',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                background: selectedPlatforms.includes(platform.id) ? 'rgba(99, 102, 241, 0.2)' : 'rgb(30, 41, 59)',
-                                color: '#e2e8f0'
-                            }}>
+                            <label key={platform.id} className={`flex items-center p-2 border border-[hsl(var(--border))] rounded-lg cursor-pointer transition-all duration-200 ${
+                                selectedPlatforms.includes(platform.id) 
+                                    ? 'bg-[hsl(var(--primary))]/20 ring-1 ring-[hsl(var(--primary))]/30' 
+                                    : 'bg-[hsl(var(--muted))] hover:bg-[hsl(var(--secondary))]'
+                            }`}>
                                 <input
                                     type="checkbox"
                                     checked={selectedPlatforms.includes(platform.id)}
@@ -491,22 +466,15 @@ export default function PublishingPanel({ packId }: { packId: string }) {
             )}
 
             {/* Scheduling */}
-            <div style={{ marginBottom: '2rem' }}>
-                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#e2e8f0' }}>
+            <div className="mb-8">
+                <h3 className="m-0 mb-4 text-lg font-medium text-[hsl(var(--foreground))]">
                     Schedule Publishing (Optional)
                 </h3>
                 <input
                     type="datetime-local"
                     value={scheduledAt}
                     onChange={(e) => setScheduledAt(e.target.value)}
-                    style={{
-                        padding: '0.5rem',
-                        border: '1px solid rgb(51, 65, 85)',
-                        borderRadius: '8px',
-                        fontSize: '0.9rem',
-                        background: 'rgb(30, 41, 59)',
-                        color: '#e2e8f0'
-                    }}
+                    className="p-2 border border-[hsl(var(--input-border))] rounded-lg text-sm bg-[hsl(var(--input))] text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]/20 focus:border-[hsl(var(--primary))] transition-all duration-200"
                 />
             </div>
 
@@ -539,50 +507,36 @@ export default function PublishingPanel({ packId }: { packId: string }) {
             {/* Publishing Status */}
             {publishingStatus && (
                 <div>
-                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#e2e8f0' }}>
+                    <h3 className="m-0 mb-4 text-lg font-medium text-[hsl(var(--foreground))]">
                         Publishing Status
                     </h3>
-                    <div style={{
-                        background: 'rgb(30, 41, 59)',
-                        border: '1px solid rgb(51, 65, 85)',
-                        borderRadius: '8px',
-                        padding: '1rem'
-                    }}>
-                        <p style={{ margin: '0 0 0.5rem 0', color: '#e2e8f0' }}>
+                    <div className="bg-[hsl(var(--muted))] border border-[hsl(var(--border))] rounded-lg p-4">
+                        <p className="m-0 mb-2 text-[hsl(var(--foreground))]">
                             <strong>Overall Status:</strong> {publishingStatus.pack_status?.publishing_status || 'Not published'}
                         </p>
                         {publishingStatus.pack_status?.last_published_at && (
-                            <p style={{ margin: '0 0 1rem 0', color: '#94a3b8' }}>
-                                <strong style={{ color: '#e2e8f0' }}>Last Published:</strong> {new Date(publishingStatus.pack_status.last_published_at).toLocaleString()}
+                            <p className="m-0 mb-4 text-[hsl(var(--muted-foreground))]">
+                                <strong className="text-[hsl(var(--foreground))]">Last Published:</strong> {new Date(publishingStatus.pack_status.last_published_at).toLocaleString()}
                             </p>
                         )}
                         
                         {publishingStatus.jobs.length > 0 && (
                             <div>
-                                <strong style={{ color: '#e2e8f0' }}>Platform Status:</strong>
-                                <div style={{ marginTop: '0.5rem' }}>
+                                <strong className="text-[hsl(var(--foreground))]">Platform Status:</strong>
+                                <div className="mt-2 space-y-2">
                                     {publishingStatus.jobs.map((job, index) => (
-                                        <div key={index} style={{
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center',
-                                            padding: '0.5rem',
-                                            border: '1px solid rgb(51, 65, 85)',
-                                            borderRadius: '6px',
-                                            marginBottom: '0.5rem',
-                                            background: job.status === 'published' ? 'rgba(16, 185, 129, 0.1)' : 
-                                                      job.status === 'failed' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)'
-                                        }}>
-                                            <span style={{ color: '#e2e8f0' }}>
+                                        <div key={index} className={`flex justify-between items-center p-2 border border-[hsl(var(--border))] rounded-lg mb-2 transition-all duration-200 ${
+                                            job.status === 'published' ? 'bg-emerald-500/10 ring-1 ring-emerald-500/20' :
+                                            job.status === 'failed' ? 'bg-red-500/10 ring-1 ring-red-500/20' : 'bg-amber-500/10 ring-1 ring-amber-500/20'
+                                        }`}>
+                                            <span className="text-[hsl(var(--foreground))]">
                                                 {PLATFORMS.find(p => p.id === job.platform)?.icon} {job.platform}
                                             </span>
-                                            <div style={{ textAlign: 'right' }}>
-                                                <div style={{
-                                                    color: job.status === 'published' ? '#10b981' :
-                                                          job.status === 'failed' ? '#ef4444' : '#f59e0b',
-                                                    fontWeight: 'bold',
-                                                    fontSize: '0.9rem'
-                                                }}>
+                                            <div className="text-right">
+                                                <div className={`font-bold text-sm ${
+                                                    job.status === 'published' ? 'text-emerald-500' :
+                                                    job.status === 'failed' ? 'text-red-500' : 'text-amber-500'
+                                                }`}>
                                                     {job.status}
                                                 </div>
                                                 {job.external_url && (
@@ -590,21 +544,13 @@ export default function PublishingPanel({ packId }: { packId: string }) {
                                                         href={job.external_url}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        style={{
-                                                            color: '#818cf8',
-                                                            fontSize: '0.8rem',
-                                                            textDecoration: 'none'
-                                                        }}
+                                                        className="text-blue-400 text-xs no-underline hover:text-blue-300 transition-colors"
                                                     >
                                                         View Post →
                                                     </a>
                                                 )}
                                                 {job.error_message && (
-                                                    <div style={{
-                                                        color: '#ef4444',
-                                                        fontSize: '0.8rem',
-                                                        marginTop: '0.25rem'
-                                                    }}>
+                                                    <div className="text-red-400 text-xs mt-1">
                                                         {job.error_message}
                                                     </div>
                                                 )}
