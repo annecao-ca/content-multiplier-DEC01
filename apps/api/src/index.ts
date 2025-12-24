@@ -157,6 +157,36 @@ app.get('/api/migrate/publishing', async (request, reply) => {
             created_at TIMESTAMPTZ DEFAULT now()
         )`)
         
+        // Create webhook_configurations table
+        await q(`CREATE TABLE IF NOT EXISTS webhook_configurations (
+            webhook_id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            url TEXT NOT NULL,
+            secret TEXT NOT NULL,
+            events TEXT[] NOT NULL,
+            headers JSONB,
+            is_active BOOLEAN DEFAULT true,
+            created_at TIMESTAMPTZ DEFAULT now(),
+            updated_at TIMESTAMPTZ DEFAULT now()
+        )`)
+        
+        // Create webhook_deliveries table
+        await q(`CREATE TABLE IF NOT EXISTS webhook_deliveries (
+            delivery_id BIGSERIAL PRIMARY KEY,
+            webhook_id TEXT NOT NULL REFERENCES webhook_configurations(webhook_id) ON DELETE CASCADE,
+            event_type TEXT NOT NULL,
+            payload JSONB NOT NULL,
+            status TEXT NOT NULL,
+            response_code INTEGER,
+            response_body TEXT,
+            attempts INTEGER DEFAULT 0,
+            max_attempts INTEGER DEFAULT 3,
+            next_retry_at TIMESTAMPTZ,
+            delivered_at TIMESTAMPTZ,
+            created_at TIMESTAMPTZ DEFAULT now()
+        )`)
+        
         // Add columns to content_packs if not exist
         try {
             await q(`ALTER TABLE content_packs ADD COLUMN IF NOT EXISTS publishing_status TEXT DEFAULT 'not_published'`)
@@ -174,12 +204,14 @@ app.get('/api/migrate/publishing', async (request, reply) => {
         await q(`CREATE INDEX IF NOT EXISTS idx_pub_creds_platform ON publishing_credentials(platform, is_active)`)
         await q(`CREATE INDEX IF NOT EXISTS idx_pub_queue_status ON publishing_queue(status, scheduled_at)`)
         await q(`CREATE INDEX IF NOT EXISTS idx_oauth_states_expires ON oauth_states(expires_at)`)
+        await q(`CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_webhook ON webhook_deliveries(webhook_id, status)`)
+        await q(`CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_retry ON webhook_deliveries(next_retry_at) WHERE status = 'pending'`)
         
         logger.info('Publishing migration completed successfully!')
         return { 
             ok: true, 
             message: 'Publishing tables created successfully!',
-            tables: ['publishing_credentials', 'oauth_states', 'publishing_queue', 'publishing_results']
+            tables: ['publishing_credentials', 'oauth_states', 'publishing_queue', 'publishing_results', 'webhook_configurations', 'webhook_deliveries']
         }
     } catch (error: any) {
         logger.error('Migration failed', { error: error.message })
