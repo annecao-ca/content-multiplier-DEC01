@@ -448,13 +448,85 @@ const routes: FastifyPluginAsync = async (app) => {
             }).join('\n\n')
             : 'No sources available.';
 
-        const system = language === 'vn'
-            ? 'Bạn là một nhà văn nội dung. Viết một bài báo 1200-1600 từ ở định dạng markdown. Sử dụng cấp độ đọc ≤10. QUAN TRỌNG: Bạn PHẢI trích dẫn nguồn trong nội dung bằng format [1], [2], [3]... tương ứng với các sources trong claims_ledger. Mỗi claim phải có ít nhất một citation.'
-            : 'You are a content writer. Write a 1200-1600 word article in markdown format. Use grade ≤10 reading level. CRITICAL: You MUST cite sources in the content using [1], [2], [3]... format corresponding to sources in claims_ledger. Each claim must have at least one citation.';
+        // Determine language for content generation
+        const lang = (language || 'en').toLowerCase();
+        const isVietnamese = lang === 'vn' || lang === 'vi';
+        const isFrench = lang === 'fr';
+        
+        let system: string;
+        if (isVietnamese) {
+            system = 'Bạn là một nhà văn nội dung chuyên nghiệp. QUAN TRỌNG: Bạn PHẢI viết TOÀN BỘ nội dung bằng TIẾNG VIỆT. Viết một bài báo 1200-1600 từ ở định dạng markdown. Sử dụng cấp độ đọc dễ hiểu. Bạn PHẢI trích dẫn nguồn trong nội dung bằng format [1], [2], [3]... tương ứng với các sources trong claims_ledger.';
+        } else if (isFrench) {
+            system = 'Vous êtes un rédacteur de contenu professionnel. IMPORTANT: Vous DEVEZ écrire TOUT le contenu en FRANÇAIS. Rédigez un article de 1200 à 1600 mots au format markdown. Utilisez un niveau de lecture facile à comprendre. Vous DEVEZ citer les sources dans le contenu en utilisant le format [1], [2], [3]...';
+        } else {
+            system = 'You are a professional content writer. IMPORTANT: You MUST write ALL content in ENGLISH. Write a 1200-1600 word article in markdown format. Use grade ≤10 reading level. You MUST cite sources in the content using [1], [2], [3]... format corresponding to sources in claims_ledger.';
+        }
 
-        const user = language === 'vn'
-            ? `Bản tóm tắt:\nĐiểm chính: ${JSON.stringify(brief.key_points)}\nDàn ý: ${JSON.stringify(brief.outline)}\nTuyên bố: ${JSON.stringify(brief.claims_ledger)}\n\nĐối tượng: ${audience}\n\nNgữ cảnh RAG (đã truy xuất từ knowledge base bằng cosine similarity):\n${ragContextText}\n\nDanh sách nguồn (sử dụng số citation này trong markdown):\n${sourcesListText}\n\nYêu cầu QUAN TRỌNG:\n1. Sử dụng ngữ cảnh RAG để làm phong phú và chính xác nội dung\n2. Trích dẫn nguồn trong markdown với format [1], [2], [3]... tương ứng với danh sách nguồn trên\n3. Mỗi citation [n] phải tương ứng với source có citationNumber = n trong danh sách\n4. Đảm bảo mỗi claim có ít nhất một citation trong nội dung\n5. Đặt citations ngay sau câu hoặc đoạn có liên quan\n6. Viết bài báo ở định dạng JSON: {"draft_markdown":"...nội dung markdown với citations [1], [2]...","claims_ledger":[...cùng tuyên bố từ bản tóm tắt...]}`
-            : `Brief:\nKey Points: ${JSON.stringify(brief.key_points)}\nOutline: ${JSON.stringify(brief.outline)}\nClaims: ${JSON.stringify(brief.claims_ledger)}\n\nAudience: ${audience}\n\nRAG Context (retrieved from knowledge base using cosine similarity):\n${ragContextText}\n\nSources List (use these citation numbers in markdown):\n${sourcesListText}\n\nCRITICAL Requirements:\n1. Use RAG context to enrich and verify content accuracy\n2. Cite sources in markdown using [1], [2], [3]... format matching the sources list above\n3. Each citation [n] must correspond to the source with citationNumber = n in the list\n4. Ensure each claim has at least one citation in the content\n5. Place citations immediately after relevant sentences or paragraphs\n6. Write the article in JSON format: {"draft_markdown":"...markdown content with citations [1], [2]...","claims_ledger":[...same claims from brief...]}`;
+        let user: string;
+        if (isVietnamese) {
+            user = `⚠️ NGÔN NGỮ: Bạn PHẢI viết TOÀN BỘ nội dung bằng TIẾNG VIỆT. Không được dùng tiếng Anh.
+
+Bản tóm tắt:
+Điểm chính: ${JSON.stringify(brief.key_points)}
+Dàn ý: ${JSON.stringify(brief.outline)}
+Tuyên bố: ${JSON.stringify(brief.claims_ledger)}
+
+Đối tượng: ${audience}
+
+Ngữ cảnh RAG (đã truy xuất từ knowledge base):
+${ragContextText}
+
+Danh sách nguồn (sử dụng số citation này trong markdown):
+${sourcesListText}
+
+Yêu cầu QUAN TRỌNG:
+1. ⚠️ VIẾT TOÀN BỘ BẰNG TIẾNG VIỆT - không dùng tiếng Anh
+2. Sử dụng ngữ cảnh RAG để làm phong phú và chính xác nội dung
+3. Trích dẫn nguồn trong markdown với format [1], [2], [3]...
+4. Viết bài báo ở định dạng JSON: {"draft_markdown":"...nội dung markdown TIẾNG VIỆT với citations [1], [2]...","claims_ledger":[...]}`;
+        } else if (isFrench) {
+            user = `⚠️ LANGUE: Vous DEVEZ écrire TOUT le contenu en FRANÇAIS. N'utilisez pas l'anglais.
+
+Résumé:
+Points clés: ${JSON.stringify(brief.key_points)}
+Plan: ${JSON.stringify(brief.outline)}
+Affirmations: ${JSON.stringify(brief.claims_ledger)}
+
+Public cible: ${audience}
+
+Contexte RAG (récupéré de la base de connaissances):
+${ragContextText}
+
+Liste des sources (utilisez ces numéros de citation dans le markdown):
+${sourcesListText}
+
+Exigences IMPORTANTES:
+1. ⚠️ ÉCRIRE TOUT EN FRANÇAIS - pas d'anglais
+2. Utilisez le contexte RAG pour enrichir et vérifier le contenu
+3. Citez les sources dans le markdown avec le format [1], [2], [3]...
+4. Rédigez l'article au format JSON: {"draft_markdown":"...contenu markdown EN FRANÇAIS avec citations [1], [2]...","claims_ledger":[...]}`;
+        } else {
+            user = `⚠️ LANGUAGE: You MUST write ALL content in ENGLISH.
+
+Brief:
+Key Points: ${JSON.stringify(brief.key_points)}
+Outline: ${JSON.stringify(brief.outline)}
+Claims: ${JSON.stringify(brief.claims_ledger)}
+
+Audience: ${audience}
+
+RAG Context (retrieved from knowledge base using cosine similarity):
+${ragContextText}
+
+Sources List (use these citation numbers in markdown):
+${sourcesListText}
+
+CRITICAL Requirements:
+1. Write ALL content in ENGLISH
+2. Use RAG context to enrich and verify content accuracy
+3. Cite sources in markdown using [1], [2], [3]... format matching the sources list above
+4. Write the article in JSON format: {"draft_markdown":"...markdown content with citations [1], [2]...","claims_ledger":[...same claims from brief...]}`;
+        }
 
         let draft;
         try {

@@ -196,24 +196,55 @@ export class ImageService {
 
     /**
      * Extract keywords from content for image search
+     * Supports English, Vietnamese, and French
      */
     private extractKeywords(content: string): string[] {
-        // Remove common stop words and extract meaningful keywords
-        const stopWords = new Set([
+        // Stop words for multiple languages
+        const stopWordsEN = new Set([
             'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
             'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
             'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
             'could', 'should', 'may', 'might', 'must', 'shall', 'can', 'this',
             'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they',
-            'what', 'which', 'who', 'when', 'where', 'why', 'how', 'your', 'their'
+            'what', 'which', 'who', 'when', 'where', 'why', 'how', 'your', 'their',
+            'introduction', 'current', 'landscape', 'overview', 'today', 'understanding'
         ]);
 
-        // Clean and tokenize
+        const stopWordsVI = new Set([
+            'và', 'hoặc', 'nhưng', 'trong', 'trên', 'tại', 'để', 'cho', 'của',
+            'với', 'bởi', 'từ', 'như', 'là', 'đã', 'đang', 'sẽ', 'có', 'được',
+            'này', 'đó', 'những', 'các', 'một', 'tôi', 'bạn', 'anh', 'chị', 'nó',
+            'chúng', 'họ', 'gì', 'nào', 'ai', 'khi', 'nơi', 'tại', 'sao', 'làm',
+            'cách', 'thế', 'giới', 'thiệu', 'overview', 'hiện', 'tại', 'hôm', 'nay',
+            'understanding', 'research', 'reveals', 'implications', 'organizations',
+            'significant', 'approach', 'strategic', 'analysis', 'comprehensive'
+        ]);
+
+        const stopWordsFR = new Set([
+            'le', 'la', 'les', 'un', 'une', 'des', 'et', 'ou', 'mais', 'dans',
+            'sur', 'à', 'pour', 'de', 'avec', 'par', 'comme', 'est', 'sont',
+            'été', 'être', 'avoir', 'fait', 'ce', 'cette', 'ces', 'je', 'tu',
+            'il', 'elle', 'nous', 'vous', 'ils', 'elles', 'qui', 'que', 'quoi'
+        ]);
+
+        const allStopWords = new Set([...stopWordsEN, ...stopWordsVI, ...stopWordsFR]);
+
+        // Try to extract the title/main topic from the content
+        // Look for markdown headers
+        const headerMatch = content.match(/^#\s+(.+?)(?:\n|$)/m);
+        let mainTopic = '';
+        if (headerMatch) {
+            mainTopic = headerMatch[1]
+                .replace(/[#*_\[\]()]/g, '')
+                .trim();
+        }
+
+        // Clean and tokenize - preserve Vietnamese characters
         const words = content
             .toLowerCase()
-            .replace(/[^\w\s]/g, ' ')
+            .replace(/[^\p{L}\p{N}\s]/gu, ' ')  // Use Unicode property for letters
             .split(/\s+/)
-            .filter(word => word.length > 3 && !stopWords.has(word));
+            .filter(word => word.length > 2 && !allStopWords.has(word));
 
         // Count word frequency
         const wordCount = new Map<string, number>();
@@ -221,13 +252,28 @@ export class ImageService {
             wordCount.set(word, (wordCount.get(word) || 0) + 1);
         });
 
-        // Sort by frequency and return top 3-5 keywords
+        // Sort by frequency and return top keywords
         const sortedWords = [...wordCount.entries()]
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 4)
+            .slice(0, 5)
             .map(([word]) => word);
 
-        return sortedWords.length > 0 ? sortedWords : ['business', 'professional'];
+        // If we found a main topic, use it as the primary keyword
+        if (mainTopic && mainTopic.length > 5) {
+            // Extract key nouns from the title
+            const titleWords = mainTopic
+                .toLowerCase()
+                .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+                .split(/\s+/)
+                .filter(word => word.length > 3 && !allStopWords.has(word))
+                .slice(0, 3);
+            
+            if (titleWords.length > 0) {
+                return [...new Set([...titleWords, ...sortedWords.slice(0, 2)])].slice(0, 4);
+            }
+        }
+
+        return sortedWords.length > 0 ? sortedWords.slice(0, 4) : ['professional', 'business'];
     }
 
     /**
