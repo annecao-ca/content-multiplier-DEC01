@@ -97,6 +97,61 @@ app.get('/api/health', async (request, reply) => {
     }
 })
 
+// Migration endpoint - setup RAG tables with embeddings
+app.get('/api/migrate/rag', async (request, reply) => {
+    logger.info('Running RAG tables migration...')
+    try {
+        const { q } = await import('./db.ts')
+        
+        // Create documents table if not exists
+        await q(`CREATE TABLE IF NOT EXISTS documents (
+            doc_id TEXT PRIMARY KEY,
+            title TEXT,
+            url TEXT,
+            raw TEXT,
+            author TEXT,
+            published_date TIMESTAMPTZ,
+            tags TEXT[],
+            description TEXT,
+            created_at TIMESTAMPTZ DEFAULT now(),
+            updated_at TIMESTAMPTZ DEFAULT now()
+        )`)
+        
+        // Create doc_chunks table with vector extension
+        await q(`CREATE EXTENSION IF NOT EXISTS vector`)
+        
+        await q(`CREATE TABLE IF NOT EXISTS doc_chunks (
+            chunk_id TEXT PRIMARY KEY,
+            doc_id TEXT REFERENCES documents(doc_id) ON DELETE CASCADE,
+            content TEXT NOT NULL,
+            embedding vector(1536),
+            chunk_index INTEGER,
+            created_at TIMESTAMPTZ DEFAULT now()
+        )`)
+        
+        // Add embedding column if not exists (for existing tables)
+        await q(`ALTER TABLE doc_chunks ADD COLUMN IF NOT EXISTS embedding vector(1536)`)
+        
+        // Create indexes
+        await q(`CREATE INDEX IF NOT EXISTS idx_doc_chunks_doc_id ON doc_chunks(doc_id)`)
+        await q(`CREATE INDEX IF NOT EXISTS idx_doc_chunks_embedding ON doc_chunks USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)`)
+        
+        logger.info('RAG tables migration completed!')
+        return {
+            ok: true,
+            message: 'RAG tables created/updated with embedding support',
+            tables: ['documents', 'doc_chunks'],
+            extensions: ['vector']
+        }
+    } catch (error: any) {
+        logger.error('RAG migration failed', { error: error.message })
+        return reply.status(500).send({
+            ok: false,
+            error: error.message
+        })
+    }
+})
+
 // Migration endpoint - update documents table with new columns
 app.get('/api/migrate/documents', async (request, reply) => {
     logger.info('Running documents table migration...')
