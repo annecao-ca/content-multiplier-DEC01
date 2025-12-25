@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react'
 import { API_URL } from '../lib/api-config'
 import { useLanguage } from '../contexts/LanguageContext'
 import { 
-    AppShell,
     PageHeader, 
     Card, 
     PrimaryButton,
@@ -224,8 +223,7 @@ export default function RAGPage() {
     }
 
     return (
-        <AppShell>
-            <div className="space-y-10">
+        <div className="space-y-10">
                 <PageHeader
                     title="📚 Knowledge Base (RAG)"
                     description="Quản lý tài liệu nguồn để AI tạo nội dung chất lượng"
@@ -443,7 +441,6 @@ export default function RAGPage() {
                         </div>
                     )}
                 </Card>
-            </div>
-        </AppShell>
+        </div>
     )
 }
