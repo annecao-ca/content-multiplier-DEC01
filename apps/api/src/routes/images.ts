@@ -17,6 +17,7 @@ interface SearchQuery {
 interface SuggestQuery {
     content: string;
     count?: number;
+    language?: string;
 }
 
 interface AttachMediaBody {
@@ -91,22 +92,24 @@ const routes: FastifyPluginAsync = async (app) => {
                 required: ['content'],
                 properties: {
                     content: { type: 'string', minLength: 10 },
-                    count: { type: 'number', minimum: 1, maximum: 20, default: 5 }
+                    count: { type: 'number', minimum: 1, maximum: 20, default: 5 },
+                    language: { type: 'string', default: 'en' }
                 }
             }
         }
     }, async (req, reply) => {
-        const { content, count = 5 } = req.query;
+        const { content, count = 5, language = 'en' } = req.query;
 
         try {
-            const results = await imageService.suggestImagesForContent(content, count);
+            const results = await imageService.suggestImagesForContent(content, count, language);
 
-            logger.info('Image suggestions generated', { contentLength: content.length, count: results.length });
+            logger.info('Image suggestions generated', { contentLength: content.length, count: results.length, language });
 
             return {
                 ok: true,
                 data: results,
-                count: results.length
+                count: results.length,
+                language
             };
         } catch (error: any) {
             logger.error('Image suggestion failed', { error: error.message });

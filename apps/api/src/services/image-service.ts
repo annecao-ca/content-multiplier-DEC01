@@ -183,13 +183,16 @@ export class ImageService {
 
     /**
      * Suggest images for content by extracting keywords
+     * @param content - The content to extract keywords from
+     * @param count - Number of images to return
+     * @param language - Language of content (en, vn, vi, fr)
      */
-    async suggestImagesForContent(content: string, count: number = 5): Promise<ImageResult[]> {
-        // Extract main keywords from content (simple approach)
-        const keywords = this.extractKeywords(content);
+    async suggestImagesForContent(content: string, count: number = 5, language: string = 'en'): Promise<ImageResult[]> {
+        // Extract main keywords from content based on language
+        const keywords = this.extractKeywords(content, language);
         const query = keywords.join(' ');
 
-        logger.debug('Suggesting images for content', { keywords, query });
+        logger.info('Suggesting images for content', { keywords, query, language });
 
         return this.searchImages(query, count);
     }
@@ -197,8 +200,10 @@ export class ImageService {
     /**
      * Extract keywords from content for image search
      * Supports English, Vietnamese, and French
+     * @param content - The content to extract keywords from
+     * @param language - Language hint (en, vn, vi, fr)
      */
-    private extractKeywords(content: string): string[] {
+    private extractKeywords(content: string, language: string = 'en'): string[] {
         // Stop words for multiple languages
         const stopWordsEN = new Set([
             'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',

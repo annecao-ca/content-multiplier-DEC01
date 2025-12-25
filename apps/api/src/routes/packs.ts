@@ -453,6 +453,8 @@ const routes: FastifyPluginAsync = async (app) => {
         const isVietnamese = lang === 'vn' || lang === 'vi';
         const isFrench = lang === 'fr';
         
+        console.log(`[draft] Generating content in language: ${lang}, isVietnamese: ${isVietnamese}, isFrench: ${isFrench}`);
+        
         let system: string;
         if (isVietnamese) {
             system = 'Bạn là một nhà văn nội dung chuyên nghiệp. QUAN TRỌNG: Bạn PHẢI viết TOÀN BỘ nội dung bằng TIẾNG VIỆT. Viết một bài báo 1200-1600 từ ở định dạng markdown. Sử dụng cấp độ đọc dễ hiểu. Bạn PHẢI trích dẫn nguồn trong nội dung bằng format [1], [2], [3]... tương ứng với các sources trong claims_ledger.';
@@ -664,8 +666,8 @@ The path forward requires commitment, resources, and sustained attention, but th
             }
         }
 
-        await q('INSERT INTO content_packs(pack_id, brief_id, draft_markdown, claims_ledger, status) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (pack_id) DO UPDATE SET draft_markdown=$3,claims_ledger=$4,status=$5', [
-            pack_id, brief_id, draft.draft_markdown, JSON.stringify(draft.claims_ledger || []), 'draft'
+        await q('INSERT INTO content_packs(pack_id, brief_id, draft_markdown, claims_ledger, status, language) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (pack_id) DO UPDATE SET draft_markdown=$3,claims_ledger=$4,status=$5,language=$6', [
+            pack_id, brief_id, draft.draft_markdown, JSON.stringify(draft.claims_ledger || []), 'draft', lang
         ]);
 
         await logEvent({
@@ -725,16 +727,29 @@ The path forward requires commitment, resources, and sustained attention, but th
                 claims_ledger: safeParse(rawBrief.claims_ledger)
             };
 
-            // Build prompt
+            // Build prompt with language support
             sendSSE('status', { message: 'Generating content with AI...' });
             
-            const system = language === 'vn'
-                ? 'Bạn là một nhà văn nội dung chuyên nghiệp. Viết bài viết từ 1200-1600 từ ở định dạng markdown. Sử dụng văn phong dễ đọc. Bao gồm tất cả các tuyên bố từ brief với nguồn trích dẫn.'
-                : 'You are a professional content writer. Write a 1200-1600 word article in markdown format. Use clear, accessible writing style. Include all claims from the brief with proper citations.';
-
-            const user = language === 'vn'
-                ? `Brief:\n- Điểm chính: ${JSON.stringify(brief.key_points)}\n- Dàn ý: ${JSON.stringify(brief.outline)}\n- Tuyên bố có nguồn: ${JSON.stringify(brief.claims_ledger)}\n\nĐối tượng đọc: ${audience || 'general audience'}\n\nViết bài viết hoàn chỉnh ở định dạng markdown.`
-                : `Brief:\n- Key Points: ${JSON.stringify(brief.key_points)}\n- Outline: ${JSON.stringify(brief.outline)}\n- Sourced Claims: ${JSON.stringify(brief.claims_ledger)}\n\nTarget Audience: ${audience || 'general audience'}\n\nWrite a complete article in markdown format.`;
+            // Determine language for content generation
+            const lang = (language || 'en').toLowerCase();
+            const isVietnamese = lang === 'vn' || lang === 'vi';
+            const isFrench = lang === 'fr';
+            
+            console.log(`[draft-stream] Generating content in language: ${lang}, isVietnamese: ${isVietnamese}, isFrench: ${isFrench}`);
+            
+            let system: string;
+            let user: string;
+            
+            if (isVietnamese) {
+                system = 'Bạn là một nhà văn nội dung chuyên nghiệp. QUAN TRỌNG: Bạn PHẢI viết TOÀN BỘ nội dung bằng TIẾNG VIỆT. Viết bài viết từ 1200-1600 từ ở định dạng markdown. Sử dụng văn phong dễ đọc. Bao gồm tất cả các tuyên bố từ brief với nguồn trích dẫn.';
+                user = `⚠️ NGÔN NGỮ: Bạn PHẢI viết TOÀN BỘ nội dung bằng TIẾNG VIỆT. Không được dùng tiếng Anh.\n\nBrief:\n- Điểm chính: ${JSON.stringify(brief.key_points)}\n- Dàn ý: ${JSON.stringify(brief.outline)}\n- Tuyên bố có nguồn: ${JSON.stringify(brief.claims_ledger)}\n\nĐối tượng đọc: ${audience || 'độc giả phổ thông'}\n\nViết bài viết hoàn chỉnh BẰNG TIẾNG VIỆT ở định dạng markdown.`;
+            } else if (isFrench) {
+                system = 'Vous êtes un rédacteur de contenu professionnel. IMPORTANT: Vous DEVEZ écrire TOUT le contenu en FRANÇAIS. Rédigez un article de 1200 à 1600 mots au format markdown.';
+                user = `⚠️ LANGUE: Vous DEVEZ écrire TOUT le contenu en FRANÇAIS.\n\nRésumé:\n- Points clés: ${JSON.stringify(brief.key_points)}\n- Plan: ${JSON.stringify(brief.outline)}\n- Affirmations: ${JSON.stringify(brief.claims_ledger)}\n\nPublic cible: ${audience || 'public général'}\n\nRédigez un article complet EN FRANÇAIS au format markdown.`;
+            } else {
+                system = 'You are a professional content writer. IMPORTANT: You MUST write ALL content in ENGLISH. Write a 1200-1600 word article in markdown format. Use clear, accessible writing style.';
+                user = `⚠️ LANGUAGE: You MUST write ALL content in ENGLISH.\n\nBrief:\n- Key Points: ${JSON.stringify(brief.key_points)}\n- Outline: ${JSON.stringify(brief.outline)}\n- Sourced Claims: ${JSON.stringify(brief.claims_ledger)}\n\nTarget Audience: ${audience || 'general audience'}\n\nWrite a complete article IN ENGLISH in markdown format.`;
+            }
 
             let fullContent = '';
             let chunkCount = 0;
@@ -799,13 +814,13 @@ The path forward requires commitment, resources, and sustained attention, but th
 
             sendSSE('status', { message: 'Saving to database...' });
 
-            // Save to database with new columns
+            // Save to database with new columns including language
             try {
                 await q(
-                    `INSERT INTO content_packs(pack_id, brief_id, draft_content, draft_markdown, word_count, claims_ledger, status) 
-                     VALUES ($1,$2,$3,$4,$5,$6,$7) 
+                    `INSERT INTO content_packs(pack_id, brief_id, draft_content, draft_markdown, word_count, claims_ledger, status, language) 
+                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) 
                      ON CONFLICT (pack_id) DO UPDATE 
-                     SET draft_content=$3, draft_markdown=$4, word_count=$5, claims_ledger=$6, status=$7, updated_at=now()`,
+                     SET draft_content=$3, draft_markdown=$4, word_count=$5, claims_ledger=$6, status=$7, language=$8, updated_at=now()`,
                     [
                         pack_id,
                         brief_id,
@@ -813,7 +828,8 @@ The path forward requires commitment, resources, and sustained attention, but th
                         fullContent, // draft_markdown (same content)
                         wordCount,
                         JSON.stringify(brief.claims_ledger || []),
-                        'draft'
+                        'draft',
+                        lang // Save language
                     ]
                 );
 

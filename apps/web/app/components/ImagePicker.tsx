@@ -20,6 +20,7 @@ interface ImagePickerProps {
     packId?: string
     maxImages?: number
     contentForSuggestions?: string
+    language?: string
 }
 
 export default function ImagePicker({
@@ -27,7 +28,8 @@ export default function ImagePicker({
     onImagesChange,
     packId,
     maxImages = 5,
-    contentForSuggestions
+    contentForSuggestions,
+    language = 'en'
 }: ImagePickerProps) {
     const [searchQuery, setSearchQuery] = useState('')
     const [searchResults, setSearchResults] = useState<ImageResult[]>([])
@@ -89,8 +91,9 @@ export default function ImagePicker({
         setLoadingSuggestions(true)
         try {
             // Extract key terms from content for better suggestions
-            const snippet = content.substring(0, 500)
-            const res = await fetch(`${API_URL}/api/images/suggest?content=${encodeURIComponent(snippet)}&count=6`)
+            // Use first 800 chars to capture title and main topic
+            const snippet = content.substring(0, 800)
+            const res = await fetch(`${API_URL}/api/images/suggest?content=${encodeURIComponent(snippet)}&count=6&language=${language}`)
             const data = await res.json()
 
             if (data.ok && data.data) {

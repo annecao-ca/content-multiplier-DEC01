@@ -322,6 +322,7 @@ export default function PackDetailPage() {
                     packId={pack.pack_id}
                     maxImages={5}
                     contentForSuggestions={pack.draft_markdown}
+                    language={language}
                 />
                 {savingImages && (
                     <p className="text-xs text-slate-400 mt-2">Saving images...</p>
