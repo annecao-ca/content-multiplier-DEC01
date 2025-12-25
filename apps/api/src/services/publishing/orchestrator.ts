@@ -195,7 +195,8 @@ export class PublishingOrchestrator {
             case 'facebook':
                 return {
                     message: content.text || content.title,
-                    page_id: content.page_id || process.env.FACEBOOK_PAGE_ID,
+                    // page_id will be resolved from credentials in FacebookService if not provided
+                    page_id: content.page_id || undefined,
                     // Facebook supports multiple images
                     media_urls: mediaUrls,
                     link: content.link // Optional link preview

@@ -316,9 +316,10 @@ export class FacebookService implements PublishingService {
             errors.push('Facebook post message is required')
         }
 
-        if (!content.page_id) {
-            errors.push('Facebook page ID is required')
-        }
+        // page_id is optional in content - will be resolved from credentials in publish()
+        // if (!content.page_id) {
+        //     errors.push('Facebook page ID is required')
+        // }
 
         return { valid: errors.length === 0, errors }
     }
