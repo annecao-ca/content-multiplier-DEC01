@@ -544,9 +544,122 @@ CRITICAL Requirements:
             draft = result.draft || result;
         } catch (error) {
             console.log('LLM failed for draft generation, using fallback:', error);
-            // Fallback draft when LLM fails - create substantial content
+            // Fallback draft when LLM fails - create substantial content based on language
             const topicTitle = brief.key_points?.[0]?.replace('Research topic: ', '') || 'Research Topic';
-            const fallbackMarkdown = `# ${topicTitle}
+            
+            // Generate fallback content in the correct language
+            let fallbackMarkdown: string;
+            
+            if (isVietnamese) {
+                fallbackMarkdown = `# ${topicTitle}
+
+## Giới Thiệu
+
+Trong bối cảnh phát triển nhanh chóng hiện nay, việc hiểu về ${topicTitle.toLowerCase()} đã trở nên quan trọng đối với ${audience.toLowerCase() || 'độc giả phổ thông'}. Phân tích toàn diện này xem xét tình trạng hiện tại, xu hướng mới nổi và các hệ quả chiến lược mà người ra quyết định cần cân nhắc.
+
+${brief.key_points?.slice(1, 3).map((point: string) => `Nghiên cứu cho thấy ${point.toLowerCase()}, điều này có ý nghĩa quan trọng đối với các tổ chức và chuyên gia trong lĩnh vực này.`).join(' ') || 'Nghiên cứu cho thấy những hiểu biết quan trọng có ý nghĩa đối với các tổ chức và chuyên gia trong lĩnh vực này.'}
+
+## Bối Cảnh Hiện Tại
+
+Môi trường hiện tại mang đến cả cơ hội và thách thức. Các tổ chức ngày càng nhận ra tầm quan trọng của việc đi trước xu hướng và đưa ra quyết định dựa trên phân tích toàn diện.
+
+${brief.outline?.map((section: any) => `### ${section.h2 || section}
+
+${section.bullets?.map((bullet: string) => `**${bullet}**: Đây là một lĩnh vực trọng tâm quan trọng cho các tổ chức muốn tối ưu hóa cách tiếp cận của họ. Những hệ quả vượt ra ngoài các mối quan tâm hoạt động trước mắt đến vị thế chiến lược dài hạn.
+
+Nghiên cứu chỉ ra rằng các công ty đầu tư vào việc hiểu và thực hiện các khái niệm này thấy sự cải thiện đáng kể trong kết quả của họ.`).join('\n\n') || 'Lĩnh vực này đại diện cho cơ hội đáng kể cho sự phát triển và cải thiện.'}`).join('\n\n') || '### Các Lĩnh Vực Trọng Tâm\n\nCác tổ chức phải xem xét nhiều yếu tố khi phát triển chiến lược của họ.'}
+
+## Phân Tích Chiến Lược
+
+Bằng chứng chỉ ra một số yếu tố thành công quan trọng phân biệt các tổ chức hoạt động hiệu quả cao với các đối thủ. Các yếu tố này bao gồm lập kế hoạch chiến lược, xuất sắc trong thực thi và khả năng thích ứng.
+
+### Động Lực Thị Trường
+
+Cảnh quan cạnh tranh tiếp tục phát triển, với các đối thủ mới thách thức các doanh nghiệp đã thành lập và tiến bộ công nghệ định hình lại các phương pháp truyền thống.
+
+### Cân Nhắc Triển Khai
+
+Triển khai thành công đòi hỏi sự chú ý cẩn thận đến cả các yếu tố kỹ thuật và con người. Các tổ chức xuất sắc trong quản lý thay đổi thường thấy tỷ lệ thành công cao hơn.
+
+## Bằng Chứng và Nghiên Cứu Hỗ Trợ
+
+${brief.claims_ledger?.map((claim: any) => `**Phát Hiện Nghiên Cứu**: ${claim.claim}
+
+Phát hiện này được hỗ trợ bởi phân tích toàn diện và phù hợp với xu hướng ngành rộng hơn. [Nguồn: ${claim.sources?.map((s: any) => s.url).join(', ') || 'phân tích nghiên cứu'}]`).join('\n\n') || 'Nền tảng nghiên cứu cho phân tích này rút ra từ nhiều nguồn và phương pháp luận.'}
+
+## Ứng Dụng Thực Tế
+
+Đối với ${audience.toLowerCase() || 'độc giả phổ thông'}, những hiểu biết này chuyển thành các chiến lược có thể hành động và có thể được thực hiện trong các bối cảnh tổ chức khác nhau.
+
+### Khung Triển Khai
+
+1. **Giai đoạn Đánh giá**: Bắt đầu với đánh giá toàn diện về khả năng hiện tại và các khoảng trống
+2. **Phát triển Chiến lược**: Tạo kế hoạch mục tiêu phù hợp với mục tiêu tổ chức
+3. **Lập kế hoạch Thực thi**: Phát triển lộ trình triển khai chi tiết với các mốc rõ ràng
+4. **Giám sát Hiệu suất**: Thiết lập các chỉ số và vòng phản hồi để cải tiến liên tục
+
+### Yếu Tố Thành Công
+
+Các tổ chức đạt kết quả vượt trội thường tập trung vào:
+
+- Xây dựng năng lực nền tảng vững chắc trước khi theo đuổi các chiến lược nâng cao
+- Đầu tư vào phát triển con người song song với cải tiến quy trình
+- Duy trì giao tiếp rõ ràng trong suốt các giai đoạn triển khai
+- Thiết lập hệ thống đo lường và phản hồi mạnh mẽ
+
+## Triển Vọng Tương Lai
+
+Quỹ đạo phát triển trong lĩnh vực này cho thấy sự tiến hóa và tinh vi liên tục. Các tổ chức định vị chiến lược hôm nay sẽ được chuẩn bị tốt hơn cho các thách thức và cơ hội trong tương lai.
+
+## Khuyến Nghị
+
+Dựa trên phân tích này, chúng tôi khuyến nghị các tổ chức:
+
+1. **Phát triển hiểu biết toàn diện** về các yếu tố chính thúc đẩy thành công
+2. **Đầu tư xây dựng năng lực** trên các chiều kỹ thuật, hoạt động và văn hóa
+3. **Thiết lập hệ thống đo lường** cung cấp tầm nhìn rõ ràng về hiệu suất
+4. **Tạo khung thích ứng** cho phép học hỏi và cải tiến liên tục
+
+## Kết Luận
+
+Nghiên cứu cho thấy rõ ràng rằng ${topicTitle.toLowerCase()} đại diện cho cả cơ hội quan trọng và yêu cầu thiết yếu cho sự thành công của tổ chức.
+
+Các tổ chức hành động dựa trên những hiểu biết này sẽ được định vị tốt hơn để vượt qua các thách thức và tận dụng cơ hội trong môi trường ngày càng phức tạp.
+
+---
+
+*Phân tích này cung cấp nền tảng toàn diện cho việc lập kế hoạch chiến lược và ra quyết định.*`;
+            } else if (isFrench) {
+                fallbackMarkdown = `# ${topicTitle}
+
+## Introduction
+
+Dans le paysage en évolution rapide d'aujourd'hui, la compréhension de ${topicTitle.toLowerCase()} est devenue cruciale pour ${audience.toLowerCase() || 'le public général'}. Cette analyse complète examine l'état actuel, les tendances émergentes et les implications stratégiques.
+
+${brief.key_points?.slice(1, 3).map((point: string) => `La recherche révèle que ${point.toLowerCase()}, ce qui a des implications significatives pour les organisations et les professionnels dans ce domaine.`).join(' ') || 'La recherche révèle des informations clés importantes pour les organisations et les professionnels.'}
+
+## Paysage Actuel
+
+L'environnement actuel présente à la fois des opportunités et des défis. Les organisations reconnaissent de plus en plus l'importance de rester en avance sur les tendances.
+
+## Analyse Stratégique
+
+Les preuves indiquent plusieurs facteurs de succès critiques qui distinguent les organisations performantes de leurs pairs.
+
+## Recommandations
+
+Sur la base de cette analyse, nous recommandons aux organisations de développer une compréhension globale des facteurs clés de succès.
+
+## Conclusion
+
+La recherche démontre clairement que ${topicTitle.toLowerCase()} représente à la fois une opportunité significative et une exigence critique pour le succès organisationnel.
+
+---
+
+*Cette analyse fournit une base complète pour la planification stratégique et la prise de décision.*`;
+            } else {
+                // English fallback
+                fallbackMarkdown = `# ${topicTitle}
 
 ## Introduction
 
@@ -638,6 +751,7 @@ The path forward requires commitment, resources, and sustained attention, but th
 ---
 
 *This analysis provides a comprehensive foundation for strategic planning and decision-making. For specific implementation guidance tailored to your organization's context, consider conducting a detailed assessment of current capabilities and requirements.*`;
+            }
 
             draft = {
                 draft_markdown: fallbackMarkdown,
