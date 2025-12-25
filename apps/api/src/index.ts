@@ -222,6 +222,65 @@ app.get('/api/migrate/publishing', async (request, reply) => {
     }
 })
 
+// LLM Test endpoint - check if LLM is working
+app.get('/api/llm/test', async (request, reply) => {
+    logger.info('Testing LLM connection...')
+    try {
+        const { llm } = await import('./services/llm.ts')
+        const { env } = await import('./env.ts')
+        const { loadLLMSettings } = await import('./services/settingsStore.ts')
+        
+        const saved = loadLLMSettings()
+        
+        // Log available API keys (masked)
+        const hasOpenAI = !!(env.OPENAI_API_KEY || process.env.OPENAI_API_KEY)
+        const hasDeepSeek = !!(env.DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY)
+        const hasGemini = !!(env.GEMINI_API_KEY || process.env.GEMINI_API_KEY)
+        
+        logger.info('API Keys status', { 
+            openai: hasOpenAI, 
+            deepseek: hasDeepSeek, 
+            gemini: hasGemini,
+            savedProvider: saved?.provider,
+            savedModel: saved?.model
+        })
+        
+        // Test simple completion
+        const startTime = Date.now()
+        const result = await llm.completeText({
+            model: 'deepseek-chat', // Force DeepSeek which has default key
+            system: 'You are a helpful assistant. Respond briefly.',
+            user: 'Say "LLM is working!" in Vietnamese.',
+            temperature: 0.5
+        })
+        const duration = Date.now() - startTime
+        
+        logger.info('LLM test successful', { duration, resultLength: result.length })
+        
+        return {
+            ok: true,
+            message: 'LLM is working!',
+            result: result.substring(0, 200),
+            duration_ms: duration,
+            config: {
+                hasOpenAI,
+                hasDeepSeek,
+                hasGemini,
+                savedProvider: saved?.provider || 'none',
+                savedModel: saved?.model || 'none',
+                defaultModel: env.LLM_MODEL || 'gpt-4o-mini'
+            }
+        }
+    } catch (error: any) {
+        logger.error('LLM test failed', { error: error.message })
+        return reply.status(500).send({
+            ok: false,
+            error: error.message,
+            hint: 'Check API keys in Railway Variables'
+        })
+    }
+})
+
 // Root endpoint - just return API info
 app.get('/', async (request, reply) => {
     return { 
@@ -232,6 +291,7 @@ app.get('/', async (request, reply) => {
         endpoints: {
             health: '/healthz',
             apiHealth: '/api/health',
+            llmTest: '/api/llm/test',
             docs: '/api/docs'
         }
     }

@@ -7,7 +7,29 @@ import { retrieve, getDocument } from '../services/rag.ts';
 import { logEvent } from '../services/telemetry.ts';
 import { validatePackStatusTransition, getValidNextStatuses } from '../../../../packages/utils/pack-status-validator.ts';
 import { validateCitationsMiddleware } from '../middleware/citation-validator.ts';
+import { env } from '../env.ts';
 import crypto from 'crypto';
+
+/**
+ * Get the best available LLM model based on configured API keys
+ * Priority: OpenAI (if key exists) > DeepSeek (has default key) > fallback
+ */
+function getAvailableLLMModel(): string {
+    const hasOpenAI = !!(env.OPENAI_API_KEY || process.env.OPENAI_API_KEY);
+    const hasDeepSeek = !!(env.DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY);
+    
+    if (hasOpenAI) {
+        console.log('[LLM] Using OpenAI model:', env.LLM_MODEL || 'gpt-4o-mini');
+        return env.LLM_MODEL || 'gpt-4o-mini';
+    } else if (hasDeepSeek) {
+        console.log('[LLM] Using DeepSeek model: deepseek-chat');
+        return 'deepseek-chat';
+    } else {
+        // Fallback to DeepSeek which has a default key
+        console.log('[LLM] No API key found, falling back to DeepSeek');
+        return 'deepseek-chat';
+    }
+}
 
 function safeParseValue(val: any) {
     if (!val) return null;
@@ -72,7 +94,7 @@ async function generateFromTemplate(template: DerivativeTemplate, draft: string,
         : `Source content:\n${draft}\n\nCreate a derivative for template "${template.name}". ${outputHint}\nKeep it concise and follow the described output format.`;
 
     const result = await llm.completeText({
-        model: process.env.LLM_MODEL!,
+        model: getAvailableLLMModel(),
         system,
         user,
         temperature: 0.6,
@@ -533,7 +555,7 @@ CRITICAL Requirements:
         let draft;
         try {
             const result = await llm.completeJSON({
-                model: process.env.LLM_MODEL!, system, user, jsonSchema: {
+                model: getAvailableLLMModel(), system, user, jsonSchema: {
                     type: 'object', required: ['draft_markdown', 'claims_ledger'],
                     properties: {
                         draft_markdown: { type: 'string' },
@@ -874,7 +896,7 @@ The path forward requires commitment, resources, and sustained attention, but th
                 // Note: This uses completeJSON which doesn't stream. 
                 // For true streaming, you'd need to implement streaming in LLMClient
                 const result = await llm.completeJSON({
-                    model: process.env.LLM_MODEL!,
+                    model: getAvailableLLMModel(),
                     system,
                     user,
                     jsonSchema: {
@@ -1043,7 +1065,7 @@ The path forward requires commitment, resources, and sustained attention, but th
             console.log('Calling LLM for derivatives...')
             let derivatives;
             try {
-                derivatives = await llm.completeJSON({ model: process.env.LLM_MODEL!, system, user, jsonSchema: derivativesSchema })
+                derivatives = await llm.completeJSON({ model: getAvailableLLMModel(), system, user, jsonSchema: derivativesSchema })
                 console.log('Derivatives generated:', derivatives)
             } catch (error) {
                 console.log('LLM failed for derivatives, using fallback:', error)
@@ -1152,7 +1174,7 @@ Position strategically today.
             let seo;
             try {
                 seo = await llm.completeJSON({
-                    model: process.env.LLM_MODEL!, system: seoSystem, user: seoUser, jsonSchema: {
+                    model: getAvailableLLMModel(), system: seoSystem, user: seoUser, jsonSchema: {
                         type: 'object',
                         required: ['title', 'description'],
                         properties: {
