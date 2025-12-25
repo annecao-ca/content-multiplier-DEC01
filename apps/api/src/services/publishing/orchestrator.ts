@@ -170,37 +170,61 @@ export class PublishingOrchestrator {
     }
 
     private formatContentForPlatform(platform: PublishingPlatform, content: Record<string, any>): Record<string, any> {
+        // Get media from content
+        const featuredImage = content.media_url || content.image_url || content.featured_image
+        const mediaUrls = content.media_urls || (featuredImage ? [featuredImage] : [])
+
         switch (platform) {
             case 'twitter':
                 return {
                     text: content.text || content.title,
-                    thread: content.thread || []
+                    thread: content.thread || [],
+                    // Twitter supports up to 4 images
+                    media_urls: mediaUrls.slice(0, 4)
                 }
 
             case 'linkedin':
                 return {
                     text: content.text || content.title,
-                    visibility: 'PUBLIC'
+                    visibility: 'PUBLIC',
+                    // LinkedIn supports images in posts
+                    image_url: featuredImage,
+                    media_urls: mediaUrls
                 }
 
             case 'facebook':
                 return {
                     message: content.text || content.title,
-                    page_id: content.page_id || process.env.FACEBOOK_PAGE_ID
+                    page_id: content.page_id || process.env.FACEBOOK_PAGE_ID,
+                    // Facebook supports multiple images
+                    media_urls: mediaUrls,
+                    link: content.link // Optional link preview
                 }
 
             case 'instagram':
                 return {
                     caption: content.text || content.title,
-                    media_url: content.media_url || content.image_url,
-                    media_type: 'IMAGE'
+                    media_url: featuredImage,
+                    media_type: mediaUrls.length > 1 ? 'CAROUSEL' : 'IMAGE',
+                    // Instagram carousel supports up to 10 images
+                    children: mediaUrls.slice(0, 10).map((url: string) => ({ media_url: url }))
                 }
 
             case 'sendgrid':
             case 'mailchimp':
+                // Add featured image to HTML content for newsletters
+                let htmlContent = content.html_content || content.html || content.content
+                if (featuredImage && !htmlContent.includes(featuredImage)) {
+                    // Prepend featured image to newsletter
+                    const imageHtml = `<div style="margin-bottom: 24px; text-align: center;">
+                        <img src="${featuredImage}" alt="Featured Image" style="max-width: 100%; height: auto; border-radius: 8px;" />
+                    </div>`
+                    htmlContent = imageHtml + htmlContent
+                }
+                
                 const emailContent = {
                     subject: content.subject || content.title,
-                    html_content: content.html_content || content.html || content.content,
+                    html_content: htmlContent,
                     text_content: content.text_content || content.text || content.content,
                     to: content.recipients || [content.email],
                     from_email: content.from_email || process.env.DEFAULT_FROM_EMAIL || 'noreply@contentmultiplier.com',
@@ -213,7 +237,9 @@ export class PublishingOrchestrator {
                 return {
                     title: content.title,
                     content: content.content,
-                    status: 'publish'
+                    status: 'publish',
+                    // WordPress featured image (requires media ID, URL for reference)
+                    featured_media_url: featuredImage
                 }
 
             case 'medium':
@@ -221,7 +247,9 @@ export class PublishingOrchestrator {
                     title: content.title,
                     content: content.content,
                     contentFormat: 'html',
-                    publishStatus: 'public'
+                    publishStatus: 'public',
+                    // Medium supports a canonical URL and featured image
+                    featuredImage: featuredImage
                 }
 
             default:

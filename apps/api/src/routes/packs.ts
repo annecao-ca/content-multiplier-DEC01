@@ -269,10 +269,13 @@ const routes: FastifyPluginAsync = async (app) => {
 
     app.patch('/:pack_id', async (req: any) => {
         const { pack_id } = req.params
-        const { draft_markdown, derivatives, seo } = req.body
+        const { draft_markdown, derivatives, seo, media, language } = req.body
 
         console.log('PATCH /packs/:pack_id - Received draft_markdown length:', draft_markdown?.length)
         console.log('PATCH /packs/:pack_id - First 200 chars:', draft_markdown?.substring(0, 200))
+        if (media) {
+            console.log('PATCH /packs/:pack_id - Updating media with', media.length, 'images')
+        }
 
         const updates: string[] = []
         const values: any[] = []
@@ -289,6 +292,14 @@ const routes: FastifyPluginAsync = async (app) => {
         if (seo !== undefined) {
             updates.push(`seo=$${paramCount++}`)
             values.push(JSON.stringify(seo))
+        }
+        if (media !== undefined) {
+            updates.push(`media=$${paramCount++}`)
+            values.push(JSON.stringify(media))
+        }
+        if (language !== undefined) {
+            updates.push(`language=$${paramCount++}`)
+            values.push(language)
         }
 
         if (updates.length > 0) {

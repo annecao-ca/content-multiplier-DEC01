@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { Search, X, Check, Image as ImageIcon, Loader2, ExternalLink } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Search, X, Image as ImageIcon, Check, Loader2, ExternalLink } from 'lucide-react'
+import { API_URL } from '../lib/api-config'
 
-export interface ImageResult {
+interface ImageResult {
     id: string
     url: string
     thumbnailUrl: string
@@ -11,222 +12,327 @@ export interface ImageResult {
     photographer: string
     photographerUrl: string
     source: 'unsplash' | 'pexels'
-    width: number
-    height: number
 }
 
 interface ImagePickerProps {
-    onSelect: (image: ImageResult) => void
-    selectedImages?: ImageResult[]
-    suggestedImages?: ImageResult[]
-    searchEnabled?: boolean
-    multiple?: boolean
-    apiUrl?: string
+    selectedImages: ImageResult[]
+    onImagesChange: (images: ImageResult[]) => void
+    packId?: string
+    maxImages?: number
+    contentForSuggestions?: string
 }
 
-export function ImagePicker({
-    onSelect,
-    selectedImages = [],
-    suggestedImages = [],
-    searchEnabled = true,
-    multiple = false,
-    apiUrl = ''
+export default function ImagePicker({
+    selectedImages,
+    onImagesChange,
+    packId,
+    maxImages = 5,
+    contentForSuggestions
 }: ImagePickerProps) {
     const [searchQuery, setSearchQuery] = useState('')
     const [searchResults, setSearchResults] = useState<ImageResult[]>([])
+    const [suggestedImages, setSuggestedImages] = useState<ImageResult[]>([])
     const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
+    const [loadingSuggestions, setLoadingSuggestions] = useState(false)
+    const [isConfigured, setIsConfigured] = useState<boolean | null>(null)
+    const [availableSources, setAvailableSources] = useState<string[]>([])
+    const [showPicker, setShowPicker] = useState(false)
 
-    const handleSearch = useCallback(async () => {
+    // Check if image service is configured
+    useEffect(() => {
+        checkImageService()
+    }, [])
+
+    // Get suggestions when content changes
+    useEffect(() => {
+        if (contentForSuggestions && isConfigured) {
+            getSuggestions(contentForSuggestions)
+        }
+    }, [contentForSuggestions, isConfigured])
+
+    async function checkImageService() {
+        try {
+            const res = await fetch(`${API_URL}/api/images/status`)
+            const data = await res.json()
+            setIsConfigured(data.configured)
+            setAvailableSources(data.availableSources || [])
+        } catch (error) {
+            console.error('Failed to check image service:', error)
+            setIsConfigured(false)
+        }
+    }
+
+    async function searchImages() {
         if (!searchQuery.trim()) return
 
         setLoading(true)
-        setError(null)
-
         try {
-            const response = await fetch(
-                `${apiUrl}/api/images/search?query=${encodeURIComponent(searchQuery)}&count=12`
-            )
+            const res = await fetch(`${API_URL}/api/images/search?query=${encodeURIComponent(searchQuery)}&count=12`)
+            const data = await res.json()
 
-            if (!response.ok) {
-                throw new Error('Failed to search images')
+            if (data.ok && data.data) {
+                setSearchResults(data.data)
+            } else {
+                setSearchResults([])
             }
-
-            const data = await response.json()
-            setSearchResults(data.data || [])
-        } catch (err: any) {
-            setError(err.message || 'Failed to search images')
+        } catch (error) {
+            console.error('Image search failed:', error)
             setSearchResults([])
         } finally {
             setLoading(false)
         }
-    }, [searchQuery, apiUrl])
+    }
 
-    const handleKeyPress = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            handleSearch()
+    async function getSuggestions(content: string) {
+        if (!content || content.length < 50) return
+
+        setLoadingSuggestions(true)
+        try {
+            // Extract key terms from content for better suggestions
+            const snippet = content.substring(0, 500)
+            const res = await fetch(`${API_URL}/api/images/suggest?content=${encodeURIComponent(snippet)}&count=6`)
+            const data = await res.json()
+
+            if (data.ok && data.data) {
+                setSuggestedImages(data.data)
+            }
+        } catch (error) {
+            console.error('Failed to get suggestions:', error)
+        } finally {
+            setLoadingSuggestions(false)
         }
     }
 
-    const isSelected = (image: ImageResult) => {
-        return selectedImages.some(selected => selected.id === image.id)
-    }
+    function toggleImage(image: ImageResult) {
+        const isSelected = selectedImages.some(img => img.id === image.id)
 
-    const handleImageClick = (image: ImageResult) => {
-        if (!multiple && isSelected(image)) {
-            return // Already selected in single mode
+        if (isSelected) {
+            onImagesChange(selectedImages.filter(img => img.id !== image.id))
+        } else {
+            if (selectedImages.length >= maxImages) {
+                alert(`Chỉ có thể chọn tối đa ${maxImages} hình ảnh`)
+                return
+            }
+            onImagesChange([...selectedImages, image])
         }
-        onSelect(image)
     }
 
-    const displayImages = searchResults.length > 0 ? searchResults : suggestedImages
+    function removeImage(imageId: string) {
+        onImagesChange(selectedImages.filter(img => img.id !== imageId))
+    }
+
+    // Not configured state
+    if (isConfigured === false) {
+        return (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                    <ImageIcon className="w-5 h-5 text-amber-500 mt-0.5" />
+                    <div>
+                        <h4 className="text-sm font-semibold text-amber-400">Stock Images Not Configured</h4>
+                        <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                            To add stock images to your content, configure UNSPLASH_ACCESS_KEY or PEXELS_API_KEY in Railway environment variables.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     return (
-        <div className="image-picker">
-            {/* Search Input */}
-            {searchEnabled && (
-                <div className="flex gap-2 mb-4">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            onKeyPress={handleKeyPress}
-                            placeholder="Search for images..."
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                    </div>
-                    <button
-                        onClick={handleSearch}
-                        disabled={loading || !searchQuery.trim()}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                        {loading ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                            <Search className="w-4 h-4" />
-                        )}
-                        Search
-                    </button>
+        <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-xl p-4">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                    <ImageIcon className="w-5 h-5 text-[hsl(var(--primary))]" />
+                    <h3 className="text-sm font-semibold text-[hsl(var(--foreground))]">
+                        Featured Images
+                    </h3>
+                    {selectedImages.length > 0 && (
+                        <span className="text-xs px-2 py-0.5 bg-[hsl(var(--primary))]/20 text-[hsl(var(--primary))] rounded-full">
+                            {selectedImages.length}/{maxImages}
+                        </span>
+                    )}
                 </div>
-            )}
+                <button
+                    onClick={() => setShowPicker(!showPicker)}
+                    className="text-xs px-3 py-1.5 bg-[hsl(var(--primary))] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-1"
+                >
+                    <Search className="w-3 h-3" />
+                    {showPicker ? 'Close' : 'Add Images'}
+                </button>
+            </div>
 
-            {/* Error Message */}
-            {error && (
-                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-sm">
-                    {error}
-                </div>
-            )}
-
-            {/* Loading State */}
-            {loading && (
-                <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                </div>
-            )}
-
-            {/* Image Grid */}
-            {!loading && displayImages.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {displayImages.map((image) => (
-                        <div
-                            key={image.id}
-                            onClick={() => handleImageClick(image)}
-                            className={`
-                                relative group cursor-pointer rounded-lg overflow-hidden
-                                border-2 transition-all duration-200
-                                ${isSelected(image)
-                                    ? 'border-blue-500 ring-2 ring-blue-500/30'
-                                    : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
-                                }
-                            `}
-                        >
-                            {/* Thumbnail */}
-                            <div className="aspect-video bg-gray-100 dark:bg-gray-800">
-                                <img
-                                    src={image.thumbnailUrl}
-                                    alt={image.alt}
-                                    className="w-full h-full object-cover"
-                                    loading="lazy"
-                                />
-                            </div>
-
-                            {/* Selection Indicator */}
-                            {isSelected(image) && (
-                                <div className="absolute top-2 right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                                    <Check className="w-4 h-4 text-white" />
-                                </div>
-                            )}
-
-                            {/* Hover Overlay */}
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
-                                <p className="text-white text-xs truncate">{image.alt}</p>
-                                <div className="flex items-center gap-1 mt-1">
-                                    <span className="text-white/70 text-xs">by</span>
-                                    <a
-                                        href={image.photographerUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="text-white text-xs hover:underline flex items-center gap-1"
-                                    >
-                                        {image.photographer}
-                                        <ExternalLink className="w-3 h-3" />
-                                    </a>
-                                </div>
-                                <span className="text-white/50 text-xs mt-1 capitalize">
-                                    {image.source}
-                                </span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            {/* Empty State */}
-            {!loading && displayImages.length === 0 && (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                    <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                    <p className="text-sm">
-                        {searchQuery
-                            ? 'No images found. Try a different search term.'
-                            : 'Search for images or view suggestions.'}
-                    </p>
-                </div>
-            )}
-
-            {/* Selected Images Preview */}
+            {/* Selected Images */}
             {selectedImages.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Selected Images ({selectedImages.length})
-                    </h4>
-                    <div className="flex gap-2 flex-wrap">
+                <div className="mb-4">
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] mb-2">Selected images:</p>
+                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                         {selectedImages.map((image) => (
-                            <div
-                                key={image.id}
-                                className="relative w-16 h-16 rounded-lg overflow-hidden group"
-                            >
+                            <div key={image.id} className="relative group">
                                 <img
                                     src={image.thumbnailUrl}
                                     alt={image.alt}
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-16 object-cover rounded-lg ring-2 ring-[hsl(var(--primary))]"
                                 />
                                 <button
-                                    onClick={() => onSelect(image)}
-                                    className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                                    onClick={() => removeImage(image.id)}
+                                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
-                                    <X className="w-5 h-5 text-white" />
+                                    <X className="w-3 h-3" />
                                 </button>
+                                <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] px-1 py-0.5 rounded-b-lg truncate">
+                                    {image.source}
+                                </div>
                             </div>
                         ))}
                     </div>
+                </div>
+            )}
+
+            {/* Image Picker Panel */}
+            {showPicker && (
+                <div className="border-t border-[hsl(var(--border))] pt-4 mt-4 space-y-4">
+                    {/* Search Bar */}
+                    <div className="flex gap-2">
+                        <div className="flex-1 relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && searchImages()}
+                                placeholder="Search for images... (e.g., technology, nature, business)"
+                                className="w-full pl-10 pr-4 py-2 text-sm bg-[hsl(var(--input))] border border-[hsl(var(--input-border))] rounded-lg text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]/20 focus:border-[hsl(var(--primary))]"
+                            />
+                        </div>
+                        <button
+                            onClick={searchImages}
+                            disabled={loading || !searchQuery.trim()}
+                            className="px-4 py-2 bg-[hsl(var(--primary))] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+                        >
+                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                            Search
+                        </button>
+                    </div>
+
+                    {/* Available Sources */}
+                    <div className="flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
+                        <span>Sources:</span>
+                        {availableSources.map(source => (
+                            <span key={source} className="px-2 py-0.5 bg-[hsl(var(--muted))] rounded">
+                                {source}
+                            </span>
+                        ))}
+                    </div>
+
+                    {/* Suggested Images */}
+                    {suggestedImages.length > 0 && searchResults.length === 0 && (
+                        <div>
+                            <p className="text-xs text-[hsl(var(--muted-foreground))] mb-2 flex items-center gap-2">
+                                ✨ Suggested based on your content:
+                                {loadingSuggestions && <Loader2 className="w-3 h-3 animate-spin" />}
+                            </p>
+                            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                                {suggestedImages.map((image) => (
+                                    <ImageCard
+                                        key={image.id}
+                                        image={image}
+                                        isSelected={selectedImages.some(img => img.id === image.id)}
+                                        onToggle={() => toggleImage(image)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Search Results */}
+                    {searchResults.length > 0 && (
+                        <div>
+                            <p className="text-xs text-[hsl(var(--muted-foreground))] mb-2">
+                                Search results for "{searchQuery}":
+                            </p>
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                                {searchResults.map((image) => (
+                                    <ImageCard
+                                        key={image.id}
+                                        image={image}
+                                        isSelected={selectedImages.some(img => img.id === image.id)}
+                                        onToggle={() => toggleImage(image)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Empty State */}
+                    {searchResults.length === 0 && suggestedImages.length === 0 && !loading && (
+                        <div className="text-center py-8">
+                            <ImageIcon className="w-12 h-12 mx-auto text-[hsl(var(--muted-foreground))] mb-3" />
+                            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                                Search for stock images to add to your content
+                            </p>
+                            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                                Try: technology, business, nature, people, etc.
+                            </p>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
     )
 }
 
-export default ImagePicker
+// Image Card Component
+function ImageCard({
+    image,
+    isSelected,
+    onToggle
+}: {
+    image: ImageResult
+    isSelected: boolean
+    onToggle: () => void
+}) {
+    return (
+        <div
+            onClick={onToggle}
+            className={`relative cursor-pointer group rounded-lg overflow-hidden transition-all duration-200 ${
+                isSelected 
+                    ? 'ring-2 ring-[hsl(var(--primary))] scale-[0.98]' 
+                    : 'hover:ring-2 hover:ring-[hsl(var(--primary))]/50 hover:scale-[1.02]'
+            }`}
+        >
+            <img
+                src={image.thumbnailUrl}
+                alt={image.alt}
+                className="w-full h-20 object-cover"
+                loading="lazy"
+            />
+            
+            {/* Selection Overlay */}
+            <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${
+                isSelected ? 'bg-[hsl(var(--primary))]/60' : 'bg-black/0 group-hover:bg-black/20'
+            }`}>
+                {isSelected && (
+                    <Check className="w-6 h-6 text-white" />
+                )}
+            </div>
 
+            {/* Source Badge */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-1.5 py-1">
+                <div className="flex items-center justify-between">
+                    <span className="text-[9px] text-white/80 capitalize">{image.source}</span>
+                    <a
+                        href={image.photographerUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[9px] text-white/80 hover:text-white flex items-center gap-0.5"
+                    >
+                        {image.photographer.split(' ')[0]}
+                        <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                </div>
+            </div>
+        </div>
+    )
+}

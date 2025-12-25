@@ -10,6 +10,7 @@ import { ParsedContentWithCitations } from '../../components/InlineCitation'
 import { Footnotes } from '../../components/Footnotes'
 import { DerivativesDisplay } from '../../components/DerivativesDisplay'
 import { DerivativesExportDropdown } from '../../components/DerivativesExportButton'
+import ImagePicker from '../../components/ImagePicker'
 
 // API URL - backend running on port 3001
 import { API_URL } from '../../lib/api-config';
@@ -89,6 +90,25 @@ export default function PackDetailPage() {
     const [editedX, setEditedX] = useState<string[]>([])
     const [editedSEO, setEditedSEO] = useState({ title: '', description: '', keywords: [] as string[] })
     const [activeEditor, setActiveEditor] = useState<string | null>(null)
+    const [selectedImages, setSelectedImages] = useState<any[]>([])
+    const [savingImages, setSavingImages] = useState(false)
+
+    // Save images to pack when they change
+    async function saveImagesTopack(images: any[]) {
+        setSelectedImages(images)
+        setSavingImages(true)
+        try {
+            await fetch(`${API_URL}/api/packs/${params.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ media: images })
+            })
+        } catch (err) {
+            console.error('Failed to save images:', err)
+        } finally {
+            setSavingImages(false)
+        }
+    }
 
     async function loadPack() {
         try {
@@ -117,6 +137,8 @@ export default function PackDetailPage() {
             setEditedLinkedIn(linkedInPosts)
             setEditedX(xPosts)
             setEditedSEO(data.seo || { title: '', description: '', keywords: [] })
+            // Load existing media/images
+            setSelectedImages(data.media || [])
         } catch (err) {
             console.error('Error loading pack:', err)
         }
@@ -291,6 +313,20 @@ export default function PackDetailPage() {
                     />
                 </div>
             )}
+
+            {/* Featured Images Section */}
+            <div style={{ marginTop: '2rem' }}>
+                <ImagePicker
+                    selectedImages={selectedImages}
+                    onImagesChange={saveImagesTopack}
+                    packId={pack.pack_id}
+                    maxImages={5}
+                    contentForSuggestions={pack.draft_markdown}
+                />
+                {savingImages && (
+                    <p className="text-xs text-slate-400 mt-2">Saving images...</p>
+                )}
+            </div>
 
             <Button style={{ marginTop: '1rem' }} onClick={() => isEditing ? saveEdits() : setIsEditing(true)} disabled={loading}>
                 {isEditing ? 'Save Changes' : 'Edit Draft'}

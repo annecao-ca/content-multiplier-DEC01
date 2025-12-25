@@ -133,6 +133,11 @@ export default function PublishingPanel({ packId }: { packId: string }) {
                     text: pack.derivatives?.x?.[0] || pack.draft_markdown?.substring(0, 280)
                 }
 
+            // Get featured images from pack media
+            const mediaImages = pack.media || []
+            const featuredImageUrl = mediaImages.length > 0 ? mediaImages[0].url : undefined
+            const allMediaUrls = mediaImages.map((img: any) => img.url)
+
             const publishData = {
                 pack_id: packId,
                 platforms: selectedPlatforms,
@@ -145,7 +150,12 @@ export default function PublishingPanel({ packId }: { packId: string }) {
                     html_content: pack.derivatives?.newsletter || pack.draft_markdown,
                     text_content: pack.draft_markdown,
                     from_email: 'fo.cuahang@gmail.com',
-                    from_name: 'Content Multiplier'
+                    from_name: 'Content Multiplier',
+                    // Add media for platforms that support images
+                    media_url: featuredImageUrl,
+                    media_urls: allMediaUrls,
+                    image_url: featuredImageUrl,
+                    featured_image: featuredImageUrl
                 },
                 scheduled_at: scheduledAt || undefined
             }
