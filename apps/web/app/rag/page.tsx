@@ -231,7 +231,7 @@ export default function RAGPage() {
             <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
                 <PageHeader
                     title="📚 Knowledge Base (RAG)"
-                    subtitle="Quản lý tài liệu nguồn để AI tạo nội dung chất lượng"
+                    description="Quản lý tài liệu nguồn để AI tạo nội dung chất lượng"
                 />
 
                 {/* Actions */}
