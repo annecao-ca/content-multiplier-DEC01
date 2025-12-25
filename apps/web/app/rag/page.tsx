@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react'
 import { API_URL } from '../lib/api-config'
 import { useLanguage } from '../contexts/LanguageContext'
 import { 
-    AppShell, 
     PageHeader, 
     Card, 
     PrimaryButton,
@@ -227,7 +226,7 @@ export default function RAGPage() {
     }
 
     return (
-        <AppShell>
+        <div className="min-h-screen bg-[hsl(var(--background))]">
             <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
                 <PageHeader
                     title="📚 Knowledge Base (RAG)"
@@ -436,7 +435,7 @@ export default function RAGPage() {
                     )}
                 </Card>
             </div>
-        </AppShell>
+        </div>
     )
 }
 
