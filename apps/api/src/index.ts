@@ -97,6 +97,38 @@ app.get('/api/health', async (request, reply) => {
     }
 })
 
+// Migration endpoint - update documents table with new columns
+app.get('/api/migrate/documents', async (request, reply) => {
+    logger.info('Running documents table migration...')
+    try {
+        const { q } = await import('./db.ts')
+        
+        // Add new columns to documents table
+        await q(`ALTER TABLE documents ADD COLUMN IF NOT EXISTS author TEXT`)
+        await q(`ALTER TABLE documents ADD COLUMN IF NOT EXISTS published_date TIMESTAMPTZ`)
+        await q(`ALTER TABLE documents ADD COLUMN IF NOT EXISTS tags TEXT[]`)
+        await q(`ALTER TABLE documents ADD COLUMN IF NOT EXISTS description TEXT`)
+        await q(`ALTER TABLE documents ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now()`)
+        
+        // Create index for better search
+        await q(`CREATE INDEX IF NOT EXISTS idx_documents_tags ON documents USING GIN(tags)`)
+        await q(`CREATE INDEX IF NOT EXISTS idx_documents_author ON documents(author)`)
+        
+        logger.info('Documents table migration completed!')
+        return {
+            ok: true,
+            message: 'Documents table updated with new columns',
+            columns: ['author', 'published_date', 'tags', 'description', 'updated_at']
+        }
+    } catch (error: any) {
+        logger.error('Documents migration failed', { error: error.message })
+        return reply.status(500).send({
+            ok: false,
+            error: error.message
+        })
+    }
+})
+
 // Migration endpoint - run publishing tables migration
 app.get('/api/migrate/publishing', async (request, reply) => {
     logger.info('Running publishing migration...')
