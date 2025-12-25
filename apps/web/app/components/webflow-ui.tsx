@@ -29,9 +29,9 @@ function cn(...classes: Array<string | false | null | undefined>) {
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-white text-slate-900 dark:bg-[hsl(var(--background))] dark:text-[hsl(var(--foreground))] transition-colors duration-300">
+    <div className="min-h-screen transition-all duration-500">
       <AppNavbar />
-      <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-10 md:px-8 md:pt-14">
+      <main className="mx-auto w-full max-w-7xl px-4 pb-16 pt-10 md:px-8 md:pt-14">
         {children}
       </main>
     </div>
@@ -58,7 +58,7 @@ export function AppNavbar() {
   ]
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/95 backdrop-blur-lg transition-all duration-300 dark:border-[hsl(var(--border))] dark:bg-[hsl(var(--background))]/95 shadow-sm dark:shadow-slate-900/20">
+    <header className="sticky top-0 z-30 border-b border-slate-200/50 bg-white/80 backdrop-blur-2xl transition-all duration-500 dark:border-white/5 dark:bg-[hsl(var(--background))]/60 shadow-lg shadow-slate-200/20 dark:shadow-black/30">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 md:h-20 md:px-8">
         {/* Left: logo + brand */}
         <div className="flex items-center gap-3">
@@ -190,7 +190,7 @@ export function Section({
 }
 
 /**
- * PageHeader – tiêu đề lớn của từng trang
+ * PageHeader – tiêu đề lớn với Aurora gradient
  */
 export function PageHeader({
   title,
@@ -204,18 +204,18 @@ export function PageHeader({
   actions?: React.ReactNode
 }) {
   return (
-    <div className="mb-8 flex flex-col gap-4 md:mb-10 md:flex-row md:items-end md:justify-between">
-      <div>
+    <div className="mb-10 flex flex-col gap-4 md:mb-12 md:flex-row md:items-end md:justify-between">
+      <div className="space-y-4">
         {eyebrow && (
-          <div className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-[hsl(var(--muted-foreground))]">
+          <div className="inline-block rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-purple-400 dark:text-purple-300">
             {eyebrow}
           </div>
         )}
-        <h1 className="text-3xl font-semibold tracking-tight text-[hsl(var(--foreground))] md:text-4xl">
+        <h1 className="text-4xl font-bold tracking-tight md:text-5xl bg-gradient-to-r from-[hsl(var(--foreground))] via-purple-500 to-pink-500 bg-clip-text text-transparent dark:from-white dark:via-purple-400 dark:to-pink-400">
           {title}
         </h1>
         {description && (
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">
+          <p className="max-w-2xl text-base leading-relaxed text-[hsl(var(--muted-foreground))]">
             {description}
           </p>
         )}
@@ -245,23 +245,50 @@ export function PrimaryButton({
   ...props
 }: ButtonProps) {
   const base =
-    "inline-flex items-center justify-center rounded-full font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/80 disabled:opacity-60 disabled:cursor-not-allowed"
+    "relative inline-flex items-center justify-center rounded-full font-semibold transition-all duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--primary))]/50 disabled:opacity-60 disabled:cursor-not-allowed overflow-hidden"
 
   const variants: Record<ButtonVariant, string> = {
-    primary:
-      "bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--primary-accent))] text-white hover:shadow-lg hover:shadow-[hsl(var(--primary))]/40 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]",
-    secondary:
-      "bg-[hsl(var(--card))] text-[hsl(var(--foreground))] border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))] hover:border-[hsl(var(--primary))]/30 transition-all duration-200",
-    ghost:
-      "bg-transparent text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] border border-transparent transition-all duration-200",
-    danger:
-      "bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-500/25 transition-all duration-200 hover:shadow-red-500/40",
+    primary: [
+      // Aurora gradient background
+      "bg-gradient-to-r from-[#a855f7] via-[#ec4899] to-[#f97316] bg-[length:200%_100%]",
+      "text-white font-semibold",
+      // Glow effect
+      "shadow-lg shadow-purple-500/30",
+      // Hover animations
+      "hover:bg-[position:100%_0] hover:shadow-xl hover:shadow-purple-500/40 hover:scale-[1.03] hover:-translate-y-0.5",
+      // Active state
+      "active:scale-[0.98] active:shadow-md",
+      // Transition
+      "transition-all duration-300",
+    ].join(" "),
+    secondary: [
+      // Neumorphism light / Glass dark
+      "bg-[hsl(var(--card))] text-[hsl(var(--foreground))]",
+      "shadow-[4px_4px_10px_rgba(174,174,192,0.2),-4px_-4px_10px_rgba(255,255,255,0.7)]",
+      "dark:bg-white/5 dark:backdrop-blur-lg dark:border dark:border-white/10",
+      "dark:shadow-[0_4px_16px_rgba(0,0,0,0.3)]",
+      // Hover
+      "hover:shadow-[6px_6px_14px_rgba(174,174,192,0.25),-6px_-6px_14px_rgba(255,255,255,0.8)]",
+      "dark:hover:bg-white/10 dark:hover:border-white/20",
+      "hover:scale-[1.02]",
+    ].join(" "),
+    ghost: [
+      "bg-transparent text-[hsl(var(--foreground))]",
+      "hover:bg-[hsl(var(--muted))] dark:hover:bg-white/5",
+      "border border-transparent",
+    ].join(" "),
+    danger: [
+      "bg-gradient-to-r from-red-500 to-rose-600 text-white",
+      "shadow-lg shadow-red-500/30",
+      "hover:shadow-xl hover:shadow-red-500/40 hover:scale-[1.02]",
+      "active:scale-[0.98]",
+    ].join(" "),
   }
 
   const sizes: Record<ButtonSize, string> = {
-    sm: "px-3 py-1 text-xs",
-    md: "px-4 py-2 text-xs md:text-sm",
-    lg: "px-6 py-3 text-sm md:text-base",
+    sm: "px-4 py-1.5 text-xs",
+    md: "px-5 py-2.5 text-sm",
+    lg: "px-7 py-3.5 text-base",
   }
 
   return (
@@ -269,7 +296,7 @@ export function PrimaryButton({
       className={cn(base, variants[variant], sizes[size], className)}
       {...props}
     >
-      {children}
+      <span className="relative z-10">{children}</span>
     </button>
   )
 }
@@ -284,19 +311,30 @@ interface CardProps {
 }
 
 /**
- * Card – card trắng bo tròn phong cách Webflow
+ * Card – Aurora Glass + Neumorphism card
  */
 export function Card({ children, className, onClick }: CardProps) {
   return (
     <div
       onClick={onClick}
       className={cn(
-        "rounded-3xl bg-[hsl(var(--card))] p-6 shadow-[0_12px_40px_rgba(15,23,42,0.08)] ring-1 ring-[hsl(var(--border))] transition-all duration-300 dark:shadow-[0_12px_40px_rgba(0,0,0,0.3)]",
-        onClick && "cursor-pointer transition-all hover:scale-[1.01] hover:shadow-[0_16px_48px_rgba(15,23,42,0.12)] dark:hover:shadow-[0_16px_48px_rgba(0,0,0,0.4)]",
+        // Base styles
+        "relative rounded-3xl p-6 transition-all duration-500 ease-out overflow-hidden",
+        // Light mode: Neumorphism
+        "bg-[hsl(var(--card))] shadow-[8px_8px_20px_rgba(174,174,192,0.25),-8px_-8px_20px_rgba(255,255,255,0.8)]",
+        // Dark mode: Glassmorphism
+        "dark:bg-gradient-to-br dark:from-white/[0.08] dark:to-white/[0.02] dark:backdrop-blur-xl dark:border dark:border-white/10",
+        "dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)]",
+        // Hover effects
+        onClick && "cursor-pointer",
+        onClick && "hover:scale-[1.02] hover:shadow-[12px_12px_30px_rgba(174,174,192,0.35),-12px_-12px_30px_rgba(255,255,255,0.9)]",
+        onClick && "dark:hover:border-white/20 dark:hover:shadow-[0_16px_48px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)]",
         className
       )}
     >
-      {children}
+      {/* Subtle gradient overlay for glass effect */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 dark:opacity-100 pointer-events-none rounded-3xl" />
+      <div className="relative z-10">{children}</div>
     </div>
   )
 }
@@ -568,22 +606,34 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export function Input({ label, error, className, ...props }: InputProps) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-2">
       {label && (
-        <label className="text-xs font-medium text-[hsl(var(--foreground))]">
+        <label className="text-sm font-medium text-[hsl(var(--foreground))]">
           {label}
         </label>
       )}
       <input
         className={cn(
-          "rounded-xl border border-[hsl(var(--input-border))] bg-[hsl(var(--input))] px-4 py-2.5 text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] transition-all duration-200 focus:border-[hsl(var(--primary))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]/20",
-          error && "border-red-500 focus:border-red-500 focus:ring-red-500/20",
+          // Base styles
+          "rounded-2xl px-4 py-3 text-sm transition-all duration-300",
+          // Light mode: Neumorphism inset
+          "bg-[hsl(var(--card))] shadow-[inset_3px_3px_6px_rgba(174,174,192,0.2),inset_-3px_-3px_6px_rgba(255,255,255,0.7)]",
+          // Dark mode: Glass effect
+          "dark:bg-white/5 dark:backdrop-blur-lg dark:border dark:border-white/10",
+          // Text
+          "text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))]",
+          // Focus states
+          "focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/30",
+          "focus:shadow-[inset_4px_4px_8px_rgba(174,174,192,0.25),inset_-4px_-4px_8px_rgba(255,255,255,0.8)]",
+          "dark:focus:border-[hsl(var(--primary))]/50 dark:focus:shadow-[0_0_20px_rgba(168,85,247,0.2)]",
+          // Error state
+          error && "ring-2 ring-red-500/30 dark:border-red-500/50",
           className
         )}
         {...props}
       />
       {error && (
-        <span className="text-xs text-red-500">{error}</span>
+        <span className="text-xs text-red-400">{error}</span>
       )}
     </div>
   )

@@ -1,97 +1,98 @@
 @import "tailwindcss";
 
+/* ============================================
+   AURORA GLASS + NEUMORPHISM DESIGN SYSTEM
+   Kết hợp hiệu ứng kính mờ với soft 3D shadows
+   ============================================ */
+
 @layer base {
-  /* 
-    Theme switching: Tailwind sử dụng class 'dark' trên <html> để toggle theme
-    - Khi có class 'dark': áp dụng dark mode styles
-    - Khi không có: áp dụng light mode styles
-    
-    Background và text color được set qua CSS variables trong :root và .dark
-    để đảm bảo transition mượt mà khi toggle theme.
-  */
-  
-  /* Light mode default - Clean, modern, elegant */
+  /* Light mode default */
   html {
-    background-color: #ffffff;
-    color: #0f172a;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 50%, #f0f4f8 100%);
+    color: #1a202c;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
-  /* Dark mode - Sophisticated dark theme */
+  /* Dark mode - Aurora background */
   html.dark {
-    background-color: #0a0e1a;
+    background: 
+      radial-gradient(ellipse at 20% 0%, rgba(120, 0, 255, 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 0%, rgba(255, 0, 128, 0.1) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 100%, rgba(0, 200, 255, 0.08) 0%, transparent 50%),
+      linear-gradient(180deg, #0a0e1a 0%, #0d1225 50%, #0a0e1a 100%);
     color: #f1f5f9;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    min-height: 100vh;
+    background-attachment: fixed;
   }
 
   :root {
-    /* Light Mode - Clean & Elegant */
-    --background: 0 0% 100%; /* Pure white */
-    --foreground: 222.2 47% 11.2%; /* Deep slate for excellent readability */
-    --card: 0 0% 100%; /* White cards */
-    --card-foreground: 222.2 47% 11.2%; /* Dark text on cards */
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 47% 11.2%;
-    --primary: 262 83% 58%; /* Vibrant purple */
-    --primary-foreground: 0 0% 100%; /* White text on primary */
-    --secondary: 210 20% 96%; /* Very light gray */
-    --secondary-foreground: 222.2 47% 11.2%; /* Dark text */
-    --muted: 210 20% 96%; /* Subtle gray */
-    --muted-foreground: 215.4 16.3% 46.9%; /* Medium gray text */
-    --accent: 262 83% 96%; /* Light purple accent */
-    --accent-foreground: 262 83% 58%; /* Purple text */
-    --destructive: 0 84.2% 60.2%; /* Clear red */
-    --destructive-foreground: 0 0% 100%; /* White on red */
-    --success: 142 76% 36%; /* Green */
-    --warning: 38 92% 50%; /* Amber */
-    --info: 199 89% 48%; /* Blue */
-    --border: 214.3 31.8% 91.4%; /* Light gray borders */
-    --input: 0 0% 100%; /* White input backgrounds */
-    --input-border: 214.3 31.8% 91.4%; /* Light gray input borders */
-    --ring: 262 83% 58%; /* Purple focus ring */
-    --radius: 0.75rem; /* Slightly rounded */
-    /* Chart colors */
-    --chart-1: 262 83% 58%;
-    --chart-2: 330 81% 60%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    /* Light Mode - Neumorphism */
+    --background: 220 20% 97%;
+    --foreground: 222 47% 11%;
+    --card: 220 20% 98%;
+    --card-foreground: 222 47% 11%;
+    --popover: 220 20% 98%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 262 83% 58%;
+    --primary-accent: 330 81% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 262 83% 96%;
+    --accent-foreground: 262 83% 45%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 76% 36%;
+    --warning: 38 92% 50%;
+    --info: 199 89% 48%;
+    --border: 220 13% 91%;
+    --input: 220 20% 98%;
+    --input-border: 220 13% 91%;
+    --ring: 262 83% 58%;
+    --radius: 1rem;
+    
+    /* Neumorphism shadows - Light */
+    --shadow-neu-light: 8px 8px 16px rgba(174, 174, 192, 0.4), -8px -8px 16px rgba(255, 255, 255, 0.8);
+    --shadow-neu-light-inset: inset 4px 4px 8px rgba(174, 174, 192, 0.3), inset -4px -4px 8px rgba(255, 255, 255, 0.7);
+    --shadow-neu-light-sm: 4px 4px 8px rgba(174, 174, 192, 0.3), -4px -4px 8px rgba(255, 255, 255, 0.7);
   }
 
   .dark {
-    /* Dark Mode - Sophisticated & Modern */
-    --background: 222 47% 6%; /* Deep slate background */
-    --foreground: 210 40% 98%; /* Almost white text for excellent contrast */
-    --card: 222 47% 8%; /* Slightly lighter cards */
-    --card-foreground: 210 40% 98%; /* Light text */
-    --card-elevated: 222 47% 10%; /* Elevated card background */
-    --popover: 222 47% 8%;
+    /* Dark Mode - Aurora Glass */
+    --background: 225 35% 7%;
+    --foreground: 210 40% 98%;
+    --card: 225 35% 10%;
+    --card-foreground: 210 40% 98%;
+    --card-elevated: 225 35% 12%;
+    --popover: 225 35% 10%;
     --popover-foreground: 210 40% 98%;
-    --primary: 262 83% 58%; /* Vibrant purple */
-    --primary-accent: 330 81% 60%; /* Pink accent */
-    --primary-foreground: 0 0% 100%; /* White on primary */
-    --secondary: 222 47% 12%; /* Subtle elevated surface */
-    --secondary-foreground: 210 40% 98%; /* Light text */
-    --muted: 222 47% 10%; /* Muted background */
-    --muted-foreground: 215 20% 65%; /* Muted text - good contrast */
-    --accent: 262 83% 20%; /* Dark purple accent */
-    --accent-foreground: 262 83% 75%; /* Light purple text */
-    --destructive: 0 72% 51%; /* Red */
-    --destructive-foreground: 0 0% 100%; /* White on red */
-    --success: 142 71% 45%; /* Green */
-    --warning: 38 92% 50%; /* Amber */
-    --info: 199 89% 48%; /* Blue */
-    --border: 215 25% 27%; /* Visible but subtle borders */
-    --border-subtle: 215 15% 20%; /* Very subtle borders */
-    --input: 222 47% 10%; /* Input backgrounds */
-    --input-border: 215 25% 27%; /* Input borders */
-    --ring: 262 83% 58%; /* Purple focus ring */
-    /* Chart colors */
-    --chart-1: 262 83% 65%;
-    --chart-2: 330 81% 65%;
-    --chart-3: 197 60% 45%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --primary: 262 83% 58%;
+    --primary-accent: 330 81% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 225 35% 13%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 225 35% 12%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 262 50% 25%;
+    --accent-foreground: 262 83% 75%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 71% 45%;
+    --warning: 38 92% 50%;
+    --info: 199 89% 48%;
+    --border: 225 20% 22%;
+    --border-subtle: 225 15% 18%;
+    --input: 225 35% 12%;
+    --input-border: 225 20% 25%;
+    --ring: 262 83% 58%;
+    
+    /* Glass shadows - Dark */
+    --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    --shadow-glass-hover: 0 16px 48px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    --shadow-glow: 0 0 40px rgba(139, 92, 246, 0.3);
+    --shadow-glow-pink: 0 0 40px rgba(236, 72, 153, 0.3);
   }
 }
 
@@ -99,23 +100,401 @@
   * {
     border-color: hsl(var(--border));
   }
+  
   body {
-    background-color: hsl(var(--background));
+    background-color: transparent;
     color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
 @layer utilities {
+  /* ============================================
+     GLASSMORPHISM UTILITIES
+     ============================================ */
+  .glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .glass-light {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+  }
+  
+  .glass-card {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.05) 0%,
+      rgba(255, 255, 255, 0.02) 100%
+    );
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: var(--shadow-glass);
+  }
+  
+  .glass-card:hover {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(255, 255, 255, 0.04) 100%
+    );
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: var(--shadow-glass-hover);
+  }
+
+  /* ============================================
+     NEUMORPHISM UTILITIES
+     ============================================ */
+  .neu {
+    background: hsl(var(--card));
+    box-shadow: var(--shadow-neu-light);
+    border: none;
+  }
+  
+  .neu:hover {
+    box-shadow: 12px 12px 20px rgba(174, 174, 192, 0.5), -12px -12px 20px rgba(255, 255, 255, 0.9);
+  }
+  
+  .neu-inset {
+    background: hsl(var(--card));
+    box-shadow: var(--shadow-neu-light-inset);
+  }
+  
+  .dark .neu {
+    background: linear-gradient(145deg, hsl(225, 35%, 12%), hsl(225, 35%, 8%));
+    box-shadow: 8px 8px 20px rgba(0, 0, 0, 0.5), -8px -8px 20px rgba(255, 255, 255, 0.03);
+  }
+  
+  .dark .neu:hover {
+    box-shadow: 12px 12px 30px rgba(0, 0, 0, 0.6), -12px -12px 30px rgba(255, 255, 255, 0.05);
+  }
+
+  /* ============================================
+     3D TILT EFFECT (Apple-style)
+     ============================================ */
+  .tilt-card {
+    transform-style: preserve-3d;
+    perspective: 1000px;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .tilt-card:hover {
+    transform: rotateX(2deg) rotateY(-2deg) scale(1.02);
+  }
+  
+  .tilt-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.2) 0%,
+      transparent 50%
+    );
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+  }
+  
+  .tilt-card:hover::before {
+    opacity: 1;
+  }
+
+  /* ============================================
+     AURORA GRADIENT EFFECTS
+     ============================================ */
+  .aurora-border {
+    position: relative;
+    background: hsl(var(--card));
+    border-radius: var(--radius);
+  }
+  
+  .aurora-border::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: calc(var(--radius) + 2px);
+    background: linear-gradient(
+      135deg,
+      #a855f7 0%,
+      #ec4899 25%,
+      #06b6d4 50%,
+      #a855f7 75%,
+      #ec4899 100%
+    );
+    background-size: 300% 300%;
+    animation: aurora-flow 8s ease infinite;
+    z-index: -1;
+    opacity: 0.6;
+    filter: blur(8px);
+  }
+  
+  .aurora-border:hover::before {
+    opacity: 1;
+    filter: blur(4px);
+  }
+  
+  @keyframes aurora-flow {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  /* ============================================
+     GLOW EFFECTS
+     ============================================ */
+  .glow-purple {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.4), 0 0 40px rgba(139, 92, 246, 0.2);
+  }
+  
+  .glow-pink {
+    box-shadow: 0 0 20px rgba(236, 72, 153, 0.4), 0 0 40px rgba(236, 72, 153, 0.2);
+  }
+  
+  .glow-cyan {
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.4), 0 0 40px rgba(6, 182, 212, 0.2);
+  }
+  
+  .hover\:glow-purple:hover {
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.5), 0 0 60px rgba(139, 92, 246, 0.3);
+  }
+
+  /* ============================================
+     FLOATING ANIMATION
+     ============================================ */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+  
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .animate-float-slow {
+    animation: float 8s ease-in-out infinite;
+  }
+
+  /* ============================================
+     SHIMMER EFFECT
+     ============================================ */
   @keyframes shimmer {
-    0% {
-      background-position: -200% 0;
-    }
-    100% {
-      background-position: 200% 0;
-    }
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
   }
   
   .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
     animation: shimmer 2s infinite;
   }
+
+  /* ============================================
+     GRADIENT TEXT
+     ============================================ */
+  .gradient-text {
+    background: linear-gradient(135deg, #a855f7 0%, #ec4899 50%, #06b6d4 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .gradient-text-aurora {
+    background: linear-gradient(135deg, #a855f7 0%, #ec4899 33%, #f97316 66%, #06b6d4 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradient-shift 4s ease infinite;
+  }
+  
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% center; }
+    50% { background-position: 100% center; }
+  }
+
+  /* ============================================
+     BUTTON STYLES
+     ============================================ */
+  .btn-aurora {
+    background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+    color: white;
+    border: none;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .btn-aurora::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #c084fc 0%, #f472b6 100%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  
+  .btn-aurora:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 40px rgba(168, 85, 247, 0.4);
+  }
+  
+  .btn-aurora:hover::before {
+    opacity: 1;
+  }
+  
+  .btn-aurora span {
+    position: relative;
+    z-index: 1;
+  }
+  
+  .btn-glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: hsl(var(--foreground));
+    transition: all 0.3s ease;
+  }
+  
+  .btn-glass:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+  }
+  
+  .btn-neu {
+    background: hsl(var(--card));
+    box-shadow: var(--shadow-neu-light-sm);
+    border: none;
+    transition: all 0.3s ease;
+  }
+  
+  .btn-neu:hover {
+    box-shadow: var(--shadow-neu-light);
+  }
+  
+  .btn-neu:active {
+    box-shadow: var(--shadow-neu-light-inset);
+  }
+  
+  .dark .btn-neu {
+    background: linear-gradient(145deg, hsl(225, 35%, 14%), hsl(225, 35%, 10%));
+    box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.4), -4px -4px 12px rgba(255, 255, 255, 0.02);
+  }
+  
+  .dark .btn-neu:hover {
+    box-shadow: 6px 6px 16px rgba(0, 0, 0, 0.5), -6px -6px 16px rgba(255, 255, 255, 0.03);
+  }
+
+  /* ============================================
+     INPUT STYLES
+     ============================================ */
+  .input-glass {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.3s ease;
+  }
+  
+  .input-glass:focus {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(168, 85, 247, 0.5);
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.2);
+    outline: none;
+  }
+  
+  .input-neu {
+    background: hsl(var(--card));
+    box-shadow: var(--shadow-neu-light-inset);
+    border: none;
+    transition: all 0.3s ease;
+  }
+  
+  .input-neu:focus {
+    box-shadow: inset 6px 6px 12px rgba(174, 174, 192, 0.4), inset -6px -6px 12px rgba(255, 255, 255, 0.8);
+    outline: none;
+  }
+  
+  .dark .input-neu {
+    background: hsl(225, 35%, 8%);
+    box-shadow: inset 4px 4px 10px rgba(0, 0, 0, 0.4), inset -4px -4px 10px rgba(255, 255, 255, 0.02);
+  }
+
+  /* ============================================
+     CARD HOVER LIFT
+     ============================================ */
+  .hover-lift {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-8px);
+  }
+
+  /* ============================================
+     BACKDROP BLUR UTILITIES
+     ============================================ */
+  .backdrop-blur-xl {
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+  }
+  
+  .backdrop-blur-2xl {
+    backdrop-filter: blur(60px);
+    -webkit-backdrop-filter: blur(60px);
+  }
+}
+
+/* ============================================
+   SCROLLBAR STYLING
+   ============================================ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.4);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.6);
+}
+
+/* ============================================
+   SELECTION STYLING
+   ============================================ */
+::selection {
+  background: rgba(168, 85, 247, 0.3);
+  color: inherit;
+}
+
+.dark ::selection {
+  background: rgba(168, 85, 247, 0.4);
 }
