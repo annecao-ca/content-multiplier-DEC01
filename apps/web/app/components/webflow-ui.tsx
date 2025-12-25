@@ -50,7 +50,7 @@ export function AppNavbar() {
     { href: "/dashboard", label: "Dashboard" },
     { href: "/ideas", label: "Ideas" },
     { href: "/briefs", label: "Briefs" },
-    { href: "/documents", label: "RAG" },
+    { href: "/rag-demo", label: "RAG" },
     { href: "/packs", label: "Content" },
     { href: "/analytics", label: "Analytics" },
     { href: "/publisher", label: "Publisher" },
