@@ -5,6 +5,23 @@ import { ensureValid } from '../../../../packages/utils/validate.ts';
 import { llm } from '../services/llm.ts';
 import { retrieve } from '../services/rag.ts';
 import { logEvent } from '../services/telemetry.ts';
+import { env } from '../env.ts';
+
+/**
+ * Get the best available LLM model based on configured API keys
+ */
+function getAvailableLLMModel(): string {
+    const hasOpenAI = !!(env.OPENAI_API_KEY || process.env.OPENAI_API_KEY);
+    const hasDeepSeek = !!(env.DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY);
+    
+    if (hasOpenAI) {
+        return env.LLM_MODEL || 'gpt-4o-mini';
+    } else if (hasDeepSeek) {
+        return 'deepseek-chat';
+    } else {
+        return 'deepseek-chat';
+    }
+}
 
 const routes: FastifyPluginAsync = async (app) => {
     // List all briefs
@@ -150,7 +167,7 @@ const routes: FastifyPluginAsync = async (app) => {
         
         let brief;
         try {
-            const result = await llm.completeJSON({ model: process.env.LLM_MODEL!, system, user, jsonSchema: contentSchema });
+            const result = await llm.completeJSON({ model: getAvailableLLMModel(), system, user, jsonSchema: contentSchema });
             brief = result.brief || result;
         } catch (error) {
             console.log('LLM failed, using fallback brief:', error);
