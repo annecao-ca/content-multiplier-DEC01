@@ -259,6 +259,14 @@ export class FacebookService implements PublishingService {
             throw new Error('Facebook page access token not found in credentials')
         }
 
+        // Get page_id from content or credentials
+        const pageId = content.page_id || credentials.pageId || credentials.page_id
+        if (!pageId) {
+            throw new Error('Facebook page ID not found in content or credentials')
+        }
+
+        console.log(`Publishing to Facebook page: ${pageId}`)
+
         const postData = new URLSearchParams({
             message: content.message,
             access_token: accessToken
@@ -268,7 +276,7 @@ export class FacebookService implements PublishingService {
             postData.append('link', content.link)
         }
 
-        const response = await fetch(`https://graph.facebook.com/v18.0/${content.page_id}/feed`, {
+        const response = await fetch(`https://graph.facebook.com/v18.0/${pageId}/feed`, {
             method: 'POST',
             body: postData
         })

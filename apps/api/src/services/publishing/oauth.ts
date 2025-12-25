@@ -297,8 +297,38 @@ export class OAuthService {
             throw new Error(`Credentials expired for platform: ${platform}`)
         }
 
-        const decrypted = decrypt(cred.encrypted_credentials.encrypted)
-        return JSON.parse(decrypted)
+        // Handle different credential formats
+        let credentials = cred.encrypted_credentials
+        
+        // Parse if string
+        if (typeof credentials === 'string') {
+            try {
+                credentials = JSON.parse(credentials)
+            } catch (e) {
+                console.error('Failed to parse credentials string:', e)
+                throw new Error('Invalid credentials format')
+            }
+        }
+
+        // If encrypted, decrypt
+        if (credentials && credentials.encrypted) {
+            try {
+                const decrypted = decrypt(credentials.encrypted)
+                return JSON.parse(decrypted)
+            } catch (e) {
+                console.error('Failed to decrypt credentials:', e)
+                // Return as-is if decryption fails (might be old format)
+                return credentials
+            }
+        }
+
+        // If has pageAccessToken or access_token, return directly
+        if (credentials && (credentials.pageAccessToken || credentials.access_token || credentials.pageId)) {
+            return credentials
+        }
+
+        // Return credentials as-is
+        return credentials
     }
 
     // Refresh expired OAuth token
