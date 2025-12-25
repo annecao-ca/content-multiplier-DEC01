@@ -97,7 +97,7 @@ app.get('/api/health', async (request, reply) => {
     }
 })
 
-// Migration endpoint - setup RAG tables with embeddings
+// Migration endpoint - setup RAG tables with embeddings (JSONB for compatibility)
 app.get('/api/migrate/rag', async (request, reply) => {
     logger.info('Running RAG tables migration...')
     try {
@@ -117,31 +117,29 @@ app.get('/api/migrate/rag', async (request, reply) => {
             updated_at TIMESTAMPTZ DEFAULT now()
         )`)
         
-        // Create doc_chunks table with vector extension
-        await q(`CREATE EXTENSION IF NOT EXISTS vector`)
-        
+        // Create doc_chunks table with JSONB embedding (works without pgvector)
         await q(`CREATE TABLE IF NOT EXISTS doc_chunks (
             chunk_id TEXT PRIMARY KEY,
             doc_id TEXT REFERENCES documents(doc_id) ON DELETE CASCADE,
             content TEXT NOT NULL,
-            embedding vector(1536),
+            embedding JSONB,
             chunk_index INTEGER,
             created_at TIMESTAMPTZ DEFAULT now()
         )`)
         
         // Add embedding column if not exists (for existing tables)
-        await q(`ALTER TABLE doc_chunks ADD COLUMN IF NOT EXISTS embedding vector(1536)`)
+        await q(`ALTER TABLE doc_chunks ADD COLUMN IF NOT EXISTS embedding JSONB`)
         
         // Create indexes
         await q(`CREATE INDEX IF NOT EXISTS idx_doc_chunks_doc_id ON doc_chunks(doc_id)`)
-        await q(`CREATE INDEX IF NOT EXISTS idx_doc_chunks_embedding ON doc_chunks USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)`)
+        await q(`CREATE INDEX IF NOT EXISTS idx_doc_chunks_embedding ON doc_chunks USING GIN(embedding)`)
         
         logger.info('RAG tables migration completed!')
         return {
             ok: true,
-            message: 'RAG tables created/updated with embedding support',
+            message: 'RAG tables created/updated with JSONB embedding support',
             tables: ['documents', 'doc_chunks'],
-            extensions: ['vector']
+            note: 'Using JSONB for embeddings (compatible with all PostgreSQL)'
         }
     } catch (error: any) {
         logger.error('RAG migration failed', { error: error.message })
