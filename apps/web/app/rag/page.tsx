@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { API_URL } from '../lib/api-config'
 import { useLanguage } from '../contexts/LanguageContext'
 import { 
+    AppShell,
     PageHeader, 
     Card, 
     PrimaryButton,
@@ -138,13 +139,11 @@ export default function RAGPage() {
         setWebResults([])
         
         try {
-            // Try DuckDuckGo API (free, no key required)
             const res = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(webSearchQuery)}&format=json&no_html=1`)
             const data = await res.json()
             
             const results = []
             
-            // Abstract text
             if (data.AbstractText) {
                 results.push({
                     title: data.Heading || webSearchQuery,
@@ -154,7 +153,6 @@ export default function RAGPage() {
                 })
             }
             
-            // Related topics
             if (data.RelatedTopics) {
                 for (const topic of data.RelatedTopics.slice(0, 5)) {
                     if (topic.Text) {
@@ -226,8 +224,8 @@ export default function RAGPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[hsl(var(--background))]">
-            <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+        <AppShell>
+            <div className="space-y-10">
                 <PageHeader
                     title="📚 Knowledge Base (RAG)"
                     description="Quản lý tài liệu nguồn để AI tạo nội dung chất lượng"
@@ -250,50 +248,40 @@ export default function RAGPage() {
 
                 {/* Upload Form */}
                 {showUploadForm && (
-                    <Card className="p-6 space-y-4">
-                        <h3 className="text-lg font-semibold text-white">Thêm Tài Liệu Mới</h3>
+                    <Card className="p-8">
+                        <h3 className="text-xl font-bold text-[hsl(var(--foreground))] mb-6 flex items-center gap-2">
+                            <span>📄</span> Thêm Tài Liệu Mới
+                        </h3>
                         
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1">
-                                    Tiêu đề *
-                                </label>
-                                <Input
-                                    value={uploadTitle}
-                                    onChange={(e) => setUploadTitle(e.target.value)}
-                                    placeholder="VD: Lịch sử nhạc Bolero Sài Gòn"
-                                />
-                            </div>
+                        <div className="space-y-5">
+                            <Input
+                                label="Tiêu đề *"
+                                value={uploadTitle}
+                                onChange={(e) => setUploadTitle(e.target.value)}
+                                placeholder="VD: Lịch sử nhạc Bolero Sài Gòn"
+                            />
                             
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1">
-                                    URL nguồn (tùy chọn)
-                                </label>
-                                <Input
-                                    value={uploadUrl}
-                                    onChange={(e) => setUploadUrl(e.target.value)}
-                                    placeholder="https://..."
-                                />
-                            </div>
+                            <Input
+                                label="URL nguồn (tùy chọn)"
+                                value={uploadUrl}
+                                onChange={(e) => setUploadUrl(e.target.value)}
+                                placeholder="https://..."
+                            />
                             
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1">
-                                    Nội dung *
-                                </label>
-                                <Textarea
-                                    value={uploadContent}
-                                    onChange={(e) => setUploadContent(e.target.value)}
-                                    placeholder="Dán nội dung bài viết, tài liệu nghiên cứu, hoặc thông tin bạn muốn AI tham khảo..."
-                                    rows={8}
-                                />
-                            </div>
+                            <Textarea
+                                label="Nội dung *"
+                                value={uploadContent}
+                                onChange={(e) => setUploadContent(e.target.value)}
+                                placeholder="Dán nội dung bài viết, tài liệu nghiên cứu, hoặc thông tin bạn muốn AI tham khảo..."
+                                rows={8}
+                            />
                             
-                            <div className="flex gap-3">
+                            <div className="flex gap-3 pt-2">
                                 <PrimaryButton onClick={handleUpload} disabled={uploading}>
-                                    {uploading ? 'Đang xử lý...' : '✅ Lưu Tài Liệu'}
+                                    {uploading ? '⏳ Đang xử lý...' : '✅ Lưu Tài Liệu'}
                                 </PrimaryButton>
                                 <PrimaryButton variant="secondary" onClick={() => setShowUploadForm(false)}>
-                                    Hủy
+                                    ❌ Hủy
                                 </PrimaryButton>
                             </div>
                         </div>
@@ -301,43 +289,51 @@ export default function RAGPage() {
                 )}
 
                 {/* Web Search Section */}
-                <Card className="p-6 space-y-4">
-                    <h3 className="text-lg font-semibold text-white">🌐 Tìm Kiếm Web</h3>
-                    <p className="text-sm text-slate-400">
+                <Card className="p-8">
+                    <h3 className="text-xl font-bold text-[hsl(var(--foreground))] mb-2 flex items-center gap-2">
+                        <span>🌐</span> Tìm Kiếm Web
+                    </h3>
+                    <p className="text-[hsl(var(--muted-foreground))] mb-6">
                         Tìm kiếm thông tin từ internet và thêm vào Knowledge Base
                     </p>
                     
                     <div className="flex gap-3">
-                        <Input
-                            value={webSearchQuery}
-                            onChange={(e) => setWebSearchQuery(e.target.value)}
-                            placeholder="VD: Nhạc Bolero Sài Gòn xưa"
-                            className="flex-1"
-                            onKeyDown={(e) => e.key === 'Enter' && handleWebSearch()}
-                        />
+                        <div className="flex-1">
+                            <Input
+                                value={webSearchQuery}
+                                onChange={(e) => setWebSearchQuery(e.target.value)}
+                                placeholder="VD: Nhạc Bolero Sài Gòn xưa"
+                                onKeyDown={(e) => e.key === 'Enter' && handleWebSearch()}
+                            />
+                        </div>
                         <PrimaryButton onClick={handleWebSearch} disabled={webSearching}>
                             {webSearching ? '🔍 Đang tìm...' : '🔍 Tìm kiếm'}
                         </PrimaryButton>
                     </div>
                     
                     {webResults.length > 0 && (
-                        <div className="space-y-3 mt-4">
-                            <h4 className="text-sm font-medium text-slate-300">Kết quả ({webResults.length})</h4>
+                        <div className="space-y-4 mt-6">
+                            <h4 className="text-sm font-semibold text-[hsl(var(--foreground))]">
+                                Kết quả ({webResults.length})
+                            </h4>
                             {webResults.map((result, idx) => (
-                                <div key={idx} className="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+                                <div 
+                                    key={idx} 
+                                    className="p-5 rounded-2xl bg-gradient-to-br from-purple-500/5 to-pink-500/5 dark:from-purple-500/10 dark:to-pink-500/10 border border-purple-200/50 dark:border-purple-500/20 transition-all duration-300 hover:scale-[1.01]"
+                                >
                                     <div className="flex justify-between items-start gap-4">
                                         <div className="flex-1">
-                                            <h5 className="font-medium text-white">{result.title}</h5>
-                                            <p className="text-sm text-slate-400 mt-1 line-clamp-3">{result.snippet}</p>
+                                            <h5 className="font-semibold text-[hsl(var(--foreground))]">{result.title}</h5>
+                                            <p className="text-sm text-[hsl(var(--muted-foreground))] mt-2 line-clamp-3">{result.snippet}</p>
                                             {result.url && (
-                                                <a href={result.url} target="_blank" rel="noopener" className="text-xs text-indigo-400 hover:underline mt-1 inline-block">
-                                                    {result.url}
+                                                <a href={result.url} target="_blank" rel="noopener" className="text-xs text-purple-500 hover:text-purple-400 hover:underline mt-2 inline-block">
+                                                    🔗 {result.url}
                                                 </a>
                                             )}
                                         </div>
                                         <PrimaryButton 
+                                            size="sm"
                                             onClick={() => addWebResultToRAG(result)}
-                                            className="shrink-0"
                                         >
                                             ➕ Thêm
                                         </PrimaryButton>
@@ -349,33 +345,41 @@ export default function RAGPage() {
                 </Card>
 
                 {/* Search RAG Section */}
-                <Card className="p-6 space-y-4">
-                    <h3 className="text-lg font-semibold text-white">🔍 Tìm trong Knowledge Base</h3>
+                <Card className="p-8">
+                    <h3 className="text-xl font-bold text-[hsl(var(--foreground))] mb-6 flex items-center gap-2">
+                        <span>🔍</span> Tìm trong Knowledge Base
+                    </h3>
                     
                     <div className="flex gap-3">
-                        <Input
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Nhập từ khóa tìm kiếm..."
-                            className="flex-1"
-                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                        />
+                        <div className="flex-1">
+                            <Input
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Nhập từ khóa tìm kiếm..."
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                            />
+                        </div>
                         <PrimaryButton onClick={handleSearch} disabled={searching}>
-                            {searching ? 'Đang tìm...' : 'Tìm kiếm'}
+                            {searching ? '⏳ Đang tìm...' : '🔍 Tìm kiếm'}
                         </PrimaryButton>
                     </div>
                     
                     {searchResults.length > 0 && (
-                        <div className="space-y-3 mt-4">
-                            <h4 className="text-sm font-medium text-slate-300">Kết quả ({searchResults.length})</h4>
+                        <div className="space-y-4 mt-6">
+                            <h4 className="text-sm font-semibold text-[hsl(var(--foreground))]">
+                                Kết quả ({searchResults.length})
+                            </h4>
                             {searchResults.map((result, idx) => (
-                                <div key={idx} className="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <h5 className="font-medium text-white">{result.doc_title || result.doc_id}</h5>
-                                            <p className="text-sm text-slate-400 mt-1">{result.content.substring(0, 300)}...</p>
+                                <div 
+                                    key={idx} 
+                                    className="p-5 rounded-2xl bg-gradient-to-br from-cyan-500/5 to-blue-500/5 dark:from-cyan-500/10 dark:to-blue-500/10 border border-cyan-200/50 dark:border-cyan-500/20 transition-all duration-300 hover:scale-[1.01]"
+                                >
+                                    <div className="flex justify-between items-start gap-4">
+                                        <div className="flex-1">
+                                            <h5 className="font-semibold text-[hsl(var(--foreground))]">{result.doc_title || result.doc_id}</h5>
+                                            <p className="text-sm text-[hsl(var(--muted-foreground))] mt-2">{result.content.substring(0, 300)}...</p>
                                         </div>
-                                        <Badge variant="info">
+                                        <Badge variant="info" className="shrink-0">
                                             {(result.similarity * 100).toFixed(1)}% match
                                         </Badge>
                                     </div>
@@ -386,36 +390,41 @@ export default function RAGPage() {
                 </Card>
 
                 {/* Documents List */}
-                <Card className="p-6">
-                    <h3 className="text-lg font-semibold text-white mb-4">
-                        📄 Tài Liệu Đã Lưu ({documents.length})
+                <Card className="p-8">
+                    <h3 className="text-xl font-bold text-[hsl(var(--foreground))] mb-6 flex items-center gap-2">
+                        <span>📄</span> Tài Liệu Đã Lưu 
+                        <Badge variant="default">{documents.length}</Badge>
                     </h3>
                     
                     {loading ? (
-                        <div className="text-center py-8 text-slate-400">Đang tải...</div>
+                        <div className="text-center py-12">
+                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-purple-500 border-t-transparent"></div>
+                            <p className="text-[hsl(var(--muted-foreground))] mt-4">Đang tải...</p>
+                        </div>
                     ) : documents.length === 0 ? (
-                        <div className="text-center py-8">
-                            <p className="text-slate-400 mb-4">Chưa có tài liệu nào</p>
-                            <p className="text-sm text-slate-500">
+                        <div className="text-center py-12">
+                            <div className="text-6xl mb-4">📚</div>
+                            <p className="text-[hsl(var(--muted-foreground))] mb-2">Chưa có tài liệu nào</p>
+                            <p className="text-sm text-[hsl(var(--muted-foreground))]">
                                 Thêm tài liệu để AI có thể tạo nội dung chất lượng hơn
                             </p>
                         </div>
                     ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             {documents.map((doc) => (
                                 <div 
                                     key={doc.doc_id} 
-                                    className="p-4 bg-slate-800/50 rounded-lg border border-slate-700 flex justify-between items-center"
+                                    className="p-5 rounded-2xl bg-[hsl(var(--card))] shadow-[4px_4px_12px_rgba(174,174,192,0.15),-4px_-4px_12px_rgba(255,255,255,0.6)] dark:bg-white/5 dark:backdrop-blur-lg dark:border dark:border-white/10 dark:shadow-[0_4px_20px_rgba(0,0,0,0.2)] flex justify-between items-center transition-all duration-300 hover:scale-[1.01]"
                                 >
-                                    <div>
-                                        <h4 className="font-medium text-white">{doc.title}</h4>
-                                        <div className="flex gap-3 mt-1 text-xs text-slate-400">
+                                    <div className="flex-1">
+                                        <h4 className="font-semibold text-[hsl(var(--foreground))]">{doc.title}</h4>
+                                        <div className="flex flex-wrap gap-3 mt-2 text-xs text-[hsl(var(--muted-foreground))]">
                                             {doc.author && <span>👤 {doc.author}</span>}
                                             {doc.chunk_count && <span>📝 {doc.chunk_count} chunks</span>}
                                             <span>📅 {new Date(doc.created_at).toLocaleDateString('vi-VN')}</span>
                                         </div>
                                         {doc.tags && doc.tags.length > 0 && (
-                                            <div className="flex gap-1 mt-2">
+                                            <div className="flex flex-wrap gap-2 mt-3">
                                                 {doc.tags.map(tag => (
                                                     <Badge key={tag} variant="default">{tag}</Badge>
                                                 ))}
@@ -424,7 +433,7 @@ export default function RAGPage() {
                                     </div>
                                     <button
                                         onClick={() => deleteDocument(doc.doc_id)}
-                                        className="text-red-400 hover:text-red-300 p-2"
+                                        className="text-red-400 hover:text-red-300 p-3 rounded-xl hover:bg-red-500/10 transition-all duration-200"
                                         title="Xóa"
                                     >
                                         🗑️
@@ -435,7 +444,6 @@ export default function RAGPage() {
                     )}
                 </Card>
             </div>
-        </div>
+        </AppShell>
     )
 }
-
