@@ -1,5 +1,5 @@
 import { FastifyPluginAsync } from 'fastify';
-import { loadLLMSettings, saveLLMSettings } from '../services/settingsStore.ts'
+import { loadLLMSettingsAsync, saveLLMSettings } from '../services/settingsStore.ts'
 
 interface LLMConfig {
     provider: 'openai' | 'deepseek' | 'anthropic' | 'gemini' | 'grok'
@@ -11,7 +11,7 @@ interface LLMConfig {
 const routes: FastifyPluginAsync = async (app) => {
     // Get LLM configuration
     app.get('/llm', async (req: any) => {
-        const saved = loadLLMSettings()
+        const saved = await loadLLMSettingsAsync()
         if (saved) return saved
         const fallback: LLMConfig = {
             provider: (process.env.LLM_PROVIDER as any) || 'openai',
@@ -35,9 +35,10 @@ const routes: FastifyPluginAsync = async (app) => {
         }
 
         try {
-            saveLLMSettings({ provider, apiKey, model, baseUrl })
+            await saveLLMSettings({ provider, apiKey, model, baseUrl })
             return { ok: true, message: 'Settings saved successfully' }
         } catch (error) {
+            console.error('Save settings error:', error)
             return reply.status(500).send({ ok: false, error: 'Failed to save settings' })
         }
     });
@@ -110,7 +111,7 @@ const routes: FastifyPluginAsync = async (app) => {
         const { prompt, model } = req.body as { prompt: string, model?: string }
         if (!prompt) return reply.status(400).send({ ok: false, error: 'Missing prompt' })
 
-        const saved = loadLLMSettings()
+        const saved = await loadLLMSettingsAsync()
         if (!saved) return reply.status(400).send({ ok: false, error: 'No saved LLM settings' })
 
         const provider = saved.provider

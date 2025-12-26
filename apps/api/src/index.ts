@@ -307,6 +307,36 @@ app.get('/api/migrate/publishing', async (request, reply) => {
     }
 })
 
+// Migration endpoint - create LLM settings table
+app.get('/api/migrate/settings', async (request, reply) => {
+    logger.info('Running LLM settings migration...')
+    try {
+        const { q } = await import('./db.ts')
+        
+        // Create llm_settings table
+        await q(`
+            CREATE TABLE IF NOT EXISTS llm_settings (
+                id TEXT PRIMARY KEY DEFAULT 'default',
+                config JSONB NOT NULL,
+                updated_at TIMESTAMPTZ DEFAULT now()
+            )
+        `)
+        
+        logger.info('LLM settings migration completed!')
+        return { 
+            ok: true, 
+            message: 'LLM settings table created successfully!',
+            tables: ['llm_settings']
+        }
+    } catch (error: any) {
+        logger.error('LLM settings migration failed', { error: error.message })
+        return reply.status(500).send({ 
+            ok: false, 
+            error: error.message 
+        })
+    }
+})
+
 // LLM Test endpoint - check if LLM is working
 app.get('/api/llm/test', async (request, reply) => {
     logger.info('Testing LLM connection...')

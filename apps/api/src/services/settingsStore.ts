@@ -1,5 +1,4 @@
-import fs from 'fs'
-import path from 'path'
+import { q } from '../db.ts'
 
 export type LLMProvider = 'openai' | 'deepseek' | 'anthropic' | 'gemini' | 'grok'
 
@@ -10,29 +9,47 @@ export interface SavedLLMConfig {
     baseUrl?: string
 }
 
-const DATA_DIR = path.resolve(process.cwd(), '.data')
-const SETTINGS_PATH = path.join(DATA_DIR, 'llm-settings.json')
-
-function ensureDataDir() {
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })
-}
+// In-memory cache to avoid DB calls on every request
+let cachedSettings: SavedLLMConfig | null = null
 
 export function loadLLMSettings(): SavedLLMConfig | null {
+    // Return cached value if available
+    return cachedSettings
+}
+
+export async function loadLLMSettingsAsync(): Promise<SavedLLMConfig | null> {
     try {
-        if (!fs.existsSync(SETTINGS_PATH)) return null
-        const raw = fs.readFileSync(SETTINGS_PATH, 'utf8')
-        const parsed = JSON.parse(raw)
-        if (!parsed || typeof parsed !== 'object') return null
-        return parsed as SavedLLMConfig
-    } catch {
+        const rows = await q('SELECT config FROM llm_settings WHERE id = $1', ['default'])
+        if (rows.length > 0 && rows[0].config) {
+            cachedSettings = rows[0].config as SavedLLMConfig
+            return cachedSettings
+        }
+        return null
+    } catch (error) {
+        console.error('Failed to load LLM settings from DB:', error)
         return null
     }
 }
 
-export function saveLLMSettings(cfg: SavedLLMConfig): void {
-    ensureDataDir()
-    fs.writeFileSync(SETTINGS_PATH, JSON.stringify(cfg, null, 2), 'utf8')
+export async function saveLLMSettings(cfg: SavedLLMConfig): Promise<void> {
+    try {
+        // Upsert into database
+        await q(`
+            INSERT INTO llm_settings (id, config, updated_at)
+            VALUES ($1, $2, NOW())
+            ON CONFLICT (id) DO UPDATE SET config = $2, updated_at = NOW()
+        `, ['default', JSON.stringify(cfg)])
+        
+        // Update cache
+        cachedSettings = cfg
+    } catch (error) {
+        console.error('Failed to save LLM settings to DB:', error)
+        throw error
+    }
 }
+
+// Initialize settings from DB on module load
+loadLLMSettingsAsync().catch(() => {})
 
 
 
