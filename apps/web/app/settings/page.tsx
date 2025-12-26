@@ -20,6 +20,7 @@ import {
     Alert,
 } from '../components/webflow-ui'
 import { DashboardHero } from '../components/dashboard-ui'
+import { API_URL } from '../lib/api-config'
 
 interface LLMConfig {
     provider: 'openai' | 'deepseek' | 'anthropic' | 'gemini' | 'grok'
@@ -103,7 +104,7 @@ export default function SettingsPage() {
 
     const loadConfig = async () => {
         try {
-            const response = await fetch('/api/settings/llm')
+            const response = await fetch(`${API_URL}/api/settings/llm`)
             if (response.ok) {
                 const data = await response.json()
                 setConfig(data)
@@ -118,7 +119,7 @@ export default function SettingsPage() {
         setMessage('')
 
         try {
-            const response = await fetch('/api/settings/llm', {
+            const response = await fetch(`${API_URL}/api/settings/llm`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(config)
@@ -152,7 +153,7 @@ export default function SettingsPage() {
         setMessage('')
 
         try {
-            const response = await fetch('/api/settings/llm/test', {
+            const response = await fetch(`${API_URL}/api/settings/llm/test`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(config)
@@ -182,7 +183,7 @@ export default function SettingsPage() {
         setRunning(true)
         setMessage('')
         try {
-            const res = await fetch('/api/settings/llm/run', {
+            const res = await fetch(`${API_URL}/api/settings/llm/run`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt })
